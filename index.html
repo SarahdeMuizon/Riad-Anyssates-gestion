@@ -655,32 +655,18 @@
     <div class="login-logo">
       <h1>Riad Anyssates</h1>
       <div class="ornament"></div>
-      <p>Gestion interne — Dépenses & Encaissements</p>
+      <p>Espace de gestion — Accès manager</p>
     </div>
 
-    <div class="role-tabs">
-      <button class="role-tab active" onclick="setRole('employee')">👤 Employé</button>
-      <button class="role-tab" onclick="setRole('manager')">👑 Manager</button>
+    <div class="form-group">
+      <label>Code d'accès</label>
+      <input type="password" id="login-pin" placeholder="••••••••" onkeydown="if(event.key==='Enter') loginManager()" autocomplete="off">
     </div>
-
-    <div id="login-employee">
-      <div class="form-group">
-        <label>Votre prénom</label>
-        <input type="text" id="login-name" placeholder="ex: Fatima, Youssef…" autocomplete="off">
-      </div>
-      <div id="login-error" class="alert alert-error">Merci d'entrer votre prénom.</div>
-      <button class="btn btn-primary" onclick="loginEmployee()">Accéder à mon espace</button>
-    </div>
-
-    <div id="login-manager" style="display:none">
-      <div class="form-group">
-        <label>Code manager</label>
-        <input type="password" id="login-pin" placeholder="••••" onkeydown="if(event.key==='Enter') loginManager()">
-      </div>
-      <div id="login-error-mgr" class="alert alert-error">Code incorrect.</div>
-      <button class="btn btn-primary" onclick="loginManager()">Accéder au tableau de bord</button>
-      <p style="margin-top:12px; font-size:12px; color:var(--muted); text-align:center">Contactez le manager pour obtenir le code d'accès.</p>
-    </div>
+    <div id="login-error-mgr" class="alert alert-error">Code incorrect. Réessayez.</div>
+    <button class="btn btn-primary" onclick="loginManager()">Accéder au tableau de bord</button>
+    <p style="margin-top:16px; font-size:12px; color:var(--muted); text-align:center">
+      Les employés accèdent via leur lien personnel.
+    </p>
   </div>
 </div>
 
@@ -1085,32 +1071,6 @@ let _autoLoginEmployee = null;
 // ════════════════════════════════════════════
 //  LOGIN
 // ════════════════════════════════════════════
-let loginRole = 'employee';
-
-function setRole(role) {
-  loginRole = role;
-  document.querySelectorAll('.role-tab').forEach((t,i) => {
-    t.classList.toggle('active', (i===0 && role==='employee') || (i===1 && role==='manager'));
-  });
-  document.getElementById('login-employee').style.display = role === 'employee' ? '' : 'none';
-  document.getElementById('login-manager').style.display = role === 'manager' ? '' : 'none';
-}
-
-function loginEmployee() {
-  const name = document.getElementById('login-name').value.trim();
-  const err = document.getElementById('login-error');
-  if (!name) {
-    err.style.display = 'block';
-    err.className = 'alert alert-error';
-    err.textContent = 'Merci d\'entrer votre prénom.';
-    return;
-  }
-  err.style.display = 'none';
-  currentUser = name;
-  currentRole = 'employee';
-  showApp();
-}
-
 function loginManager() {
   const pin = document.getElementById('login-pin').value;
   const data = getData();
@@ -1154,7 +1114,6 @@ function logout() {
   currentRole = null;
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
-  document.getElementById('login-name').value = '';
   document.getElementById('login-pin').value = '';
 }
 
