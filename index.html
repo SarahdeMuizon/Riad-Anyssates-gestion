@@ -557,6 +557,78 @@
       border-radius: 6px;
     }
 
+    .emp-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+    }
+
+    .emp-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .emp-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--terracotta-light);
+      color: var(--terracotta);
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .emp-info { flex: 1; margin-left: 12px; }
+    .emp-name { font-weight: 700; font-size: 15px; }
+    .emp-poste { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .emp-link-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-top: 8px;
+    }
+
+    .emp-link-text {
+      font-size: 12px;
+      color: var(--muted);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: monospace;
+    }
+
+    .btn-copy {
+      background: var(--terracotta);
+      color: white;
+      border: none;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .btn-copy:hover { background: var(--terracotta-dark); }
+    .btn-copy.copied { background: var(--green); }
+
+    .badge-inactive { background: #f0f0f0; color: #999; }
+
     .export-btn {
       display: flex;
       align-items: center;
@@ -607,7 +679,7 @@
       </div>
       <div id="login-error-mgr" class="alert alert-error">Code incorrect.</div>
       <button class="btn btn-primary" onclick="loginManager()">Accéder au tableau de bord</button>
-      <p style="margin-top:12px; font-size:12px; color:var(--muted); text-align:center">Code par défaut : <strong>1234</strong></p>
+      <p style="margin-top:12px; font-size:12px; color:var(--muted); text-align:center">Contactez le manager pour obtenir le code d'accès.</p>
     </div>
   </div>
 </div>
@@ -773,6 +845,7 @@
         <button class="tab active" onclick="mgrTab('dashboard')">📊 Tableau de bord</button>
         <button class="tab" onclick="mgrTab('cb')">💳 Dépenses CB</button>
         <button class="tab" onclick="mgrTab('cash')">💵 Encaissements</button>
+        <button class="tab" onclick="mgrTab('employees')">👥 Employés</button>
         <button class="tab" onclick="mgrTab('settings')">⚙️ Paramètres</button>
       </div>
 
@@ -895,6 +968,42 @@
         <div id="mgr-cash-table" class="table-wrapper"></div>
       </div>
 
+      <!-- EMPLOYEES -->
+      <div id="mgr-employees" style="display:none">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start">
+
+          <!-- Formulaire création -->
+          <div class="card">
+            <div class="card-title">
+              <div class="icon icon-gold">➕</div>
+              Créer un profil employé
+            </div>
+            <div id="emp-create-alert" class="alert"></div>
+            <div class="form-group">
+              <label>Prénom et nom</label>
+              <input type="text" id="new-emp-name" placeholder="ex: Fatima Zahra">
+            </div>
+            <div class="form-group">
+              <label>Poste</label>
+              <input type="text" id="new-emp-poste" placeholder="ex: Réceptionniste, Femme de chambre…">
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" style="width:auto;padding:12px 24px" onclick="addEmployee()">
+                ✓ Créer le profil
+              </button>
+            </div>
+          </div>
+
+          <!-- Liste employés -->
+          <div>
+            <div class="section-header" style="margin-bottom:16px">
+              <span class="section-title">Équipe (<span id="emp-count">0</span>)</span>
+            </div>
+            <div id="emp-list"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- SETTINGS -->
       <div id="mgr-settings" style="display:none">
         <div class="card" style="max-width:480px">
@@ -938,17 +1047,19 @@
 //  ÉTAT & STORAGE
 // ════════════════════════════════════════════
 const STORAGE_KEY = 'riad_anyssates_v1';
-const DEFAULT_PIN = '1234';
+const DEFAULT_PIN = 'gestion2026';
 let currentUser = null;
 let currentRole = null;
 
 function loadData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { entries: [], pin: DEFAULT_PIN };
-    return JSON.parse(raw);
+    if (!raw) return { entries: [], employees: [], pin: DEFAULT_PIN };
+    const d = JSON.parse(raw);
+    if (!d.employees) d.employees = [];
+    return d;
   } catch(e) {
-    return { entries: [], pin: DEFAULT_PIN };
+    return { entries: [], employees: [], pin: DEFAULT_PIN };
   }
 }
 
@@ -957,6 +1068,19 @@ function saveData(data) {
 }
 
 function getData() { return loadData(); }
+
+// ════════════════════════════════════════════
+//  AUTO-LOGIN VIA TOKEN URL
+// ════════════════════════════════════════════
+let _autoLoginEmployee = null;
+(function checkURLToken() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('emp');
+  if (!token) return;
+  const data = getData();
+  const emp = data.employees && data.employees.find(e => e.token === token && e.active !== false);
+  if (emp) _autoLoginEmployee = emp;
+})();
 
 // ════════════════════════════════════════════
 //  LOGIN
@@ -1186,15 +1310,16 @@ function initManager() {
 }
 
 function mgrTab(tab) {
-  ['dashboard','cb','cash','settings'].forEach(t => {
+  ['dashboard','cb','cash','employees','settings'].forEach(t => {
     document.getElementById('mgr-'+t).style.display = t === tab ? '' : 'none';
   });
   document.querySelectorAll('#view-manager .tab').forEach((btn, i) => {
-    btn.classList.toggle('active', ['dashboard','cb','cash','settings'][i] === tab);
+    btn.classList.toggle('active', ['dashboard','cb','cash','employees','settings'][i] === tab);
   });
   if (tab === 'dashboard') renderDashboard();
   if (tab === 'cb') { populateManagerFilters(); renderManagerCB(); }
   if (tab === 'cash') { populateManagerFilters(); renderManagerCash(); }
+  if (tab === 'employees') renderEmployees();
 }
 
 function renderDashboard() {
@@ -1494,6 +1619,136 @@ function confirmReset() {
 }
 
 // ════════════════════════════════════════════
+//  GESTION EMPLOYÉS
+// ════════════════════════════════════════════
+function generateToken() {
+  return Math.random().toString(36).substr(2, 10) + Date.now().toString(36);
+}
+
+function getBaseURL() {
+  return window.location.origin + window.location.pathname.replace(/\/+$/, '');
+}
+
+function addEmployee() {
+  const name = document.getElementById('new-emp-name').value.trim();
+  const poste = document.getElementById('new-emp-poste').value.trim();
+  const alert = document.getElementById('emp-create-alert');
+
+  if (!name) {
+    alert.className = 'alert alert-error';
+    alert.textContent = 'Le prénom et nom sont obligatoires.';
+    alert.style.display = 'block';
+    return;
+  }
+
+  const data = getData();
+  const duplicate = data.employees.find(e => e.name.toLowerCase() === name.toLowerCase() && e.active !== false);
+  if (duplicate) {
+    alert.className = 'alert alert-error';
+    alert.textContent = 'Un employé actif avec ce nom existe déjà.';
+    alert.style.display = 'block';
+    return;
+  }
+
+  const emp = {
+    id: Date.now().toString(),
+    name,
+    poste: poste || 'Employé',
+    token: generateToken(),
+    active: true,
+    createdAt: new Date().toISOString()
+  };
+
+  data.employees.push(emp);
+  saveData(data);
+
+  alert.className = 'alert alert-success';
+  alert.textContent = '✓ Profil créé ! Le lien est disponible ci-contre.';
+  alert.style.display = 'block';
+  setTimeout(() => alert.style.display = 'none', 4000);
+
+  document.getElementById('new-emp-name').value = '';
+  document.getElementById('new-emp-poste').value = '';
+  renderEmployees();
+}
+
+function renderEmployees() {
+  const data = getData();
+  const employees = data.employees.filter(e => e.active !== false);
+  document.getElementById('emp-count').textContent = employees.length;
+
+  const list = document.getElementById('emp-list');
+  if (employees.length === 0) {
+    list.innerHTML = `<div class="empty" style="padding:32px 20px"><div class="empty-icon">👥</div><h3>Aucun employé</h3><p>Créez un profil pour générer son lien d'accès.</p></div>`;
+    return;
+  }
+
+  list.innerHTML = employees.map(emp => {
+    const link = getBaseURL() + '?emp=' + emp.token;
+    const initials = emp.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    return `
+    <div class="emp-card">
+      <div class="emp-card-top">
+        <div style="display:flex;align-items:center;flex:1">
+          <div class="emp-avatar">${initials}</div>
+          <div class="emp-info">
+            <div class="emp-name">${emp.name}</div>
+            <div class="emp-poste">${emp.poste}</div>
+          </div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="deactivateEmployee('${emp.id}')">Supprimer</button>
+      </div>
+      <div class="emp-link-row">
+        <span class="emp-link-text" title="${link}">${link}</span>
+        <button class="btn-copy" id="copy-${emp.id}" onclick="copyLink('${link}', '${emp.id}')">📋 Copier</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function copyLink(link, empId) {
+  navigator.clipboard.writeText(link).then(() => {
+    const btn = document.getElementById('copy-' + empId);
+    btn.textContent = '✓ Copié !';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '📋 Copier';
+      btn.classList.remove('copied');
+    }, 2500);
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = link;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    const btn = document.getElementById('copy-' + empId);
+    btn.textContent = '✓ Copié !';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '📋 Copier';
+      btn.classList.remove('copied');
+    }, 2500);
+  });
+}
+
+function deactivateEmployee(id) {
+  openModal(
+    'Supprimer cet employé ?',
+    'Son lien ne fonctionnera plus. Ses entrées existantes sont conservées.',
+    () => {
+      const data = getData();
+      const emp = data.employees.find(e => e.id === id);
+      if (emp) emp.active = false;
+      saveData(data);
+      closeModal();
+      renderEmployees();
+    }
+  );
+}
+
+// ════════════════════════════════════════════
 //  EXPORT CSV
 // ════════════════════════════════════════════
 function exportCSV(type) {
@@ -1569,6 +1824,13 @@ function populateMonthFilter(id) {
 document.getElementById('confirm-modal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
+
+// Auto-login via token URL (déclenché après chargement complet)
+if (_autoLoginEmployee) {
+  currentUser = _autoLoginEmployee.name;
+  currentRole = 'employee';
+  showApp();
+}
 </script>
 </body>
 </html>
