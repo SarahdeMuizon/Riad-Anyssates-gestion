@@ -688,17 +688,17 @@
     <!-- ══ VUE EMPLOYÉ ══ -->
     <div id="view-employee" style="display:none">
       <div class="tabs">
-        <button class="tab active" onclick="empTab('cb')">💳 Dépenses CB</button>
+        <button class="tab active" onclick="empTab('cb')">💳 Dépenses</button>
         <button class="tab" onclick="empTab('cash')">💵 Encaissements</button>
         <button class="tab" onclick="empTab('history')">📋 Mon historique</button>
       </div>
 
-      <!-- TAB: Dépenses CB -->
+      <!-- TAB: Dépenses -->
       <div id="emp-cb">
         <div class="card">
           <div class="card-title">
             <div class="icon icon-red">💳</div>
-            Nouvelle dépense par carte société
+            Nouvelle dépense
           </div>
           <div id="alert-cb" class="alert"></div>
           <form onsubmit="submitCB(event)">
@@ -810,7 +810,7 @@
           <div style="display:flex; gap:8px">
             <select id="hist-filter-type" onchange="renderHistory()" style="width:auto; margin:0; font-size:14px; padding:8px 12px">
               <option value="">Tout</option>
-              <option value="cb">Dépenses CB</option>
+              <option value="cb">Dépenses</option>
               <option value="cash">Encaissements</option>
             </select>
             <select id="hist-filter-month" onchange="renderHistory()" style="width:auto; margin:0; font-size:14px; padding:8px 12px">
@@ -829,7 +829,7 @@
     <div id="view-manager" style="display:none">
       <div class="tabs">
         <button class="tab active" onclick="mgrTab('dashboard')">📊 Tableau de bord</button>
-        <button class="tab" onclick="mgrTab('cb')">💳 Dépenses CB</button>
+        <button class="tab" onclick="mgrTab('cb')">💳 Dépenses</button>
         <button class="tab" onclick="mgrTab('cash')">💵 Encaissements</button>
         <button class="tab" onclick="mgrTab('employees')">👥 Employés</button>
         <button class="tab" onclick="mgrTab('settings')">⚙️ Paramètres</button>
@@ -843,7 +843,7 @@
           <div class="card">
             <div class="card-title">
               <div class="icon icon-red">💳</div>
-              Dernières dépenses CB
+              Dernières dépenses
             </div>
             <div id="mgr-recent-cb"></div>
           </div>
@@ -868,7 +868,7 @@
       <!-- CB MANAGER -->
       <div id="mgr-cb" style="display:none">
         <div class="section-header">
-          <span class="section-title">Toutes les dépenses CB</span>
+          <span class="section-title">Toutes les dépenses</span>
           <button class="export-btn" onclick="exportCSV('cb')">⬇ Exporter CSV</button>
         </div>
         <div class="filter-bar">
@@ -1223,7 +1223,7 @@ function renderHistory() {
 
   document.getElementById('hist-stats').innerHTML = `
     <div class="stat-card">
-      <div class="stat-label">Mes dépenses CB</div>
+      <div class="stat-label">Mes dépenses</div>
       <div class="stat-value red">${fmt(totalCB)} MAD</div>
       <div class="stat-sub">${entries.filter(e=>e.type==='cb').length} entrée(s)</div>
     </div>
@@ -1295,7 +1295,7 @@ function renderDashboard() {
 
   document.getElementById('mgr-stats').innerHTML = `
     <div class="stat-card">
-      <div class="stat-label">Dépenses CB (total)</div>
+      <div class="stat-label">Dépenses (total)</div>
       <div class="stat-value red">${fmt(totalCB)} MAD</div>
       <div class="stat-sub">Ce mois : ${fmt(monthCB)} MAD</div>
     </div>
@@ -1350,7 +1350,7 @@ function renderDashboard() {
     return;
   }
   byEmpDiv.innerHTML = `<table><thead><tr>
-    <th>Employé</th><th>Dépenses CB</th><th>Encaissements</th><th>Entrées en attente</th>
+    <th>Employé</th><th>Dépenses</th><th>Encaissements</th><th>Entrées en attente</th>
   </tr></thead><tbody>
     ${employees.map(emp => {
       const empEntries = monthEntries.filter(e=>e.employee===emp);
