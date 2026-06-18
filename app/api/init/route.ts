@@ -9,6 +9,7 @@ export async function POST() {
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
     console.error('Init error:', error)
-    return NextResponse.json({ error: msg }, { status: 500 })
+    console.error('Init error:', msg)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
