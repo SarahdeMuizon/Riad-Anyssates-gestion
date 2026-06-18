@@ -23,26 +23,26 @@ export async function GET(req: NextRequest, { params }: { params: { type: string
       csv = 'Date,Employé,Catégorie,Fournisseur,Mode paiement,Montant,Statut,Description\n'
       for (const e of entries) {
         csv += [
-          e.date,
-          `"${e.employee_name}"`,
-          `"${e.category}"`,
-          `"${e.supplier || ''}"`,
-          `"${e.payment || ''}"`,
-          e.amount,
+          e.date as string,
+          `"${e.employee_name as string}"`,
+          `"${e.category as string}"`,
+          `"${(e.supplier as string) || ''}"`,
+          `"${(e.payment as string) || ''}"`,
+          e.amount as number,
           e.status === 'validated' ? 'Validé' : 'En attente',
-          `"${e.description || ''}"`,
+          `"${(e.description as string) || ''}"`,
         ].join(',') + '\n'
       }
     } else {
       csv = 'Date,Employé,Catégorie,Montant,Statut,Description\n'
       for (const e of entries) {
         csv += [
-          e.date,
-          `"${e.employee_name}"`,
-          `"${e.category}"`,
-          e.amount,
+          e.date as string,
+          `"${e.employee_name as string}"`,
+          `"${e.category as string}"`,
+          e.amount as number,
           e.status === 'validated' ? 'Validé' : 'En attente',
-          `"${e.description || ''}"`,
+          `"${(e.description as string) || ''}"`,
         ].join(',') + '\n'
       }
     }

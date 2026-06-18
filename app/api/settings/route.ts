@@ -13,7 +13,7 @@ export async function GET() {
     const settings: Record<string, string> = {}
     for (const row of rows) {
       if (row.key !== 'pin') {
-        settings[row.key] = row.value
+        settings[row.key as string] = row.value as string
       }
     }
     return NextResponse.json(settings)
@@ -34,7 +34,7 @@ export async function PATCH(req: NextRequest) {
 
     // Verify current PIN
     const rows = await sql`SELECT value FROM settings WHERE key = 'pin'`
-    if (rows[0]?.value !== currentPin) {
+    if ((rows[0]?.value as string) !== currentPin) {
       return NextResponse.json({ error: 'PIN actuel incorrect' }, { status: 400 })
     }
 

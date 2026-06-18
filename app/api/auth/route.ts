@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     }
 
     const rows = await sql`SELECT value FROM settings WHERE key = 'pin'`
-    const storedPin = rows[0]?.value
+    const storedPin = rows[0]?.value as string | undefined
 
     if (pin !== storedPin) {
       return NextResponse.json({ error: 'PIN incorrect' }, { status: 401 })

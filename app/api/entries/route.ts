@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
       if (!emp[0]) {
         return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
       }
-      const name = emp[0].name
+      const name = emp[0].name as string
       let entries
       if (type) {
         entries = await sql`
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
       if (!emp[0]) {
         return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
       }
-      empName = emp[0].name
+      empName = emp[0].name as string
     } else {
       // Manager submitting
       const isAuth = await getManagerSession()

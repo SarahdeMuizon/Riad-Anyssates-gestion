@@ -31,12 +31,12 @@ export async function GET() {
     ])
 
     return NextResponse.json({
-      total_cb: parseFloat(totals[0]?.total_cb || '0'),
-      total_cash: parseFloat(totals[0]?.total_cash || '0'),
-      pending_count: parseInt(pendingCount[0]?.count || '0'),
-      validated_count: parseInt(validatedCount[0]?.count || '0'),
-      cb_by_category: cbByCategory.map(r => ({ category: r.category, total: parseFloat(r.total) })),
-      cash_by_category: cashByCategory.map(r => ({ category: r.category, total: parseFloat(r.total) })),
+      total_cb: parseFloat((totals[0]?.total_cb as string) || '0'),
+      total_cash: parseFloat((totals[0]?.total_cash as string) || '0'),
+      pending_count: parseInt((pendingCount[0]?.count as string) || '0'),
+      validated_count: parseInt((validatedCount[0]?.count as string) || '0'),
+      cb_by_category: cbByCategory.map(r => ({ category: r.category, total: parseFloat(r.total as string) })),
+      cash_by_category: cashByCategory.map(r => ({ category: r.category, total: parseFloat(r.total as string) })),
     })
   } catch (error) {
     console.error('Dashboard error:', error)
