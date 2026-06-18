@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getManagerSession } from '@/lib/auth'
 
+export const dynamic = 'force-dynamic'
+
 function generateToken(): string {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
   let token = ''

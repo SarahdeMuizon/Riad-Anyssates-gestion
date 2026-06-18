@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { createSessionToken, SESSION_COOKIE } from '@/lib/auth'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: NextRequest) {
   try {
     const { pin } = await req.json()
