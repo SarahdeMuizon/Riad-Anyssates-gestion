@@ -7,7 +7,8 @@ export async function POST() {
     await initDb()
     return NextResponse.json({ ok: true, message: 'Base de données initialisée' })
   } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
     console.error('Init error:', error)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
