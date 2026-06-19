@@ -23,7 +23,8 @@ function fromHranaValue(v: HranaValue): unknown {
   if (v.type === 'null') return null
   if (v.type === 'integer') return parseInt(v.value, 10)
   if (v.type === 'float') return v.value
-  return v.value // text or blob
+  if (v.type === 'text') return v.value
+  return v.base64 // blob
 }
 
 async function tursoRequest(statements: Array<{ sql: string; args?: unknown[] }>) {
