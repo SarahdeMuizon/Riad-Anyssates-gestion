@@ -91,6 +91,7 @@ export async function sql(strings: TemplateStringsArray, ...values: unknown[]) {
 export default sql
 
 export async function initDb() {
+  // Create core tables (idempotent)
   const results = await tursoRequest([
     {
       sql: `CREATE TABLE IF NOT EXISTS employees (
@@ -113,6 +114,23 @@ export async function initDb() {
         supplier TEXT,
         payment TEXT,
         description TEXT,
+        currency TEXT DEFAULT 'EUR',
+        invoice_url TEXT,
+        status TEXT DEFAULT 'pending',
+        validated_at TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`,
+    },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS fonds_entries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        employee_name TEXT NOT NULL,
+        direction TEXT NOT NULL,
+        date TEXT NOT NULL,
+        amount REAL NOT NULL,
+        currency TEXT DEFAULT 'MAD',
+        category TEXT NOT NULL,
+        description TEXT,
         status TEXT DEFAULT 'pending',
         validated_at TEXT,
         created_at TEXT DEFAULT (datetime('now'))
@@ -132,6 +150,23 @@ export async function initDb() {
   for (const r of results) {
     if (r.type === 'error') {
       throw new Error(r.error?.message ?? 'Init error')
+    }
+  }
+
+  // Migrations: add new columns to existing entries table
+  // Errors are ignored when the column already exists
+  for (const migSql of [
+    `ALTER TABLE entries ADD COLUMN currency TEXT DEFAULT 'EUR'`,
+    `ALTER TABLE entries ADD COLUMN invoice_url TEXT`,
+  ]) {
+    const mResults = await tursoRequest([{ sql: migSql }])
+    const r = mResults[0]
+    if (r.type === 'error') {
+      const msg = r.error?.message ?? ''
+      // Ignore "duplicate column name" (column already exists)
+      if (!msg.toLowerCase().includes('duplicate column')) {
+        throw new Error(msg)
+      }
     }
   }
 }
