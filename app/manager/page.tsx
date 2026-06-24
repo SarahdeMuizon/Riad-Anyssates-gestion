@@ -171,6 +171,11 @@ function DashboardTab() {
 
 // ─── Entries Tab ───────────────────────────────────────────────────────────────
 
+const DEPENSES_CATEGORIES = ['Alimentation/Courses','Fournitures & bureautique','Entretien & maintenance','Transport','Restauration','Pharmacie/Hygiène','Décoration & fleurs','Autre']
+const ENCAISSEMENTS_CATEGORIES = ['Boissons bar','Repas/Restauration','Activité/Excursion','Service spa/Hammam','Transfert/Transport','Pourboire collectif','Autre encaissement']
+const PAYMENT_MODES = ['CB', 'Virement', 'Chèque']
+const CURRENCIES = ['EUR', 'MAD']
+
 function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string; color: string }) {
   const now = new Date()
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -181,6 +186,21 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [filterEmployee, setFilterEmployee] = useState('')
   const [deleteModal, setDeleteModal] = useState<number | null>(null)
   const [employees, setEmployees] = useState<string[]>([])
+  const [showForm, setShowForm] = useState(false)
+
+  // Form state
+  const [fDate, setFDate] = useState(now.toISOString().split('T')[0])
+  const [fEmployee, setFEmployee] = useState('')
+  const [fCategory, setFCategory] = useState(type === 'cb' ? DEPENSES_CATEGORIES[0] : ENCAISSEMENTS_CATEGORIES[0])
+  const [fAmount, setFAmount] = useState('')
+  const [fCurrency, setFCurrency] = useState('EUR')
+  const [fSupplier, setFSupplier] = useState('')
+  const [fPayment, setFPayment] = useState('CB')
+  const [fDescription, setFDescription] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [formError, setFormError] = useState('')
+
+  const categories = type === 'cb' ? DEPENSES_CATEGORIES : ENCAISSEMENTS_CATEGORIES
 
   const fetchEntries = useCallback(async () => {
     setLoading(true)
@@ -194,7 +214,12 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
 
   useEffect(() => { fetchEntries() }, [fetchEntries])
   useEffect(() => {
-    fetch('/api/employees').then(r => r.json()).then((emps: Employee[]) => setEmployees(emps.filter(e => e.active).map(e => e.name)))
+    fetch('/api/employees').then(r => r.json()).then((emps: Employee[]) => {
+      const names = emps.filter(e => e.active).map(e => e.name)
+      setEmployees(names)
+      if (names.length > 0 && !fEmployee) setFEmployee(names[0])
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function toggleStatus(entry: Entry) {
@@ -206,6 +231,23 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     await fetch(`/api/entries/${id}`, { method: 'DELETE' })
     setDeleteModal(null)
     fetchEntries()
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setSubmitting(true)
+    setFormError('')
+    const body: Record<string, unknown> = { type, date: fDate, employee_name: fEmployee, category: fCategory, amount: parseFloat(fAmount), currency: fCurrency, description: fDescription || null }
+    if (type === 'cb') { body.supplier = fSupplier || null; body.payment = fPayment }
+    const r = await fetch('/api/entries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    if (r.ok) {
+      setFAmount(''); setFSupplier(''); setFDescription(''); setShowForm(false)
+      fetchEntries()
+    } else {
+      const d = await r.json()
+      setFormError(d.error || 'Erreur')
+    }
+    setSubmitting(false)
   }
 
   function exportCSV() { window.location.href = `/api/export/${type}?month=${month}` }
@@ -220,8 +262,67 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
           <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color }}>{formatMonth(month)}</h2>
           <button onClick={() => setMonth(shiftMonth(month, 1))} disabled={month === currentMonth} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: month === currentMonth ? 'default' : 'pointer', opacity: month === currentMonth ? 0.4 : 1, fontWeight: 600 }}>›</button>
         </div>
-        <button className="btn-secondary" onClick={exportCSV} style={{ fontSize: '0.85rem' }}>⬇️ CSV</button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn-secondary" onClick={exportCSV} style={{ fontSize: '0.85rem' }}>⬇️ CSV</button>
+          <button className="btn-primary" onClick={() => setShowForm(!showForm)}>{showForm ? 'Annuler' : '+ Ajouter'}</button>
+        </div>
       </div>
+
+      {showForm && (
+        <div className="card" style={{ marginBottom: '1.25rem' }}>
+          <form onSubmit={handleSubmit}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Date *</label>
+                <input className="form-input" type="date" value={fDate} onChange={e => setFDate(e.target.value)} required />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Employé *</label>
+                <select className="form-input" value={fEmployee} onChange={e => setFEmployee(e.target.value)} required>
+                  <option value="">Sélectionner…</option>
+                  {employees.map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Catégorie *</label>
+                <select className="form-input" value={fCategory} onChange={e => setFCategory(e.target.value)}>
+                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Montant *</label>
+                <input className="form-input" type="number" step="0.01" min="0" value={fAmount} onChange={e => setFAmount(e.target.value)} placeholder="0.00" required />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Devise</label>
+                <select className="form-input" value={fCurrency} onChange={e => setFCurrency(e.target.value)}>
+                  {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              {type === 'cb' && (
+                <>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Fournisseur</label>
+                    <input className="form-input" value={fSupplier} onChange={e => setFSupplier(e.target.value)} placeholder="Nom fournisseur" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Mode paiement</label>
+                    <select className="form-input" value={fPayment} onChange={e => setFPayment(e.target.value)}>
+                      {PAYMENT_MODES.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                </>
+              )}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Description</label>
+                <input className="form-input" value={fDescription} onChange={e => setFDescription(e.target.value)} placeholder="Note optionnelle" />
+              </div>
+            </div>
+            {formError && <p style={{ color: 'var(--red)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{formError}</p>}
+            <button className="btn-primary" type="submit" disabled={submitting}>{submitting ? 'Enregistrement…' : 'Enregistrer'}</button>
+          </form>
+        </div>
+      )}
 
       <div className="card" style={{ marginBottom: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <select className="form-input" style={{ width: 'auto' }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
@@ -307,6 +408,8 @@ function FondsTab() {
   const [currency, setCurrency] = useState('MAD')
   const [category, setCategory] = useState(FONDS_CATEGORIES[0])
   const [description, setDescription] = useState('')
+  const [employeeName, setEmployeeName] = useState('Administrateur')
+  const [fondsEmployees, setFondsEmployees] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
 
@@ -318,6 +421,11 @@ function FondsTab() {
   }, [month])
 
   useEffect(() => { fetchEntries() }, [fetchEntries])
+  useEffect(() => {
+    fetch('/api/employees').then(r => r.json()).then((emps: Employee[]) => {
+      setFondsEmployees(emps.filter(e => e.active).map(e => e.name))
+    })
+  }, [])
 
   const totalIn = entries.filter(e => e.direction === 'in').reduce((s, e) => s + Number(e.amount), 0)
   const totalOut = entries.filter(e => e.direction === 'out').reduce((s, e) => s + Number(e.amount), 0)
@@ -341,7 +449,7 @@ function FondsTab() {
     const r = await fetch('/api/fonds', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ direction, date, amount: parseFloat(amount), currency, category, description }),
+      body: JSON.stringify({ direction, date, amount: parseFloat(amount), currency, category, description, employee_name: employeeName }),
     })
     if (r.ok) {
       setAmount(''); setDescription(''); setShowForm(false)
@@ -414,6 +522,13 @@ function FondsTab() {
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Catégorie *</label>
                 <select className="form-input" value={category} onChange={e => setCategory(e.target.value)}>
                   {FONDS_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Employé *</label>
+                <select className="form-input" value={employeeName} onChange={e => setEmployeeName(e.target.value)}>
+                  <option value="Administrateur">Administrateur</option>
+                  {fondsEmployees.map(n => <option key={n} value={n}>{n}</option>)}
                 </select>
               </div>
               <div>
