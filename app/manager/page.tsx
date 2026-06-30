@@ -5,6 +5,8 @@ import type { Entry, Employee, DashboardStats, FondsEntry } from '@/types'
 
 type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'employees' | 'settings'
 
+const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
 function formatMonth(month: string) {
   const [y, m] = month.split('-')
   const names = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
@@ -118,19 +120,19 @@ function DashboardTab() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
             <div className="stat-card">
               <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>Total Dépenses</div>
-              <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--terracotta)' }}>{stats.total_depenses.toFixed(2)}</div>
+              <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--terracotta)' }}>{fmt(stats.total_depenses)}</div>
             </div>
             <div className="stat-card" style={{ borderLeftColor: 'var(--green)' }}>
               <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>Total Encaissements</div>
-              <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--green)' }}>{stats.total_encaissements.toFixed(2)}</div>
+              <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--green)' }}>{fmt(stats.total_encaissements)}</div>
             </div>
             <div className="stat-card" style={{ borderLeftColor: '#6366F1' }}>
               <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>Fond de caisse — Entrées</div>
-              <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#6366F1' }}>{stats.total_fonds_in.toFixed(2)}</div>
+              <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#6366F1' }}>{fmt(stats.total_fonds_in)}</div>
             </div>
             <div className="stat-card" style={{ borderLeftColor: '#F59E0B' }}>
               <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>Fond de caisse — Sorties</div>
-              <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#D97706' }}>{stats.total_fonds_out.toFixed(2)}</div>
+              <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#D97706' }}>{fmt(stats.total_fonds_out)}</div>
             </div>
             <div className="stat-card" style={{ borderLeftColor: '#94A3B8' }}>
               <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>En attente</div>
@@ -148,7 +150,7 @@ function DashboardTab() {
                 <h3 style={{ fontWeight: 700, marginBottom: '0.75rem', color: 'var(--terracotta)' }}>💳 Dépenses par catégorie</h3>
                 {stats.depenses_by_category.map(c => (
                   <div key={c.category} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.35rem 0', borderBottom: '1px solid #F5EDE4', fontSize: '0.9rem' }}>
-                    <span>{c.category}</span><span style={{ fontWeight: 600 }}>{c.total.toFixed(2)}</span>
+                    <span>{c.category}</span><span style={{ fontWeight: 600 }}>{fmt(c.total)}</span>
                   </div>
                 ))}
               </div>
@@ -158,7 +160,7 @@ function DashboardTab() {
                 <h3 style={{ fontWeight: 700, marginBottom: '0.75rem', color: 'var(--green)' }}>💵 Encaissements par catégorie</h3>
                 {stats.encaissements_by_category.map(c => (
                   <div key={c.category} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.35rem 0', borderBottom: '1px solid #EDF7F1', fontSize: '0.9rem' }}>
-                    <span>{c.category}</span><span style={{ fontWeight: 600, color: 'var(--green)' }}>{c.total.toFixed(2)}</span>
+                    <span>{c.category}</span><span style={{ fontWeight: 600, color: 'var(--green)' }}>{fmt(c.total)}</span>
                   </div>
                 ))}
               </div>
@@ -520,7 +522,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
           <option value="">Tous les employés</option>
           {employees.map(n => <option key={n} value={n}>{n}</option>)}
         </select>
-        <span style={{ marginLeft: 'auto', fontWeight: 600, color }}>Total : {total.toFixed(2)}</span>
+        <span style={{ marginLeft: 'auto', fontWeight: 600, color }}>Total : {fmt(total)}</span>
       </div>
 
       {loading ? <p>Chargement…</p> : entries.length === 0 ? (
@@ -545,7 +547,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                   <td>{e.category}</td>
                   {type === 'cb' && <><td>{e.supplier || '—'}</td><td>{e.payment || '—'}</td></>}
                   <td><span style={{ fontWeight: 600, fontSize: '0.8rem', background: '#F3F4F6', padding: '0.15rem 0.4rem', borderRadius: '0.3rem' }}>{(e.currency as string) || 'MAD'}</span></td>
-                  <td style={{ fontWeight: 600, color }}>{Number(e.amount).toFixed(2)}</td>
+                  <td style={{ fontWeight: 600, color }}>{fmt(Number(e.amount))}</td>
                   <td>
                     {e.invoice_url
                       ? <a href={e.invoice_url as string} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontSize: '0.8rem' }}>{type === 'cash' ? '🧾 Ticket' : '📄 Facture'}</a>
@@ -724,15 +726,15 @@ function FondsTab() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1.25rem' }}>
         <div className="stat-card" style={{ borderLeftColor: 'var(--green)' }}>
           <div style={{ fontSize: '0.8rem', color: '#888' }}>Entrées</div>
-          <div style={{ fontWeight: 700, fontSize: '1.5rem', color: 'var(--green)' }}>+{totalIn.toFixed(2)}</div>
+          <div style={{ fontWeight: 700, fontSize: '1.5rem', color: 'var(--green)' }}>+{fmt(totalIn)}</div>
         </div>
         <div className="stat-card" style={{ borderLeftColor: 'var(--red)' }}>
           <div style={{ fontSize: '0.8rem', color: '#888' }}>Sorties</div>
-          <div style={{ fontWeight: 700, fontSize: '1.5rem', color: 'var(--red)' }}>-{totalOut.toFixed(2)}</div>
+          <div style={{ fontWeight: 700, fontSize: '1.5rem', color: 'var(--red)' }}>-{fmt(totalOut)}</div>
         </div>
         <div className="stat-card" style={{ borderLeftColor: solde >= 0 ? '#6366F1' : 'var(--red)' }}>
           <div style={{ fontSize: '0.8rem', color: '#888' }}>Solde</div>
-          <div style={{ fontWeight: 700, fontSize: '1.5rem', color: solde >= 0 ? '#6366F1' : 'var(--red)' }}>{solde >= 0 ? '+' : ''}{solde.toFixed(2)}</div>
+          <div style={{ fontWeight: 700, fontSize: '1.5rem', color: solde >= 0 ? '#6366F1' : 'var(--red)' }}>{solde >= 0 ? '+' : ''}{fmt(solde)}</div>
         </div>
       </div>
 
@@ -807,7 +809,7 @@ function FondsTab() {
                   <td>{e.category}</td>
                   <td>{e.employee_name}</td>
                   <td><span style={{ fontWeight: 600, fontSize: '0.8rem', background: '#F3F4F6', padding: '0.15rem 0.4rem', borderRadius: '0.3rem' }}>{(e.currency as string) || 'MAD'}</span></td>
-                  <td style={{ fontWeight: 600, color: e.direction === 'in' ? 'var(--green)' : 'var(--red)' }}>{e.direction === 'in' ? '+' : '-'}{Number(e.amount).toFixed(2)}</td>
+                  <td style={{ fontWeight: 600, color: e.direction === 'in' ? 'var(--green)' : 'var(--red)' }}>{e.direction === 'in' ? '+' : '-'}{fmt(Number(e.amount))}</td>
                   <td style={{ fontSize: '0.85rem', color: '#666' }}>{e.description || '—'}</td>
                   <td><span className={e.status === 'validated' ? 'badge-validated' : 'badge-pending'}>{e.status === 'validated' ? 'Validé' : 'En attente'}</span></td>
                   <td style={{ display: 'flex', gap: '0.4rem' }}>

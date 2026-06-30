@@ -4,6 +4,8 @@ import { useSearchParams } from 'next/navigation'
 import type { Entry, FondsEntry } from '@/types'
 import { Suspense } from 'react'
 
+const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
 const DEPENSES_CATEGORIES = ['Alimentation/Courses','Fournitures & bureautique','Entretien & maintenance','Transport','Restauration','Pharmacie/Hygiène','Décoration & fleurs','Autre']
 const ENCAISSEMENTS_CATEGORIES = ['Boissons bar','Repas/Restauration','Activité/Excursion','Service spa/Hammam','Transfert/Transport','Pourboire collectif','Autre encaissement']
 const FONDS_CATEGORIES = ['Courses/Marché','Entretien','Personnel','Transport','Pourboire','Recette cash','Remboursement','Autre']
@@ -167,7 +169,7 @@ function DepenseForm({ token }: { token: string }) {
     setError(''); setSuccess('')
 
     if (!invoiceFile) { setError('La facture est obligatoire.'); return }
-    if (splitMode && !splitValid) { setError(`La somme des lignes (${splitTotal.toFixed(2)}) doit égaler le total du ticket (${amount}).`); return }
+    if (splitMode && !splitValid) { setError(`La somme des lignes (${fmt(splitTotal)}) doit égaler le total du ticket (${amount}).`); return }
 
     setUploading(true)
     let invoice_url: string
@@ -286,7 +288,7 @@ function DepenseForm({ token }: { token: string }) {
           </label>
           {splitMode && (
             <div style={{ marginTop: '0.75rem' }}>
-              <p style={{ fontSize: '0.78rem', color: '#888', marginBottom: '0.5rem' }}>Total ticket : <strong>{ticketTotal.toFixed(2)} {currency}</strong> — Répartissez le montant ci-dessous :</p>
+              <p style={{ fontSize: '0.78rem', color: '#888', marginBottom: '0.5rem' }}>Total ticket : <strong>{fmt(ticketTotal)} {currency}</strong> — Répartissez le montant ci-dessous :</p>
               {splitLines.map((line, idx) => (
                 <div key={line.id} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.4rem' }}>
                   <select className="form-input" value={line.category} onChange={e => updateSplitLine(line.id, 'category', e.target.value)} style={{ flex: 2 }}>
@@ -300,9 +302,9 @@ function DepenseForm({ token }: { token: string }) {
               ))}
               <button type="button" onClick={addSplitLine} style={{ fontSize: '0.8rem', color: 'var(--terracotta)', background: 'none', border: '1px dashed var(--terracotta)', borderRadius: '0.4rem', padding: '0.3rem 0.75rem', cursor: 'pointer', marginBottom: '0.5rem' }}>+ Ajouter une ligne</button>
               <div style={{ fontSize: '0.8rem', fontWeight: 600, color: splitValid ? 'var(--green)' : (splitTotal > 0 ? 'var(--red)' : '#888') }}>
-                Réparti : {splitTotal.toFixed(2)} / {ticketTotal.toFixed(2)} {currency}
+                Réparti : {fmt(splitTotal)} / {fmt(ticketTotal)} {currency}
                 {splitValid && ' ✓'}
-                {!splitValid && splitTotal > 0 && ` (différence : ${splitDiff.toFixed(2)})`}
+                {!splitValid && splitTotal > 0 && ` (différence : ${fmt(splitDiff)})`}
               </div>
             </div>
           )}
@@ -660,7 +662,7 @@ function EmployeeHistory({ token }: { token: string }) {
                     {e.invoice_url && <a href={e.invoice_url as string} target="_blank" rel="noreferrer" style={{ fontSize: '0.78rem', color: 'var(--blue)', display: 'inline-block', marginTop: '0.2rem' }}>📄 Voir facture</a>}
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '1rem' }}>
-                    <div style={{ fontWeight: 700, fontSize: '1.05rem', color: e.type === 'cb' ? 'var(--terracotta)' : 'var(--green)' }}>{Number(e.amount).toFixed(2)} <span style={{ fontSize: '0.8rem' }}>{(e.currency as string) || 'MAD'}</span></div>
+                    <div style={{ fontWeight: 700, fontSize: '1.05rem', color: e.type === 'cb' ? 'var(--terracotta)' : 'var(--green)' }}>{fmt(Number(e.amount))} <span style={{ fontSize: '0.8rem' }}>{(e.currency as string) || 'MAD'}</span></div>
                     <div style={{ fontSize: '0.75rem', color: '#888' }}>{new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR')}</div>
                     <span className={e.status === 'validated' ? 'badge-validated' : 'badge-pending'} style={{ display: 'inline-block', marginTop: '0.25rem' }}>{e.status === 'validated' ? 'Validé' : 'En attente'}</span>
                   </div>
@@ -685,7 +687,7 @@ function EmployeeHistory({ token }: { token: string }) {
                     {e.description && <div style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.15rem' }}>{e.description}</div>}
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '1rem' }}>
-                    <div style={{ fontWeight: 700, fontSize: '1.05rem', color: e.direction === 'in' ? 'var(--green)' : 'var(--red)' }}>{e.direction === 'in' ? '+' : '-'}{Number(e.amount).toFixed(2)} <span style={{ fontSize: '0.8rem' }}>{(e.currency as string) || 'MAD'}</span></div>
+                    <div style={{ fontWeight: 700, fontSize: '1.05rem', color: e.direction === 'in' ? 'var(--green)' : 'var(--red)' }}>{e.direction === 'in' ? '+' : '-'}{fmt(Number(e.amount))} <span style={{ fontSize: '0.8rem' }}>{(e.currency as string) || 'MAD'}</span></div>
                     <div style={{ fontSize: '0.75rem', color: '#888' }}>{new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR')}</div>
                     <span className={e.status === 'validated' ? 'badge-validated' : 'badge-pending'} style={{ display: 'inline-block', marginTop: '0.25rem' }}>{e.status === 'validated' ? 'Validé' : 'En attente'}</span>
                   </div>
