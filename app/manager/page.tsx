@@ -168,7 +168,7 @@ function DashboardTab() {
                 <BarChart data={trend.map(r => ({ ...r, month: shortMonth(r.month) }))} barGap={4}>
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                   <YAxis tickFormatter={fmtShort} tick={{ fontSize: 11 }} width={50} />
-                  <Tooltip formatter={(v: number) => fmt(v)} />
+                  <Tooltip formatter={(v: unknown) => typeof v === 'number' ? fmt(v) : String(v)} />
                   <Legend />
                   <Bar dataKey="depenses" name="Dépenses" fill="#D97D4E" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="encaissements" name="Encaissements" fill="#2D9E6B" radius={[4, 4, 0, 0]} />
@@ -187,7 +187,7 @@ function DashboardTab() {
                     <Pie data={stats.depenses_by_category} dataKey="total" nameKey="category" cx="50%" cy="50%" outerRadius={70} innerRadius={35}>
                       {stats.depenses_by_category.map((_, i) => <Cell key={i} fill={PIE_COLORS_DEP[i % PIE_COLORS_DEP.length]} />)}
                     </Pie>
-                    <Tooltip formatter={(v: number) => fmt(v)} />
+                    <Tooltip formatter={(v: unknown) => typeof v === 'number' ? fmt(v) : String(v)} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div style={{ marginTop: '0.5rem' }}>
@@ -217,7 +217,7 @@ function DashboardTab() {
                     <Pie data={stats.encaissements_by_category} dataKey="total" nameKey="category" cx="50%" cy="50%" outerRadius={70} innerRadius={35}>
                       {stats.encaissements_by_category.map((_, i) => <Cell key={i} fill={PIE_COLORS_ENC[i % PIE_COLORS_ENC.length]} />)}
                     </Pie>
-                    <Tooltip formatter={(v: number) => fmt(v)} />
+                    <Tooltip formatter={(v: unknown) => typeof v === 'number' ? fmt(v) : String(v)} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div style={{ marginTop: '0.5rem' }}>
