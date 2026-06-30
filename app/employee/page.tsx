@@ -89,6 +89,8 @@ function DepenseForm({ token }: { token: string }) {
   const [description, setDescription] = useState('')
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null)
   const [invoicePreview, setInvoicePreview] = useState<string | null>(null)
+  const [amountHT, setAmountHT] = useState('')
+  const [tvaRate, setTvaRate] = useState('')
   const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [extracting, setExtracting] = useState(false)
@@ -134,6 +136,8 @@ function DepenseForm({ token }: { token: string }) {
         if (data.date) setDate(data.date)
         if (data.supplier) setSupplier(data.supplier)
         if (data.amount_ttc) setAmount(String(data.amount_ttc))
+        if (data.amount_ht) setAmountHT(String(data.amount_ht))
+        if (data.tva_rate) setTvaRate(String(data.tva_rate))
       }
     } catch { /* silent */ }
     setExtracting(false)
@@ -195,11 +199,11 @@ function DepenseForm({ token }: { token: string }) {
         const r = await fetch('/api/entries', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'cb', date, amount: parseFloat(amount), currency, category, supplier, payment, description, invoice_url, token }),
+          body: JSON.stringify({ type: 'cb', date, amount: parseFloat(amount), currency, category, supplier, payment, description, invoice_url, token, amount_ht: amountHT ? parseFloat(amountHT) : null, tva_rate: tvaRate ? parseFloat(tvaRate) : null }),
         })
         if (r.ok) {
           setSuccess('Dépense enregistrée avec succès !')
-          setAmount(''); setSupplier(''); setDescription(''); setInvoiceFile(null); setInvoicePreview(null)
+          setAmount(''); setAmountHT(''); setTvaRate(''); setSupplier(''); setDescription(''); setInvoiceFile(null); setInvoicePreview(null)
           setCategory(DEPENSES_CATEGORIES[0]); setPayment(PAYMENT_MODES[0]); setCurrency('EUR')
           setDate(new Date().toISOString().split('T')[0])
           if (fileRef.current) fileRef.current.value = ''
@@ -213,13 +217,32 @@ function DepenseForm({ token }: { token: string }) {
     <div className="card">
       <h2 style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '1.25rem', color: 'var(--terracotta)' }}>💳 Nouvelle dépense</h2>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Date *</label>
+          <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Date *</label>
-            <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Montant HT</label>
+            <input className="form-input" type="number" step="0.01" min="0" value={amountHT} onChange={e => {
+              setAmountHT(e.target.value)
+              const ht = parseFloat(e.target.value)
+              const tva = parseFloat(tvaRate)
+              if (!isNaN(ht) && !isNaN(tva)) setAmount((ht * (1 + tva / 100)).toFixed(2))
+            }} placeholder="0.00" />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Montant *</label>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>TVA %</label>
+            <input className="form-input" type="number" step="0.1" min="0" value={tvaRate} onChange={e => {
+              setTvaRate(e.target.value)
+              const ht = parseFloat(amountHT)
+              const tva = parseFloat(e.target.value)
+              if (!isNaN(ht) && !isNaN(tva)) setAmount((ht * (1 + tva / 100)).toFixed(2))
+            }} placeholder="20" />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Montant TTC *</label>
             <input className="form-input" type="number" step="0.01" min="0" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" required />
           </div>
         </div>
