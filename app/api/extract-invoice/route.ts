@@ -41,15 +41,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Format non supporté (image ou PDF uniquement)' }, { status: 400 })
   }
 
+  const DEPENSES_CATEGORIES = ['Alimentation/Courses','Fournitures & bureautique','Entretien & maintenance','Transport','Restauration','Pharmacie/Hygiène','Décoration & fleurs','Autre']
+
   const prompt = entryType === 'cb'
-    ? `Analyse cette facture/reçu et extrait les informations suivantes en JSON strict (pas de texte autour) :
+    ? `Analyse cette facture/reçu. Réponds UNIQUEMENT avec un JSON strict (aucun texte autour).
+
+Si c'est un ticket de supermarché/épicerie/grande surface avec plusieurs produits, détecte les catégories présentes et utilise ce format :
 {
   "date": "YYYY-MM-DD ou null",
-  "supplier": "nom du fournisseur/établissement ou null",
+  "supplier": "nom du magasin ou null",
+  "amount_ttc": montant total en nombre décimal ou null,
+  "is_supermarche": true,
+  "items": [
+    {"category": "une des catégories ci-dessous", "amount": nombre décimal, "label": "description courte"}
+  ]
+}
+
+Sinon (facture normale), utilise ce format :
+{
+  "date": "YYYY-MM-DD ou null",
+  "supplier": "nom du fournisseur ou null",
   "amount_ht": nombre décimal ou null,
   "tva_rate": taux TVA en % (ex: 20) ou null,
-  "amount_ttc": montant total TTC en nombre décimal ou null
+  "amount_ttc": montant total TTC en nombre décimal ou null,
+  "is_supermarche": false
 }
+
+Catégories disponibles : ${DEPENSES_CATEGORIES.join(', ')}.
+Pour les supermarché : regroupe les produits par catégorie (ex: légumes/viande/épicerie → "Alimentation/Courses", produits ménagers/nettoyage → "Entretien & maintenance", savon/shampooing/médicaments → "Pharmacie/Hygiène").
 Si une information n'est pas visible, mets null. Réponds UNIQUEMENT avec le JSON.`
     : `Analyse ce ticket CB/reçu et extrait en JSON strict :
 {

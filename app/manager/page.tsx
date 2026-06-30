@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Entry, Employee, DashboardStats, FondsEntry } from '@/types'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 
 type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'employees' | 'settings'
 
@@ -84,17 +85,26 @@ export default function ManagerPage() {
 
 // ─── Dashboard ─────────────────────────────────────────────────────────────────
 
+const PIE_COLORS_DEP = ['#D97D4E','#E8956A','#F0A978','#F5BC90','#F8CFAA','#FADBB8','#FCE7CC','#FEF3E4']
+const PIE_COLORS_ENC = ['#2D9E6B','#45B882','#5DC898','#74D8AD','#8BE3BE','#A2EDCF','#B9F5E0','#D0FAF0']
+
+type TrendRow = { month: string; depenses: number; encaissements: number }
+
 function DashboardTab() {
   const now = new Date()
   const [month, setMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
   const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [trend, setTrend] = useState<TrendRow[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetchStats = useCallback(async () => {
     setLoading(true)
-    const r = await fetch(`/api/dashboard?month=${month}`)
-    const data = await r.json()
-    setStats(data)
+    const [r1, r2] = await Promise.all([
+      fetch(`/api/dashboard?month=${month}`),
+      fetch(`/api/dashboard/trend?month=${month}`),
+    ])
+    setStats(await r1.json())
+    setTrend(await r2.json())
     setLoading(false)
   }, [month])
 
@@ -103,9 +113,14 @@ function DashboardTab() {
   const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const isCurrentMonth = month === currentMonthStr
 
+  const fmtShort = (v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v))
+  const shortMonth = (mo: string) => {
+    const [, m] = mo.split('-')
+    return ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'][parseInt(m) - 1]
+  }
+
   return (
     <div>
-      {/* Month navigation */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
         <button onClick={() => setMonth(shiftMonth(month, -1))} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.35rem 0.75rem', cursor: 'pointer', fontWeight: 600 }}>‹</button>
         <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--terracotta)', minWidth: 180, textAlign: 'center' }}>{formatMonth(month)}</h2>
@@ -117,6 +132,7 @@ function DashboardTab() {
 
       {loading ? <p>Chargement…</p> : !stats ? <p>Erreur.</p> : (
         <>
+          {/* KPI cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
             <div className="stat-card">
               <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>Total Dépenses</div>
@@ -144,25 +160,83 @@ function DashboardTab() {
             </div>
           </div>
 
+          {/* Bar chart — 6-month trend */}
+          {trend.length > 0 && (
+            <div className="card" style={{ marginBottom: '1.5rem' }}>
+              <h3 style={{ fontWeight: 700, marginBottom: '1rem', fontSize: '1rem' }}>📈 Évolution sur 6 mois</h3>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={trend.map(r => ({ ...r, month: shortMonth(r.month) }))} barGap={4}>
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                  <YAxis tickFormatter={fmtShort} tick={{ fontSize: 11 }} width={50} />
+                  <Tooltip formatter={(v: number) => fmt(v)} />
+                  <Legend />
+                  <Bar dataKey="depenses" name="Dépenses" fill="#D97D4E" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="encaissements" name="Encaissements" fill="#2D9E6B" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Pie charts + tables side by side */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             {stats.depenses_by_category.length > 0 && (
               <div className="card">
                 <h3 style={{ fontWeight: 700, marginBottom: '0.75rem', color: 'var(--terracotta)' }}>💳 Dépenses par catégorie</h3>
-                {stats.depenses_by_category.map(c => (
-                  <div key={c.category} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.35rem 0', borderBottom: '1px solid #F5EDE4', fontSize: '0.9rem' }}>
-                    <span>{c.category}</span><span style={{ fontWeight: 600 }}>{fmt(c.total)}</span>
-                  </div>
-                ))}
+                <ResponsiveContainer width="100%" height={180}>
+                  <PieChart>
+                    <Pie data={stats.depenses_by_category} dataKey="total" nameKey="category" cx="50%" cy="50%" outerRadius={70} innerRadius={35}>
+                      {stats.depenses_by_category.map((_, i) => <Cell key={i} fill={PIE_COLORS_DEP[i % PIE_COLORS_DEP.length]} />)}
+                    </Pie>
+                    <Tooltip formatter={(v: number) => fmt(v)} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div style={{ marginTop: '0.5rem' }}>
+                  {stats.depenses_by_category.map((c, i) => {
+                    const pct = stats.total_depenses > 0 ? Math.round(c.total / stats.total_depenses * 100) : 0
+                    return (
+                      <div key={c.category} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', borderBottom: '1px solid #F5EDE4', fontSize: '0.85rem' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <span style={{ width: 10, height: 10, borderRadius: '50%', background: PIE_COLORS_DEP[i % PIE_COLORS_DEP.length], display: 'inline-block' }} />
+                          {c.category}
+                        </span>
+                        <span style={{ display: 'flex', gap: '0.75rem' }}>
+                          <span style={{ color: '#888', minWidth: 32, textAlign: 'right' }}>{pct}%</span>
+                          <span style={{ fontWeight: 600, minWidth: 80, textAlign: 'right' }}>{fmt(c.total)}</span>
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             )}
             {stats.encaissements_by_category.length > 0 && (
               <div className="card">
                 <h3 style={{ fontWeight: 700, marginBottom: '0.75rem', color: 'var(--green)' }}>💵 Encaissements par catégorie</h3>
-                {stats.encaissements_by_category.map(c => (
-                  <div key={c.category} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.35rem 0', borderBottom: '1px solid #EDF7F1', fontSize: '0.9rem' }}>
-                    <span>{c.category}</span><span style={{ fontWeight: 600, color: 'var(--green)' }}>{fmt(c.total)}</span>
-                  </div>
-                ))}
+                <ResponsiveContainer width="100%" height={180}>
+                  <PieChart>
+                    <Pie data={stats.encaissements_by_category} dataKey="total" nameKey="category" cx="50%" cy="50%" outerRadius={70} innerRadius={35}>
+                      {stats.encaissements_by_category.map((_, i) => <Cell key={i} fill={PIE_COLORS_ENC[i % PIE_COLORS_ENC.length]} />)}
+                    </Pie>
+                    <Tooltip formatter={(v: number) => fmt(v)} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div style={{ marginTop: '0.5rem' }}>
+                  {stats.encaissements_by_category.map((c, i) => {
+                    const pct = stats.total_encaissements > 0 ? Math.round(c.total / stats.total_encaissements * 100) : 0
+                    return (
+                      <div key={c.category} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', borderBottom: '1px solid #EDF7F1', fontSize: '0.85rem' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <span style={{ width: 10, height: 10, borderRadius: '50%', background: PIE_COLORS_ENC[i % PIE_COLORS_ENC.length], display: 'inline-block' }} />
+                          {c.category}
+                        </span>
+                        <span style={{ display: 'flex', gap: '0.75rem' }}>
+                          <span style={{ color: '#888', minWidth: 32, textAlign: 'right' }}>{pct}%</span>
+                          <span style={{ fontWeight: 600, color: 'var(--green)', minWidth: 80, textAlign: 'right' }}>{fmt(c.total)}</span>
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             )}
           </div>

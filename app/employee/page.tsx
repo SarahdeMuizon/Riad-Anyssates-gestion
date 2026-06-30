@@ -143,6 +143,14 @@ function DepenseForm({ token }: { token: string }) {
         if (data.amount_ttc) setAmount(String(data.amount_ttc))
         if (data.amount_ht) setAmountHT(String(data.amount_ht))
         if (data.tva_rate) setTvaRate(String(data.tva_rate))
+        if (data.is_supermarche && Array.isArray(data.items) && data.items.length > 0) {
+          setSplitMode(true)
+          setSplitLines(data.items.map((item: { category: string; amount: number; label?: string }) => ({
+            category: item.category,
+            amount: String(item.amount),
+            description: item.label || '',
+          })))
+        }
       }
     } catch { /* silent */ }
     setExtracting(false)
