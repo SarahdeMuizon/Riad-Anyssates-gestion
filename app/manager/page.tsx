@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Entry, Employee, DashboardStats, FondsEntry } from '@/types'
 
@@ -198,8 +198,13 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [fSupplier, setFSupplier] = useState('')
   const [fPayment, setFPayment] = useState('CB')
   const [fDescription, setFDescription] = useState('')
+  const [fFile, setFFile] = useState<File | null>(null)
+  const [fUploading, setFUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
+  const [uploadingEntryId, setUploadingEntryId] = useState<number | null>(null)
+  const rowFileRef = useRef<HTMLInputElement>(null)
+  const [pendingUploadEntry, setPendingUploadEntry] = useState<number | null>(null)
 
   const categories = type === 'cb' ? DEPENSES_CATEGORIES : ENCAISSEMENTS_CATEGORIES
 
@@ -234,15 +239,50 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     fetchEntries()
   }
 
+  async function uploadToCloudinary(file: File, folder: string): Promise<string> {
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+    const preset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+    if (!cloudName || !preset) throw new Error('Cloudinary non configuré')
+    const fd = new FormData()
+    fd.append('file', file); fd.append('upload_preset', preset); fd.append('folder', folder)
+    const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, { method: 'POST', body: fd })
+    if (!r.ok) throw new Error('Erreur upload')
+    return (await r.json()).secure_url as string
+  }
+
+  async function handleRowUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || pendingUploadEntry === null) return
+    setUploadingEntryId(pendingUploadEntry)
+    try {
+      const folder = type === 'cb' ? 'riad-factures' : 'riad-tickets'
+      const url = await uploadToCloudinary(file, folder)
+      await fetch(`/api/entries/${pendingUploadEntry}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ invoice_url: url }) })
+      fetchEntries()
+    } catch { /* ignore */ }
+    setUploadingEntryId(null)
+    setPendingUploadEntry(null)
+    if (rowFileRef.current) rowFileRef.current.value = ''
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
     setFormError('')
-    const body: Record<string, unknown> = { type, date: fDate, employee_name: fEmployee, category: fCategory, amount: parseFloat(fAmount), currency: fCurrency, description: fDescription || null }
+    let invoice_url: string | undefined
+    if (fFile) {
+      setFUploading(true)
+      try {
+        const folder = type === 'cb' ? 'riad-factures' : 'riad-tickets'
+        invoice_url = await uploadToCloudinary(fFile, folder)
+      } catch (err) { setFormError((err as Error).message); setFUploading(false); setSubmitting(false); return }
+      setFUploading(false)
+    }
+    const body: Record<string, unknown> = { type, date: fDate, employee_name: fEmployee, category: fCategory, amount: parseFloat(fAmount), currency: fCurrency, description: fDescription || null, invoice_url }
     if (type === 'cb') { body.supplier = fSupplier || null; body.payment = fPayment }
     const r = await fetch('/api/entries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     if (r.ok) {
-      setFAmount(''); setFSupplier(''); setFDescription(''); setShowForm(false)
+      setFAmount(''); setFSupplier(''); setFDescription(''); setFFile(null); setShowForm(false)
       fetchEntries()
     } else {
       const d = await r.json()
@@ -318,9 +358,14 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Description</label>
                 <input className="form-input" value={fDescription} onChange={e => setFDescription(e.target.value)} placeholder="Note optionnelle" />
               </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>{type === 'cb' ? 'Facture' : 'Ticket CB'} <span style={{ color: '#888', fontWeight: 400 }}>(optionnel)</span></label>
+                <input type="file" accept="image/*,application/pdf" onChange={e => setFFile(e.target.files?.[0] || null)} style={{ fontSize: '0.82rem' }} />
+                {fFile && <span style={{ fontSize: '0.8rem', color: 'var(--green)', display: 'block', marginTop: '0.2rem' }}>✓ {fFile.name}</span>}
+              </div>
             </div>
             {formError && <p style={{ color: 'var(--red)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{formError}</p>}
-            <button className="btn-primary" type="submit" disabled={submitting}>{submitting ? 'Enregistrement…' : 'Enregistrer'}</button>
+            <button className="btn-primary" type="submit" disabled={submitting || fUploading}>{fUploading ? 'Upload…' : submitting ? 'Enregistrement…' : 'Enregistrer'}</button>
           </form>
         </div>
       )}
@@ -361,7 +406,12 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                   {type === 'cb' && <><td>{e.supplier || '—'}</td><td>{e.payment || '—'}</td></>}
                   <td><span style={{ fontWeight: 600, fontSize: '0.8rem', background: '#F3F4F6', padding: '0.15rem 0.4rem', borderRadius: '0.3rem' }}>{(e.currency as string) || 'EUR'}</span></td>
                   <td style={{ fontWeight: 600, color }}>{Number(e.amount).toFixed(2)}</td>
-                  <td>{e.invoice_url ? <a href={e.invoice_url as string} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontSize: '0.8rem' }}>{type === 'cash' ? '🧾 Ticket' : '📄 Facture'}</a> : '—'}</td>
+                  <td>
+                    {e.invoice_url
+                      ? <a href={e.invoice_url as string} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontSize: '0.8rem' }}>{type === 'cash' ? '🧾 Ticket' : '📄 Facture'}</a>
+                      : <button onClick={() => { setPendingUploadEntry(e.id); rowFileRef.current?.click() }} disabled={uploadingEntryId === e.id} style={{ background: 'none', border: '1px dashed #aaa', borderRadius: '0.3rem', color: '#888', cursor: 'pointer', fontSize: '0.75rem', padding: '0.2rem 0.4rem' }}>{uploadingEntryId === e.id ? '⬆️…' : '📎 Ajouter'}</button>
+                    }
+                  </td>
                   <td><span className={e.status === 'validated' ? 'badge-validated' : 'badge-pending'}>{e.status === 'validated' ? 'Validé' : 'En attente'}</span></td>
                   <td style={{ display: 'flex', gap: '0.4rem' }}>
                     <button onClick={() => toggleStatus(e)} style={{ background: e.status === 'pending' ? 'var(--green)' : '#888', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.8rem' }}>{e.status === 'pending' ? '✓' : '↩'}</button>
@@ -373,6 +423,8 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
           </table>
         </div>
       )}
+
+      <input ref={rowFileRef} type="file" accept="image/*,application/pdf" onChange={handleRowUpload} style={{ display: 'none' }} />
 
       {deleteModal !== null && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>

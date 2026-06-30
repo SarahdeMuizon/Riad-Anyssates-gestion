@@ -9,9 +9,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    const { status } = await req.json()
+    const body = await req.json()
     const id = parseInt(params.id)
 
+    if (body.invoice_url !== undefined) {
+      const result = await sql`UPDATE entries SET invoice_url = ${body.invoice_url} WHERE id = ${id} RETURNING *`
+      return NextResponse.json(result[0])
+    }
+
+    const { status } = body
     if (status === 'validated') {
       const result = await sql`
         UPDATE entries SET status = 'validated', validated_at = datetime('now')
