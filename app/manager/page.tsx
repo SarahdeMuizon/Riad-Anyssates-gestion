@@ -535,7 +535,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                   <td>{e.employee_name}</td>
                   <td>{e.category}</td>
                   {type === 'cb' && <><td>{e.supplier || '—'}</td><td>{e.payment || '—'}</td></>}
-                  <td><span style={{ fontWeight: 600, fontSize: '0.8rem', background: '#F3F4F6', padding: '0.15rem 0.4rem', borderRadius: '0.3rem' }}>{(e.currency as string) || 'EUR'}</span></td>
+                  <td><span style={{ fontWeight: 600, fontSize: '0.8rem', background: '#F3F4F6', padding: '0.15rem 0.4rem', borderRadius: '0.3rem' }}>{(e.currency as string) || 'MAD'}</span></td>
                   <td style={{ fontWeight: 600, color }}>{Number(e.amount).toFixed(2)}</td>
                   <td>
                     {e.invoice_url

@@ -190,7 +190,7 @@ export async function GET() {
       cell(row.getCell(5), e.payment || '—')
       const mc = row.getCell(6)
       mc.value = amt; mc.numFmt = '#,##0.00'; mc.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF2D6A4F' } }; mc.alignment = { horizontal: 'right' }
-      cell(row.getCell(7), (e.currency as string) || 'EUR', false, 'FF374151', 'center')
+      cell(row.getCell(7), (e.currency as string) || 'MAD', false, 'FF374151', 'center')
       cell(row.getCell(8), e.description || '')
       const status = e.status as string
       const sc = row.getCell(9)
@@ -247,7 +247,7 @@ export async function GET() {
       cell(row.getCell(6), e.payment || '—')
       const mc = row.getCell(7)
       mc.value = amt; mc.numFmt = '#,##0.00'; mc.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF991B1B' } }; mc.alignment = { horizontal: 'right' }
-      cell(row.getCell(8), (e.currency as string) || 'EUR', false, 'FF374151', 'center')
+      cell(row.getCell(8), (e.currency as string) || 'MAD', false, 'FF374151', 'center')
       cell(row.getCell(9), e.description || '')
       const status = e.status as string
       const sc = row.getCell(10)

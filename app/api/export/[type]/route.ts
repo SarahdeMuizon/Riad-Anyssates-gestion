@@ -29,7 +29,7 @@ export async function GET(req: NextRequest, { params }: { params: { type: string
           `"${e.category}"`,
           `"${(e.supplier as string) || ''}"`,
           `"${(e.payment as string) || ''}"`,
-          (e.currency as string) || 'EUR',
+          (e.currency as string) || 'MAD',
           e.amount,
           `"${(e.invoice_url as string) || ''}"`,
           e.status === 'validated' ? 'Validé' : 'En attente',
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest, { params }: { params: { type: string
           `"${e.employee_name}"`,
           `"${e.category}"`,
           `"${(e.payment as string) || ''}"`,
-          (e.currency as string) || 'EUR',
+          (e.currency as string) || 'MAD',
           e.amount,
           e.status === 'validated' ? 'Validé' : 'En attente',
         ].join(',') + '\n'

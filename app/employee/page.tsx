@@ -660,7 +660,7 @@ function EmployeeHistory({ token }: { token: string }) {
                     {e.invoice_url && <a href={e.invoice_url as string} target="_blank" rel="noreferrer" style={{ fontSize: '0.78rem', color: 'var(--blue)', display: 'inline-block', marginTop: '0.2rem' }}>📄 Voir facture</a>}
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '1rem' }}>
-                    <div style={{ fontWeight: 700, fontSize: '1.05rem', color: e.type === 'cb' ? 'var(--terracotta)' : 'var(--green)' }}>{Number(e.amount).toFixed(2)} <span style={{ fontSize: '0.8rem' }}>{(e.currency as string) || 'EUR'}</span></div>
+                    <div style={{ fontWeight: 700, fontSize: '1.05rem', color: e.type === 'cb' ? 'var(--terracotta)' : 'var(--green)' }}>{Number(e.amount).toFixed(2)} <span style={{ fontSize: '0.8rem' }}>{(e.currency as string) || 'MAD'}</span></div>
                     <div style={{ fontSize: '0.75rem', color: '#888' }}>{new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR')}</div>
                     <span className={e.status === 'validated' ? 'badge-validated' : 'badge-pending'} style={{ display: 'inline-block', marginTop: '0.25rem' }}>{e.status === 'validated' ? 'Validé' : 'En attente'}</span>
                   </div>
