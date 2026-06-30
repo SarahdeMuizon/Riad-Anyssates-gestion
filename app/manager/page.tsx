@@ -485,7 +485,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
             </div>
 
             {formError && <p style={{ color: 'var(--red)', fontSize: '0.875rem' }}>{formError}</p>}
-            <button className="btn-primary" type="submit" disabled={submitting || fUploading || fExtracting}>{fUploading ? 'Upload…' : submitting ? 'Enregistrement…' : 'Enregistrer'}</button>
+            <button className="btn-primary" type="submit" disabled={submitting || fUploading || fExtracting}>{fExtracting ? '🤖 Analyse document…' : fUploading ? '⬆️ Upload…' : submitting ? 'Enregistrement…' : 'Enregistrer'}</button>
           </form>
         </div>
       )}
