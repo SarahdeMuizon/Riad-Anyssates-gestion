@@ -130,7 +130,10 @@ function DepenseForm({ token }: { token: string }) {
       const fd = new FormData()
       fd.append('file', f)
       fd.append('type', 'cb')
-      const r = await fetch('/api/extract-invoice', { method: 'POST', body: fd, headers: { 'x-employee-token': token } })
+      const ctrl = new AbortController()
+      const timer = setTimeout(() => ctrl.abort(), 20000)
+      const r = await fetch('/api/extract-invoice', { method: 'POST', body: fd, headers: { 'x-employee-token': token }, signal: ctrl.signal })
+      clearTimeout(timer)
       if (r.ok) {
         const data = await r.json()
         if (data.date) setDate(data.date)
@@ -382,7 +385,10 @@ function EncaissementForm({ token }: { token: string }) {
       const fd = new FormData()
       fd.append('file', f)
       fd.append('type', 'cash')
-      const r = await fetch('/api/extract-invoice', { method: 'POST', body: fd, headers: { 'x-employee-token': token } })
+      const ctrl = new AbortController()
+      const timer = setTimeout(() => ctrl.abort(), 20000)
+      const r = await fetch('/api/extract-invoice', { method: 'POST', body: fd, headers: { 'x-employee-token': token }, signal: ctrl.signal })
+      clearTimeout(timer)
       if (r.ok) {
         const data = await r.json()
         if (data.date) setDate(data.date)
