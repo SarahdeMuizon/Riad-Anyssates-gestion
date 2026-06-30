@@ -464,11 +464,11 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
               </div>
             )}
 
-            {/* Devise — boutons comme page employé */}
+            {/* Devise — MAD par défaut */}
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>Devise</label>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                {CURRENCIES.map(c => (
+                {(['MAD', 'EUR'] as const).map(c => (
                   <button key={c} type="button" onClick={() => setFCurrency(c)} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fCurrency === c ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: fCurrency === c ? '#FFF5F0' : 'white', fontWeight: fCurrency === c ? 700 : 400, cursor: 'pointer', color: fCurrency === c ? 'var(--terracotta)' : 'var(--text)' }}>{c}</button>
                 ))}
               </div>

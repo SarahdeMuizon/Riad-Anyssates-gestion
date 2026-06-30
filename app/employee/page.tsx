@@ -253,7 +253,7 @@ function DepenseForm({ token }: { token: string }) {
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Devise</label>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            {CURRENCIES.map(c => (
+            {(['MAD', 'EUR'] as const).map(c => (
               <button key={c} type="button" onClick={() => setCurrency(c)} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${currency === c ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: currency === c ? '#FFF5F0' : 'white', fontWeight: currency === c ? 700 : 400, cursor: 'pointer', color: currency === c ? 'var(--terracotta)' : 'var(--text)' }}>{c}</button>
             ))}
           </div>
@@ -460,7 +460,7 @@ function EncaissementForm({ token }: { token: string }) {
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Devise</label>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            {CURRENCIES.map(c => (
+            {(['MAD', 'EUR'] as const).map(c => (
               <button key={c} type="button" onClick={() => setCurrency(c)} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${currency === c ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', background: currency === c ? '#F0FDF4' : 'white', fontWeight: currency === c ? 700 : 400, cursor: 'pointer', color: currency === c ? 'var(--green)' : 'var(--text)' }}>{c}</button>
             ))}
           </div>
@@ -583,7 +583,7 @@ function FondsForm({ token }: { token: string }) {
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Devise</label>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            {CURRENCIES.map(c => (
+            {(['MAD', 'EUR'] as const).map(c => (
               <button key={c} type="button" onClick={() => setCurrency(c)} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${currency === c ? '#6366F1' : '#ddd'}`, borderRadius: '0.5rem', background: currency === c ? '#EEF2FF' : 'white', fontWeight: currency === c ? 700 : 400, cursor: 'pointer', color: currency === c ? '#6366F1' : 'var(--text)' }}>{c}</button>
             ))}
           </div>
