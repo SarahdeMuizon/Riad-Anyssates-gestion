@@ -75,7 +75,9 @@ function EmployeeApp() {
   )
 }
 
-// ─── Dépense Form (with mandatory invoice upload) ─────────────────────────────
+// ─── Dépense Form (with mandatory invoice upload + split) ─────────────────────
+
+interface SplitLine { id: number; category: string; amount: string }
 
 function DepenseForm({ token }: { token: string }) {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
@@ -92,6 +94,27 @@ function DepenseForm({ token }: { token: string }) {
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // Split feature
+  const [splitMode, setSplitMode] = useState(false)
+  const [splitLines, setSplitLines] = useState<SplitLine[]>([
+    { id: 1, category: DEPENSES_CATEGORIES[0], amount: '' },
+    { id: 2, category: DEPENSES_CATEGORIES[1], amount: '' },
+  ])
+  const splitTotal = splitLines.reduce((s, l) => s + (parseFloat(l.amount) || 0), 0)
+  const ticketTotal = parseFloat(amount) || 0
+  const splitDiff = Math.abs(ticketTotal - splitTotal)
+  const splitValid = ticketTotal > 0 && splitDiff < 0.01 && splitLines.every(l => parseFloat(l.amount) > 0)
+
+  function addSplitLine() {
+    setSplitLines(prev => [...prev, { id: Date.now(), category: DEPENSES_CATEGORIES[0], amount: '' }])
+  }
+  function removeSplitLine(id: number) {
+    setSplitLines(prev => prev.filter(l => l.id !== id))
+  }
+  function updateSplitLine(id: number, field: 'category' | 'amount', value: string) {
+    setSplitLines(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l))
+  }
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
@@ -123,10 +146,10 @@ function DepenseForm({ token }: { token: string }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError('')
-    setSuccess('')
+    setError(''); setSuccess('')
 
     if (!invoiceFile) { setError('La facture est obligatoire.'); return }
+    if (splitMode && !splitValid) { setError(`La somme des lignes (${splitTotal.toFixed(2)}) doit égaler le total du ticket (${amount}).`); return }
 
     setUploading(true)
     let invoice_url: string
@@ -134,26 +157,42 @@ function DepenseForm({ token }: { token: string }) {
       invoice_url = await uploadToCloudinary(invoiceFile)
     } catch (err) {
       setError((err as Error).message || 'Erreur upload facture.')
-      setUploading(false)
-      return
+      setUploading(false); return
     }
     setUploading(false)
     setSubmitting(true)
 
     try {
-      const r = await fetch('/api/entries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'cb', date, amount: parseFloat(amount), currency, category, supplier, payment, description, invoice_url, token }),
-      })
-      if (r.ok) {
-        setSuccess('Dépense enregistrée avec succès !')
-        setAmount(''); setSupplier(''); setDescription(''); setInvoiceFile(null); setInvoicePreview(null)
-        setCategory(DEPENSES_CATEGORIES[0]); setPayment(PAYMENT_MODES[0]); setCurrency('EUR')
-        setDate(new Date().toISOString().split('T')[0])
-        if (fileRef.current) fileRef.current.value = ''
+      if (splitMode) {
+        // Create one entry per split line
+        const results = await Promise.all(splitLines.map(line =>
+          fetch('/api/entries', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'cb', date, amount: parseFloat(line.amount), currency, category: line.category, supplier, payment, description: `${description ? description + ' — ' : ''}Ticket ventilé`, invoice_url, token }),
+          })
+        ))
+        if (results.every(r => r.ok)) {
+          setSuccess(`Ticket ventilé en ${splitLines.length} postes ✓`)
+          setAmount(''); setSupplier(''); setDescription(''); setInvoiceFile(null); setInvoicePreview(null)
+          setCategory(DEPENSES_CATEGORIES[0]); setPayment(PAYMENT_MODES[0]); setCurrency('EUR')
+          setDate(new Date().toISOString().split('T')[0]); setSplitMode(false)
+          setSplitLines([{ id: 1, category: DEPENSES_CATEGORIES[0], amount: '' }, { id: 2, category: DEPENSES_CATEGORIES[1], amount: '' }])
+          if (fileRef.current) fileRef.current.value = ''
+        } else { setError('Erreur lors de la création des lignes.') }
       } else {
-        const d = await r.json(); setError(d.error || 'Erreur.')
+        const r = await fetch('/api/entries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'cb', date, amount: parseFloat(amount), currency, category, supplier, payment, description, invoice_url, token }),
+        })
+        if (r.ok) {
+          setSuccess('Dépense enregistrée avec succès !')
+          setAmount(''); setSupplier(''); setDescription(''); setInvoiceFile(null); setInvoicePreview(null)
+          setCategory(DEPENSES_CATEGORIES[0]); setPayment(PAYMENT_MODES[0]); setCurrency('EUR')
+          setDate(new Date().toISOString().split('T')[0])
+          if (fileRef.current) fileRef.current.value = ''
+        } else { const d = await r.json(); setError(d.error || 'Erreur.') }
       }
     } catch { setError('Erreur de connexion.') }
     setSubmitting(false)
@@ -184,13 +223,6 @@ function DepenseForm({ token }: { token: string }) {
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Catégorie *</label>
-          <select className="form-input" value={category} onChange={e => setCategory(e.target.value)}>
-            {DEPENSES_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-
-        <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Fournisseur / Lieu</label>
           <input className="form-input" value={supplier} onChange={e => setSupplier(e.target.value)} placeholder="Nom du fournisseur" />
         </div>
@@ -208,6 +240,45 @@ function DepenseForm({ token }: { token: string }) {
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Description</label>
           <textarea className="form-input" rows={2} value={description} onChange={e => setDescription(e.target.value)} placeholder="Notes optionnelles…" />
         </div>
+
+        {/* Split ticket toggle */}
+        <div style={{ background: '#FFF5F0', border: '1px solid #FDDCCA', borderRadius: '0.5rem', padding: '0.75rem' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', userSelect: 'none' }}>
+            <input type="checkbox" checked={splitMode} onChange={e => setSplitMode(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--terracotta)' }} />
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--terracotta)' }}>✂️ Ventiler ce ticket en plusieurs catégories</span>
+          </label>
+          {splitMode && (
+            <div style={{ marginTop: '0.75rem' }}>
+              <p style={{ fontSize: '0.78rem', color: '#888', marginBottom: '0.5rem' }}>Total ticket : <strong>{ticketTotal.toFixed(2)} {currency}</strong> — Répartissez le montant ci-dessous :</p>
+              {splitLines.map((line, idx) => (
+                <div key={line.id} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.4rem' }}>
+                  <select className="form-input" value={line.category} onChange={e => updateSplitLine(line.id, 'category', e.target.value)} style={{ flex: 2 }}>
+                    {DEPENSES_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <input className="form-input" type="number" step="0.01" min="0" value={line.amount} onChange={e => updateSplitLine(line.id, 'amount', e.target.value)} placeholder="0.00" style={{ flex: 1, minWidth: 80 }} />
+                  {splitLines.length > 2 && (
+                    <button type="button" onClick={() => removeSplitLine(line.id)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: '1rem', padding: '0 0.2rem' }}>✕</button>
+                  )}
+                </div>
+              ))}
+              <button type="button" onClick={addSplitLine} style={{ fontSize: '0.8rem', color: 'var(--terracotta)', background: 'none', border: '1px dashed var(--terracotta)', borderRadius: '0.4rem', padding: '0.3rem 0.75rem', cursor: 'pointer', marginBottom: '0.5rem' }}>+ Ajouter une ligne</button>
+              <div style={{ fontSize: '0.8rem', fontWeight: 600, color: splitValid ? 'var(--green)' : (splitTotal > 0 ? 'var(--red)' : '#888') }}>
+                Réparti : {splitTotal.toFixed(2)} / {ticketTotal.toFixed(2)} {currency}
+                {splitValid && ' ✓'}
+                {!splitValid && splitTotal > 0 && ` (différence : ${splitDiff.toFixed(2)})`}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {!splitMode && (
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Catégorie *</label>
+            <select className="form-input" value={category} onChange={e => setCategory(e.target.value)}>
+              {DEPENSES_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        )}
 
         {/* Mandatory invoice upload */}
         <div>
@@ -254,23 +325,60 @@ function EncaissementForm({ token }: { token: string }) {
   const [category, setCategory] = useState(ENCAISSEMENTS_CATEGORIES[0])
   const [payment, setPayment] = useState(PAYMENT_MODES[0])
   const [description, setDescription] = useState('')
+  const [ticketFile, setTicketFile] = useState<File | null>(null)
+  const [ticketPreview, setTicketPreview] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
+  const ticketRef = useRef<HTMLInputElement>(null)
+
+  function handleTicket(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    if (!f) return
+    setTicketFile(f)
+    if (f.type.startsWith('image/')) setTicketPreview(URL.createObjectURL(f))
+    else setTicketPreview(null)
+  }
+
+  async function uploadToCloudinary(file: File): Promise<string> {
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+    const preset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+    if (!cloudName || !preset) throw new Error('Cloudinary non configuré')
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('upload_preset', preset)
+    formData.append('folder', 'riad-tickets')
+    const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, { method: 'POST', body: formData })
+    if (!r.ok) throw new Error('Erreur upload ticket')
+    const data = await r.json()
+    return data.secure_url as string
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setSubmitting(true); setError(''); setSuccess('')
+    setError(''); setSuccess('')
+
+    let invoice_url: string | undefined
+    if (ticketFile) {
+      setUploading(true)
+      try { invoice_url = await uploadToCloudinary(ticketFile) }
+      catch (err) { setError((err as Error).message || 'Erreur upload ticket.'); setUploading(false); return }
+      setUploading(false)
+    }
+
+    setSubmitting(true)
     try {
       const r = await fetch('/api/entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'cash', date, amount: parseFloat(amount), currency, category, payment, description, token }),
+        body: JSON.stringify({ type: 'cash', date, amount: parseFloat(amount), currency, category, payment, description, invoice_url, token }),
       })
       if (r.ok) {
         setSuccess('Encaissement enregistré !')
         setAmount(''); setDescription(''); setCategory(ENCAISSEMENTS_CATEGORIES[0]); setPayment(PAYMENT_MODES[0]); setCurrency('EUR')
-        setDate(new Date().toISOString().split('T')[0])
+        setDate(new Date().toISOString().split('T')[0]); setTicketFile(null); setTicketPreview(null)
+        if (ticketRef.current) ticketRef.current.value = ''
       } else { const d = await r.json(); setError(d.error || 'Erreur.') }
     } catch { setError('Erreur de connexion.') }
     setSubmitting(false)
@@ -321,11 +429,36 @@ function EncaissementForm({ token }: { token: string }) {
           <textarea className="form-input" rows={2} value={description} onChange={e => setDescription(e.target.value)} placeholder="Notes optionnelles…" />
         </div>
 
+        {/* Optional ticket CB upload */}
+        <div>
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+            Ticket CB <span style={{ color: '#888', fontWeight: 400 }}>(optionnel)</span>
+          </label>
+          <div
+            onClick={() => ticketRef.current?.click()}
+            style={{ border: `2px dashed ${ticketFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: ticketFile ? '#F0FDF4' : '#FAFAFA' }}
+          >
+            {ticketFile ? (
+              <div>
+                {ticketPreview && <img src={ticketPreview} alt="Aperçu" style={{ maxHeight: 100, maxWidth: '100%', marginBottom: '0.5rem', borderRadius: '0.3rem' }} />}
+                <div style={{ fontSize: '0.85rem', color: 'var(--green)', fontWeight: 600 }}>✓ {ticketFile.name}</div>
+                <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.2rem' }}>Cliquer pour changer</div>
+              </div>
+            ) : (
+              <div>
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>🧾</div>
+                <div style={{ fontSize: '0.85rem', color: '#666' }}>Photo du ticket CB (optionnel)</div>
+              </div>
+            )}
+          </div>
+          <input ref={ticketRef} type="file" accept="image/*,application/pdf" onChange={handleTicket} style={{ display: 'none' }} />
+        </div>
+
         {error && <p style={{ color: 'var(--red)', fontSize: '0.875rem' }}>{error}</p>}
         {success && <p style={{ color: 'var(--green)', fontSize: '0.875rem', fontWeight: 600 }}>{success}</p>}
 
-        <button className="btn-primary" type="submit" disabled={submitting} style={{ background: 'var(--green)' }}>
-          {submitting ? 'Envoi…' : 'Soumettre'}
+        <button className="btn-primary" type="submit" disabled={uploading || submitting} style={{ background: 'var(--green)' }}>
+          {uploading ? '⬆️ Upload ticket…' : submitting ? 'Envoi…' : 'Soumettre'}
         </button>
       </form>
     </div>

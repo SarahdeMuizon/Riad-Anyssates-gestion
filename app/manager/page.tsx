@@ -54,6 +54,7 @@ export default function ManagerPage() {
       <header style={{ background: 'var(--terracotta)', color: 'white', padding: '0 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 56, boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
         <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>🏨 Riad Anyssates</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <button onClick={() => window.location.href = '/api/export/excel'} style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', color: 'white', padding: '0.3rem 0.75rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>📊 Excel</button>
           <span style={{ fontSize: '0.8rem', opacity: 0.85 }}>Manager</span>
           <button onClick={logout} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '0.3rem 0.75rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.8rem' }}>Déconnexion</button>
         </div>
@@ -347,7 +348,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                 <th>Date</th><th>Employé</th><th>Catégorie</th>
                 {type === 'cb' && <><th>Fournisseur</th><th>Paiement</th></>}
                 <th>Devise</th><th>Montant</th>
-                {type === 'cb' && <th>Facture</th>}
+                <th>Justificatif</th>
                 <th>Statut</th><th>Actions</th>
               </tr>
             </thead>
@@ -360,7 +361,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                   {type === 'cb' && <><td>{e.supplier || '—'}</td><td>{e.payment || '—'}</td></>}
                   <td><span style={{ fontWeight: 600, fontSize: '0.8rem', background: '#F3F4F6', padding: '0.15rem 0.4rem', borderRadius: '0.3rem' }}>{(e.currency as string) || 'EUR'}</span></td>
                   <td style={{ fontWeight: 600, color }}>{Number(e.amount).toFixed(2)}</td>
-                  {type === 'cb' && <td>{e.invoice_url ? <a href={e.invoice_url as string} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontSize: '0.8rem' }}>📄 Voir</a> : '—'}</td>}
+                  <td>{e.invoice_url ? <a href={e.invoice_url as string} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontSize: '0.8rem' }}>{type === 'cash' ? '🧾 Ticket' : '📄 Facture'}</a> : '—'}</td>
                   <td><span className={e.status === 'validated' ? 'badge-validated' : 'badge-pending'}>{e.status === 'validated' ? 'Validé' : 'En attente'}</span></td>
                   <td style={{ display: 'flex', gap: '0.4rem' }}>
                     <button onClick={() => toggleStatus(e)} style={{ background: e.status === 'pending' ? 'var(--green)' : '#888', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.8rem' }}>{e.status === 'pending' ? '✓' : '↩'}</button>
