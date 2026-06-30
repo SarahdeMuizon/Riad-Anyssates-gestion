@@ -322,14 +322,18 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       if (fAmountHT) body.amount_ht = parseFloat(fAmountHT)
       if (fTvaRate) body.tva_rate = parseFloat(fTvaRate)
     }
-    const r = await fetch('/api/entries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    if (r.ok) {
-      setFAmount(''); setFAmountHT(''); setFTvaRate(''); setFSupplier(''); setFDescription('')
-      setFFile(null); setFFilePreview(null); setFExtracted(false); setShowForm(false)
-      fetchEntries()
-    } else {
-      const d = await r.json()
-      setFormError(d.error || 'Erreur')
+    try {
+      const r = await fetch('/api/entries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      if (r.ok) {
+        setFAmount(''); setFAmountHT(''); setFTvaRate(''); setFSupplier(''); setFDescription('')
+        setFFile(null); setFFilePreview(null); setFExtracted(false); setShowForm(false)
+        fetchEntries()
+      } else {
+        const d = await r.json().catch(() => ({}))
+        setFormError(d.error || `Erreur serveur (${r.status})`)
+      }
+    } catch (err) {
+      setFormError('Erreur de connexion — réessayez.')
     }
     setSubmitting(false)
   }
