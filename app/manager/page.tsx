@@ -235,6 +235,11 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Reset currency to MAD every time form opens
+  useEffect(() => {
+    if (showForm) setFCurrency('MAD')
+  }, [showForm])
+
   async function toggleStatus(entry: Entry) {
     await fetch(`/api/entries/${entry.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: entry.status === 'pending' ? 'validated' : 'pending' }) })
     fetchEntries()
