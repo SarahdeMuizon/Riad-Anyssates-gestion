@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
 
     const result = await sql`
       INSERT INTO entries (employee_name, type, date, amount, category, supplier, payment, description, currency, invoice_url, amount_ht, tva_rate)
-      VALUES (${empName}, ${type}, ${date}, ${amount}, ${category}, ${supplier || null}, ${payment || null}, ${description || null}, ${currency || 'EUR'}, ${invoice_url || null}, ${amount_ht || null}, ${tva_rate || null})
+      VALUES (${empName}, ${type}, ${date}, ${amount}, ${category}, ${supplier || null}, ${payment || null}, ${description || null}, ${currency || 'MAD'}, ${invoice_url || null}, ${amount_ht || null}, ${tva_rate || null})
       RETURNING *
     `
 
