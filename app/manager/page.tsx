@@ -332,7 +332,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
         setFilterStatus(''); setFilterEmployee('')
         setFormSuccess('✓ Entrée ajoutée avec succès !')
         setTimeout(() => setFormSuccess(''), 4000)
-        fetchEntries()
+        setMonth(fDate.substring(0, 7))
       } else {
         const d = await r.json().catch(() => ({}))
         setFormError(d.error || `Erreur serveur (${r.status})`)
