@@ -165,6 +165,8 @@ export async function initDb() {
   for (const migSql of [
     `ALTER TABLE entries ADD COLUMN currency TEXT DEFAULT 'EUR'`,
     `ALTER TABLE entries ADD COLUMN invoice_url TEXT`,
+    `ALTER TABLE entries ADD COLUMN amount_ht REAL`,
+    `ALTER TABLE entries ADD COLUMN tva_rate REAL`,
   ]) {
     const mResults = await tursoRequest([{ sql: migSql }])
     const r = mResults[0]

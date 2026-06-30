@@ -14,6 +14,8 @@ export interface Entry {
   payment?: string
   description?: string
   invoice_url?: string
+  amount_ht?: number
+  tva_rate?: number
   status: EntryStatus
   validated_at?: string
   created_at: string

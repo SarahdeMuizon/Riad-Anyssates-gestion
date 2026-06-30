@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { type, date, amount, category, supplier, payment, description, currency, invoice_url, token, employee_name } = body
+    const { type, date, amount, category, supplier, payment, description, currency, invoice_url, token, employee_name, amount_ht, tva_rate } = body
 
     let empName: string
 
@@ -81,8 +81,8 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await sql`
-      INSERT INTO entries (employee_name, type, date, amount, category, supplier, payment, description, currency, invoice_url)
-      VALUES (${empName}, ${type}, ${date}, ${amount}, ${category}, ${supplier || null}, ${payment || null}, ${description || null}, ${currency || 'EUR'}, ${invoice_url || null})
+      INSERT INTO entries (employee_name, type, date, amount, category, supplier, payment, description, currency, invoice_url, amount_ht, tva_rate)
+      VALUES (${empName}, ${type}, ${date}, ${amount}, ${category}, ${supplier || null}, ${payment || null}, ${description || null}, ${currency || 'EUR'}, ${invoice_url || null}, ${amount_ht || null}, ${tva_rate || null})
       RETURNING *
     `
 

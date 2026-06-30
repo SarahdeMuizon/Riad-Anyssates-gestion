@@ -194,16 +194,22 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [fEmployee, setFEmployee] = useState('')
   const [fCategory, setFCategory] = useState(type === 'cb' ? DEPENSES_CATEGORIES[0] : ENCAISSEMENTS_CATEGORIES[0])
   const [fAmount, setFAmount] = useState('')
+  const [fAmountHT, setFAmountHT] = useState('')
+  const [fTvaRate, setFTvaRate] = useState('')
   const [fCurrency, setFCurrency] = useState('EUR')
   const [fSupplier, setFSupplier] = useState('')
   const [fPayment, setFPayment] = useState('CB')
   const [fDescription, setFDescription] = useState('')
   const [fFile, setFFile] = useState<File | null>(null)
+  const [fFilePreview, setFFilePreview] = useState<string | null>(null)
   const [fUploading, setFUploading] = useState(false)
+  const [fExtracting, setFExtracting] = useState(false)
+  const [fExtracted, setFExtracted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [uploadingEntryId, setUploadingEntryId] = useState<number | null>(null)
   const rowFileRef = useRef<HTMLInputElement>(null)
+  const fFileRef = useRef<HTMLInputElement>(null)
   const [pendingUploadEntry, setPendingUploadEntry] = useState<number | null>(null)
 
   const categories = type === 'cb' ? DEPENSES_CATEGORIES : ENCAISSEMENTS_CATEGORIES
@@ -237,6 +243,37 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     await fetch(`/api/entries/${id}`, { method: 'DELETE' })
     setDeleteModal(null)
     fetchEntries()
+  }
+
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setFFile(file)
+    setFExtracted(false)
+    if (file.type.startsWith('image/')) {
+      setFFilePreview(URL.createObjectURL(file))
+    } else {
+      setFFilePreview(null)
+    }
+    setFExtracting(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('type', type)
+      const r = await fetch('/api/extract-invoice', { method: 'POST', body: fd })
+      if (r.ok) {
+        const data = await r.json()
+        if (data.date) setFDate(data.date)
+        if (data.supplier) setFSupplier(data.supplier)
+        if (data.amount_ttc) setFAmount(String(data.amount_ttc))
+        if (type === 'cb') {
+          if (data.amount_ht) setFAmountHT(String(data.amount_ht))
+          if (data.tva_rate) setFTvaRate(String(data.tva_rate))
+        }
+        setFExtracted(true)
+      }
+    } catch { /* silent */ }
+    setFExtracting(false)
   }
 
   async function uploadToCloudinary(file: File, folder: string): Promise<string> {
@@ -279,10 +316,16 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       setFUploading(false)
     }
     const body: Record<string, unknown> = { type, date: fDate, employee_name: fEmployee, category: fCategory, amount: parseFloat(fAmount), currency: fCurrency, description: fDescription || null, invoice_url }
-    if (type === 'cb') { body.supplier = fSupplier || null; body.payment = fPayment }
+    if (type === 'cb') {
+      body.supplier = fSupplier || null
+      body.payment = fPayment
+      if (fAmountHT) body.amount_ht = parseFloat(fAmountHT)
+      if (fTvaRate) body.tva_rate = parseFloat(fTvaRate)
+    }
     const r = await fetch('/api/entries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     if (r.ok) {
-      setFAmount(''); setFSupplier(''); setFDescription(''); setFFile(null); setShowForm(false)
+      setFAmount(''); setFAmountHT(''); setFTvaRate(''); setFSupplier(''); setFDescription('')
+      setFFile(null); setFFilePreview(null); setFExtracted(false); setShowForm(false)
       fetchEntries()
     } else {
       const d = await r.json()
@@ -311,8 +354,45 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
 
       {showForm && (
         <div className="card" style={{ marginBottom: '1.25rem' }}>
-          <form onSubmit={handleSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+
+            {/* Upload zone — identique page employé */}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>
+                {type === 'cb' ? 'Facture' : 'Ticket CB'}
+                {type === 'cb'
+                  ? <span style={{ color: 'var(--red)', fontWeight: 400 }}> * (obligatoire)</span>
+                  : <span style={{ color: '#888', fontWeight: 400 }}> (optionnel)</span>}
+              </label>
+              <div
+                onClick={() => fFileRef.current?.click()}
+                style={{ border: `2px dashed ${fFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1.25rem', textAlign: 'center', cursor: 'pointer', background: fExtracting ? '#FFFBF0' : fFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
+              >
+                {fExtracting ? (
+                  <div>
+                    <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>⏳</div>
+                    <div style={{ fontSize: '0.85rem', color: '#888' }}>Analyse du document en cours…</div>
+                  </div>
+                ) : fFile ? (
+                  <div>
+                    {fFilePreview && <img src={fFilePreview} alt="Aperçu" style={{ maxHeight: 120, maxWidth: '100%', marginBottom: '0.5rem', borderRadius: '0.3rem', objectFit: 'contain' }} />}
+                    <div style={{ fontSize: '0.85rem', color: 'var(--green)', fontWeight: 600 }}>✓ {fFile.name}</div>
+                    {fExtracted && <div style={{ fontSize: '0.75rem', color: 'var(--green)', marginTop: '0.2rem' }}>Données extraites automatiquement — vérifiez ci-dessous</div>}
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.2rem' }}>Cliquer pour changer</div>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }}>{type === 'cb' ? '📄' : '🧾'}</div>
+                    <div style={{ fontSize: '0.85rem', color: '#666' }}>{type === 'cb' ? 'Cliquer pour ajouter la facture' : 'Cliquer pour ajouter le ticket CB'}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '0.25rem' }}>Image ou PDF — les champs seront remplis automatiquement</div>
+                  </div>
+                )}
+              </div>
+              <input ref={fFileRef} type="file" accept="image/*,application/pdf" onChange={handleFileSelect} style={{ display: 'none' }} />
+            </div>
+
+            {/* Champs auto-remplis et modifiables */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Date *</label>
                 <input className="form-input" type="date" value={fDate} onChange={e => setFDate(e.target.value)} required />
@@ -324,6 +404,74 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                   {employees.map(n => <option key={n} value={n}>{n}</option>)}
                 </select>
               </div>
+              {type === 'cb' && (
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Fournisseur</label>
+                  <input className="form-input" value={fSupplier} onChange={e => setFSupplier(e.target.value)} placeholder="Nom du fournisseur" />
+                </div>
+              )}
+            </div>
+
+            {/* Montants */}
+            {type === 'cb' ? (
+              <div style={{ background: '#F8F8F8', border: '1px solid #EEE', borderRadius: '0.5rem', padding: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#666', marginBottom: '0.1rem' }}>Montants</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.625rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '0.2rem' }}>Montant HT</label>
+                    <input className="form-input" type="number" step="0.01" min="0" value={fAmountHT} onChange={e => {
+                      setFAmountHT(e.target.value)
+                      const ht = parseFloat(e.target.value)
+                      const tva = parseFloat(fTvaRate)
+                      if (!isNaN(ht) && !isNaN(tva)) setFAmount(String((ht * (1 + tva / 100)).toFixed(2)))
+                    }} placeholder="0.00" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '0.2rem' }}>TVA %</label>
+                    <input className="form-input" type="number" step="0.1" min="0" value={fTvaRate} onChange={e => {
+                      setFTvaRate(e.target.value)
+                      const ht = parseFloat(fAmountHT)
+                      const tva = parseFloat(e.target.value)
+                      if (!isNaN(ht) && !isNaN(tva)) setFAmount(String((ht * (1 + tva / 100)).toFixed(2)))
+                    }} placeholder="20" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '0.2rem' }}>Montant TTC *</label>
+                    <input className="form-input" type="number" step="0.01" min="0" value={fAmount} onChange={e => setFAmount(e.target.value)} placeholder="0.00" required />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Montant *</label>
+                <input className="form-input" type="number" step="0.01" min="0" value={fAmount} onChange={e => setFAmount(e.target.value)} placeholder="0.00" required />
+              </div>
+            )}
+
+            {/* Devise — boutons comme page employé */}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>Devise</label>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {CURRENCIES.map(c => (
+                  <button key={c} type="button" onClick={() => setFCurrency(c)} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fCurrency === c ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: fCurrency === c ? '#FFF5F0' : 'white', fontWeight: fCurrency === c ? 700 : 400, cursor: 'pointer', color: fCurrency === c ? 'var(--terracotta)' : 'var(--text)' }}>{c}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Mode paiement (dépenses) — boutons */}
+            {type === 'cb' && (
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>Mode de paiement</label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {PAYMENT_MODES.map(p => (
+                    <button key={p} type="button" onClick={() => setFPayment(p)} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fPayment === p ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: fPayment === p ? '#FFF5F0' : 'white', fontWeight: fPayment === p ? 700 : 400, cursor: 'pointer', color: fPayment === p ? 'var(--terracotta)' : 'var(--text)', fontSize: '0.85rem' }}>{p}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Catégorie + Description */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Catégorie *</label>
                 <select className="form-input" value={fCategory} onChange={e => setFCategory(e.target.value)}>
@@ -331,41 +479,13 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                 </select>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Montant *</label>
-                <input className="form-input" type="number" step="0.01" min="0" value={fAmount} onChange={e => setFAmount(e.target.value)} placeholder="0.00" required />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Devise</label>
-                <select className="form-input" value={fCurrency} onChange={e => setFCurrency(e.target.value)}>
-                  {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              {type === 'cb' && (
-                <>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Fournisseur</label>
-                    <input className="form-input" value={fSupplier} onChange={e => setFSupplier(e.target.value)} placeholder="Nom fournisseur" />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Mode paiement</label>
-                    <select className="form-input" value={fPayment} onChange={e => setFPayment(e.target.value)}>
-                      {PAYMENT_MODES.map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
-                  </div>
-                </>
-              )}
-              <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Description</label>
                 <input className="form-input" value={fDescription} onChange={e => setFDescription(e.target.value)} placeholder="Note optionnelle" />
               </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>{type === 'cb' ? 'Facture' : 'Ticket CB'} <span style={{ color: '#888', fontWeight: 400 }}>(optionnel)</span></label>
-                <input type="file" accept="image/*,application/pdf" onChange={e => setFFile(e.target.files?.[0] || null)} style={{ fontSize: '0.82rem' }} />
-                {fFile && <span style={{ fontSize: '0.8rem', color: 'var(--green)', display: 'block', marginTop: '0.2rem' }}>✓ {fFile.name}</span>}
-              </div>
             </div>
-            {formError && <p style={{ color: 'var(--red)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{formError}</p>}
-            <button className="btn-primary" type="submit" disabled={submitting || fUploading}>{fUploading ? 'Upload…' : submitting ? 'Enregistrement…' : 'Enregistrer'}</button>
+
+            {formError && <p style={{ color: 'var(--red)', fontSize: '0.875rem' }}>{formError}</p>}
+            <button className="btn-primary" type="submit" disabled={submitting || fUploading || fExtracting}>{fUploading ? 'Upload…' : submitting ? 'Enregistrement…' : 'Enregistrer'}</button>
           </form>
         </div>
       )}
