@@ -207,6 +207,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [fExtracted, setFExtracted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
+  const [formSuccess, setFormSuccess] = useState('')
   const [uploadingEntryId, setUploadingEntryId] = useState<number | null>(null)
   const rowFileRef = useRef<HTMLInputElement>(null)
   const fFileRef = useRef<HTMLInputElement>(null)
@@ -306,6 +307,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     e.preventDefault()
     setSubmitting(true)
     setFormError('')
+    setFormSuccess('')
     let invoice_url: string | undefined
     if (fFile) {
       setFUploading(true)
@@ -327,6 +329,9 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       if (r.ok) {
         setFAmount(''); setFAmountHT(''); setFTvaRate(''); setFSupplier(''); setFDescription('')
         setFFile(null); setFFilePreview(null); setFExtracted(false); setShowForm(false)
+        setFilterStatus(''); setFilterEmployee('')
+        setFormSuccess('✓ Entrée ajoutée avec succès !')
+        setTimeout(() => setFormSuccess(''), 4000)
         fetchEntries()
       } else {
         const d = await r.json().catch(() => ({}))
@@ -355,6 +360,8 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
           <button className="btn-primary" onClick={() => setShowForm(!showForm)}>{showForm ? 'Annuler' : '+ Ajouter'}</button>
         </div>
       </div>
+
+      {formSuccess && <p style={{ color: 'var(--green)', fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: '#F0FDF4', borderRadius: '0.4rem', border: '1px solid #86efac' }}>{formSuccess}</p>}
 
       {showForm && (
         <div className="card" style={{ marginBottom: '1.25rem' }}>
