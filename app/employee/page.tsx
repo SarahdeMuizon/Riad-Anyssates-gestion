@@ -345,11 +345,12 @@ function DepenseForm({ token }: { token: string }) {
           <input ref={fileRef} type="file" accept="image/*,application/pdf" onChange={handleFile} style={{ display: 'none' }} />
         </div>
 
+        {extracting && <p style={{ color: '#888', fontSize: '0.8rem', textAlign: 'center' }}>🤖 Extraction IA en cours…</p>}
         {error && <p style={{ color: 'var(--red)', fontSize: '0.875rem' }}>{error}</p>}
         {success && <p style={{ color: 'var(--green)', fontSize: '0.875rem', fontWeight: 600 }}>{success}</p>}
 
         <button className="btn-primary" type="submit" disabled={uploading || submitting || extracting}>
-          {uploading ? '⬆️ Upload facture…' : submitting ? 'Envoi…' : 'Soumettre'}
+          {extracting ? '🤖 Analyse facture…' : uploading ? '⬆️ Upload facture…' : submitting ? 'Envoi…' : 'Soumettre'}
         </button>
       </form>
     </div>
@@ -518,7 +519,7 @@ function EncaissementForm({ token }: { token: string }) {
         {success && <p style={{ color: 'var(--green)', fontSize: '0.875rem', fontWeight: 600 }}>{success}</p>}
 
         <button className="btn-primary" type="submit" disabled={uploading || submitting || extracting} style={{ background: 'var(--green)' }}>
-          {uploading ? '⬆️ Upload ticket…' : submitting ? 'Envoi…' : 'Soumettre'}
+          {extracting ? '🤖 Analyse ticket…' : uploading ? '⬆️ Upload ticket…' : submitting ? 'Envoi…' : 'Soumettre'}
         </button>
       </form>
     </div>
