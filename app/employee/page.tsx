@@ -91,6 +91,7 @@ function DepenseForm({ token }: { token: string }) {
   const [invoicePreview, setInvoicePreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [extracting, setExtracting] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -116,16 +117,26 @@ function DepenseForm({ token }: { token: string }) {
     setSplitLines(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l))
   }
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
     if (!f) return
     setInvoiceFile(f)
-    if (f.type.startsWith('image/')) {
-      const url = URL.createObjectURL(f)
-      setInvoicePreview(url)
-    } else {
-      setInvoicePreview(null)
-    }
+    if (f.type.startsWith('image/')) setInvoicePreview(URL.createObjectURL(f))
+    else setInvoicePreview(null)
+    setExtracting(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', f)
+      fd.append('type', 'cb')
+      const r = await fetch('/api/extract-invoice', { method: 'POST', body: fd })
+      if (r.ok) {
+        const data = await r.json()
+        if (data.date) setDate(data.date)
+        if (data.supplier) setSupplier(data.supplier)
+        if (data.amount_ttc) setAmount(String(data.amount_ttc))
+      }
+    } catch { /* silent */ }
+    setExtracting(false)
   }
 
   async function uploadToCloudinary(file: File): Promise<string> {
@@ -293,7 +304,10 @@ function DepenseForm({ token }: { token: string }) {
               <div>
                 {invoicePreview && <img src={invoicePreview} alt="Aperçu" style={{ maxHeight: 120, maxWidth: '100%', marginBottom: '0.5rem', borderRadius: '0.3rem' }} />}
                 <div style={{ fontSize: '0.85rem', color: 'var(--green)', fontWeight: 600 }}>✓ {invoiceFile.name}</div>
-                <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.2rem' }}>Cliquer pour changer</div>
+                {extracting
+                  ? <div style={{ fontSize: '0.75rem', color: 'var(--terracotta)', marginTop: '0.2rem' }}>⏳ Analyse en cours…</div>
+                  : <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.2rem' }}>Cliquer pour changer</div>
+                }
               </div>
             ) : (
               <div>
@@ -308,7 +322,7 @@ function DepenseForm({ token }: { token: string }) {
         {error && <p style={{ color: 'var(--red)', fontSize: '0.875rem' }}>{error}</p>}
         {success && <p style={{ color: 'var(--green)', fontSize: '0.875rem', fontWeight: 600 }}>{success}</p>}
 
-        <button className="btn-primary" type="submit" disabled={uploading || submitting}>
+        <button className="btn-primary" type="submit" disabled={uploading || submitting || extracting}>
           {uploading ? '⬆️ Upload facture…' : submitting ? 'Envoi…' : 'Soumettre'}
         </button>
       </form>
@@ -329,16 +343,30 @@ function EncaissementForm({ token }: { token: string }) {
   const [ticketPreview, setTicketPreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [extracting, setExtracting] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
   const ticketRef = useRef<HTMLInputElement>(null)
 
-  function handleTicket(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleTicket(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
     if (!f) return
     setTicketFile(f)
     if (f.type.startsWith('image/')) setTicketPreview(URL.createObjectURL(f))
     else setTicketPreview(null)
+    setExtracting(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', f)
+      fd.append('type', 'cash')
+      const r = await fetch('/api/extract-invoice', { method: 'POST', body: fd })
+      if (r.ok) {
+        const data = await r.json()
+        if (data.date) setDate(data.date)
+        if (data.amount_ttc) setAmount(String(data.amount_ttc))
+      }
+    } catch { /* silent */ }
+    setExtracting(false)
   }
 
   async function uploadToCloudinary(file: File): Promise<string> {
@@ -442,7 +470,10 @@ function EncaissementForm({ token }: { token: string }) {
               <div>
                 {ticketPreview && <img src={ticketPreview} alt="Aperçu" style={{ maxHeight: 100, maxWidth: '100%', marginBottom: '0.5rem', borderRadius: '0.3rem' }} />}
                 <div style={{ fontSize: '0.85rem', color: 'var(--green)', fontWeight: 600 }}>✓ {ticketFile.name}</div>
-                <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.2rem' }}>Cliquer pour changer</div>
+                {extracting
+                  ? <div style={{ fontSize: '0.75rem', color: 'var(--terracotta)', marginTop: '0.2rem' }}>⏳ Analyse en cours…</div>
+                  : <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.2rem' }}>Cliquer pour changer</div>
+                }
               </div>
             ) : (
               <div>
@@ -457,7 +488,7 @@ function EncaissementForm({ token }: { token: string }) {
         {error && <p style={{ color: 'var(--red)', fontSize: '0.875rem' }}>{error}</p>}
         {success && <p style={{ color: 'var(--green)', fontSize: '0.875rem', fontWeight: 600 }}>{success}</p>}
 
-        <button className="btn-primary" type="submit" disabled={uploading || submitting} style={{ background: 'var(--green)' }}>
+        <button className="btn-primary" type="submit" disabled={uploading || submitting || extracting} style={{ background: 'var(--green)' }}>
           {uploading ? '⬆️ Upload ticket…' : submitting ? 'Envoi…' : 'Soumettre'}
         </button>
       </form>
