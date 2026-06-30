@@ -913,6 +913,8 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
   const [excelMsg, setExcelMsg] = useState('')
   const [excelError, setExcelError] = useState('')
   const [hasBaseFile, setHasBaseFile] = useState<boolean | null>(null)
+  const [dbUpdating, setDbUpdating] = useState(false)
+  const [dbMsg, setDbMsg] = useState('')
 
   useEffect(() => {
     fetch('/api/excel/status').then(r => r.ok ? r.json() : null).then(d => { if (d) setHasBaseFile(d.hasFile) })
@@ -954,6 +956,23 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
   return (
     <div>
       <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.5rem', color: 'var(--terracotta)' }}>⚙️ Paramètres</h2>
+
+      {/* DB migration */}
+      <div className="card" style={{ maxWidth: 500, marginBottom: '1.5rem', borderLeft: '4px solid var(--terracotta)' }}>
+        <h3 style={{ fontWeight: 700, marginBottom: '0.5rem' }}>🗄️ Mise à jour base de données</h3>
+        <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '1rem' }}>
+          À effectuer une fois après une mise à jour de l&apos;application pour ajouter les nouvelles colonnes.
+        </p>
+        <button className="btn-primary" disabled={dbUpdating} onClick={async () => {
+          setDbUpdating(true); setDbMsg('')
+          const r = await fetch('/api/init', { method: 'POST' })
+          setDbMsg(r.ok ? '✓ Base de données à jour !' : '✗ Erreur, réessayez.')
+          setDbUpdating(false)
+        }}>
+          {dbUpdating ? 'Mise à jour…' : '🔄 Mettre à jour'}
+        </button>
+        {dbMsg && <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: dbMsg.startsWith('✓') ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>{dbMsg}</p>}
+      </div>
 
       {/* Excel base file */}
       <div className="card" style={{ maxWidth: 500, marginBottom: '1.5rem', borderLeft: '4px solid #2D6A4F' }}>
