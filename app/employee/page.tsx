@@ -48,7 +48,7 @@ function EmployeeApp() {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'cb', label: '💳 Dépense' },
     { id: 'cash', label: '💵 Encaissement' },
-    { id: 'fonds', label: '💰 Fonds de roulement' },
+    { id: 'fonds', label: '💰 Fond de caisse' },
     { id: 'history', label: '📋 Mon historique' },
   ]
 
@@ -332,7 +332,7 @@ function EncaissementForm({ token }: { token: string }) {
   )
 }
 
-// ─── Fonds de roulement Form ──────────────────────────────────────────────────
+// ─── Fond de caisse Form ──────────────────────────────────────────────────────
 
 function FondsForm({ token }: { token: string }) {
   const [direction, setDirection] = useState<'out' | 'in'>('out')
@@ -365,7 +365,7 @@ function FondsForm({ token }: { token: string }) {
 
   return (
     <div className="card">
-      <h2 style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '1.25rem', color: '#6366F1' }}>💰 Fonds de roulement</h2>
+      <h2 style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '1.25rem', color: '#6366F1' }}>💰 Fond de caisse</h2>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Sens du mouvement *</label>
@@ -446,7 +446,7 @@ function EmployeeHistory({ token }: { token: string }) {
 
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
         <button onClick={() => setActiveSection('entries')} style={{ padding: '0.4rem 0.9rem', border: 'none', borderRadius: '0.5rem', background: activeSection === 'entries' ? 'var(--terracotta)' : '#EDE0D6', color: activeSection === 'entries' ? 'white' : 'var(--text)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>Dépenses & Encaissements</button>
-        <button onClick={() => setActiveSection('fonds')} style={{ padding: '0.4rem 0.9rem', border: 'none', borderRadius: '0.5rem', background: activeSection === 'fonds' ? '#6366F1' : '#EEF2FF', color: activeSection === 'fonds' ? 'white' : '#6366F1', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>Fonds de roulement</button>
+        <button onClick={() => setActiveSection('fonds')} style={{ padding: '0.4rem 0.9rem', border: 'none', borderRadius: '0.5rem', background: activeSection === 'fonds' ? '#6366F1' : '#EEF2FF', color: activeSection === 'fonds' ? 'white' : '#6366F1', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>Fond de caisse</button>
       </div>
 
       {activeSection === 'entries' && (

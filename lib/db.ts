@@ -146,6 +146,12 @@ export async function initDb() {
     {
       sql: `INSERT OR IGNORE INTO settings (key, value) VALUES ('pin', 'gestion2026')`,
     },
+    {
+      sql: `INSERT OR IGNORE INTO settings (key, value) VALUES ('fond_caisse_mad', '2000')`,
+    },
+    {
+      sql: `INSERT OR IGNORE INTO settings (key, value) VALUES ('fond_caisse_eur', '200')`,
+    },
   ])
 
   for (const r of results) {

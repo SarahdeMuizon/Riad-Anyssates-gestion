@@ -44,7 +44,7 @@ export default function ManagerPage() {
     { id: 'dashboard', label: '📊 Dashboard' },
     { id: 'depenses', label: '💳 Dépenses' },
     { id: 'encaissements', label: '💵 Encaissements' },
-    { id: 'fonds', label: '💰 Fonds de roulement' },
+    { id: 'fonds', label: '💰 Fond de caisse' },
     { id: 'employees', label: '👥 Employés' },
     { id: 'settings', label: '⚙️ Paramètres' },
   ]
@@ -124,11 +124,11 @@ function DashboardTab() {
               <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--green)' }}>{stats.total_encaissements.toFixed(2)}</div>
             </div>
             <div className="stat-card" style={{ borderLeftColor: '#6366F1' }}>
-              <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>Fonds — Entrées</div>
+              <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>Fond de caisse — Entrées</div>
               <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#6366F1' }}>{stats.total_fonds_in.toFixed(2)}</div>
             </div>
             <div className="stat-card" style={{ borderLeftColor: '#F59E0B' }}>
-              <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>Fonds — Sorties</div>
+              <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>Fond de caisse — Sorties</div>
               <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#D97706' }}>{stats.total_fonds_out.toFixed(2)}</div>
             </div>
             <div className="stat-card" style={{ borderLeftColor: '#94A3B8' }}>
@@ -388,7 +388,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   )
 }
 
-// ─── Fonds de roulement Tab ───────────────────────────────────────────────────
+// ─── Fond de caisse Tab ───────────────────────────────────────────────────────
 
 const FONDS_CATEGORIES = ['Courses/Marché','Entretien','Personnel','Transport','Pourboire','Recette cash','Remboursement','Autre']
 
@@ -400,6 +400,14 @@ function FondsTab() {
   const [loading, setLoading] = useState(true)
   const [deleteModal, setDeleteModal] = useState<number | null>(null)
   const [showForm, setShowForm] = useState(false)
+
+  // Dotation
+  const [dotationMAD, setDotationMAD] = useState(2000)
+  const [dotationEUR, setDotationEUR] = useState(200)
+  const [showDotationEdit, setShowDotationEdit] = useState(false)
+  const [editMAD, setEditMAD] = useState('')
+  const [editEUR, setEditEUR] = useState('')
+  const [savingDotation, setSavingDotation] = useState(false)
 
   // Form state
   const [direction, setDirection] = useState<'in' | 'out'>('out')
@@ -425,7 +433,24 @@ function FondsTab() {
     fetch('/api/employees').then(r => r.json()).then((emps: Employee[]) => {
       setFondsEmployees(emps.filter(e => e.active).map(e => e.name))
     })
+    fetch('/api/settings/fond-caisse').then(r => r.json()).then(d => {
+      setDotationMAD(d.fond_caisse_mad ?? 2000)
+      setDotationEUR(d.fond_caisse_eur ?? 200)
+    })
   }, [])
+
+  async function saveDotation() {
+    setSavingDotation(true)
+    await fetch('/api/settings/fond-caisse', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fond_caisse_mad: parseFloat(editMAD), fond_caisse_eur: parseFloat(editEUR) }),
+    })
+    setDotationMAD(parseFloat(editMAD))
+    setDotationEUR(parseFloat(editEUR))
+    setShowDotationEdit(false)
+    setSavingDotation(false)
+  }
 
   const totalIn = entries.filter(e => e.direction === 'in').reduce((s, e) => s + Number(e.amount), 0)
   const totalOut = entries.filter(e => e.direction === 'out').reduce((s, e) => s + Number(e.amount), 0)
@@ -466,12 +491,39 @@ function FondsTab() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <button onClick={() => setMonth(shiftMonth(month, -1))} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: 'pointer', fontWeight: 600 }}>‹</button>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#6366F1' }}>💰 Fonds de roulement — {formatMonth(month)}</h2>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#6366F1' }}>💰 Fond de caisse — {formatMonth(month)}</h2>
           <button onClick={() => setMonth(shiftMonth(month, 1))} disabled={month === currentMonth} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: month === currentMonth ? 'default' : 'pointer', opacity: month === currentMonth ? 0.4 : 1, fontWeight: 600 }}>›</button>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className="btn-secondary" onClick={() => window.location.href = `/api/export/fonds?month=${month}`} style={{ fontSize: '0.85rem' }}>⬇️ CSV</button>
           <button className="btn-primary" onClick={() => setShowForm(!showForm)}>{showForm ? 'Annuler' : '+ Ajouter'}</button>
+        </div>
+      </div>
+
+      {/* Dotation initiale */}
+      <div className="card" style={{ marginBottom: '1rem', background: '#EEF2FF', border: '1px solid #C7D2FE' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6366F1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Dotation fond de caisse</div>
+            {showDotationEdit ? (
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <input type="number" min="0" step="0.01" value={editMAD} onChange={e => setEditMAD(e.target.value)} placeholder="MAD" style={{ width: '100px', padding: '0.3rem 0.5rem', border: '1px solid #C7D2FE', borderRadius: '0.4rem', fontSize: '0.9rem' }} />
+                <span style={{ fontWeight: 600, color: '#6366F1' }}>MAD</span>
+                <span style={{ color: '#aaa' }}>+</span>
+                <input type="number" min="0" step="0.01" value={editEUR} onChange={e => setEditEUR(e.target.value)} placeholder="EUR" style={{ width: '100px', padding: '0.3rem 0.5rem', border: '1px solid #C7D2FE', borderRadius: '0.4rem', fontSize: '0.9rem' }} />
+                <span style={{ fontWeight: 600, color: '#6366F1' }}>EUR</span>
+                <button onClick={saveDotation} disabled={savingDotation} style={{ background: '#6366F1', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.75rem', cursor: 'pointer', fontSize: '0.85rem' }}>{savingDotation ? '…' : 'Enregistrer'}</button>
+                <button onClick={() => setShowDotationEdit(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', fontSize: '0.85rem' }}>Annuler</button>
+              </div>
+            ) : (
+              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#4338CA' }}>
+                {dotationMAD.toLocaleString('fr-FR')} MAD &nbsp;+&nbsp; {dotationEUR.toLocaleString('fr-FR')} EUR
+              </div>
+            )}
+          </div>
+          {!showDotationEdit && (
+            <button onClick={() => { setEditMAD(String(dotationMAD)); setEditEUR(String(dotationEUR)); setShowDotationEdit(true) }} style={{ background: 'white', border: '1px solid #C7D2FE', borderRadius: '0.4rem', padding: '0.35rem 0.75rem', cursor: 'pointer', fontSize: '0.8rem', color: '#6366F1', fontWeight: 600 }}>✏️ Modifier</button>
+          )}
         </div>
       </div>
 
