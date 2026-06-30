@@ -736,6 +736,32 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
   const [pinMsg, setPinMsg] = useState('')
   const [pinError, setPinError] = useState('')
   const [resetModal, setResetModal] = useState(false)
+  const [excelFile, setExcelFile] = useState<File | null>(null)
+  const [excelUploading, setExcelUploading] = useState(false)
+  const [excelMsg, setExcelMsg] = useState('')
+  const [excelError, setExcelError] = useState('')
+  const [hasBaseFile, setHasBaseFile] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    fetch('/api/excel/status').then(r => r.ok ? r.json() : null).then(d => { if (d) setHasBaseFile(d.hasFile) })
+  }, [])
+
+  async function uploadExcel(e: React.FormEvent) {
+    e.preventDefault()
+    if (!excelFile) return
+    setExcelUploading(true); setExcelMsg(''); setExcelError('')
+    const form = new FormData()
+    form.append('file', excelFile)
+    const r = await fetch('/api/excel/upload', { method: 'POST', body: form })
+    if (r.ok) { setExcelMsg('Fichier Excel enregistré ! L\'export Excel intégrera maintenant vos onglets existants.'); setHasBaseFile(true); setExcelFile(null) }
+    else { const d = await r.json(); setExcelError(d.error || 'Erreur upload.') }
+    setExcelUploading(false)
+  }
+
+  async function removeExcel() {
+    await fetch('/api/excel/upload', { method: 'DELETE' })
+    setHasBaseFile(false); setExcelMsg('Fichier supprimé.')
+  }
 
   async function changePin(e: React.FormEvent) {
     e.preventDefault()
@@ -756,6 +782,29 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
   return (
     <div>
       <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.5rem', color: 'var(--terracotta)' }}>⚙️ Paramètres</h2>
+
+      {/* Excel base file */}
+      <div className="card" style={{ maxWidth: 500, marginBottom: '1.5rem', borderLeft: '4px solid #2D6A4F' }}>
+        <h3 style={{ fontWeight: 700, marginBottom: '0.5rem' }}>📎 Fichier Excel de référence</h3>
+        <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '1rem' }}>
+          Uploadez votre <strong>COMPTES RIAD 2026.xlsx</strong> ici. Lors du téléchargement Excel (bouton 📊 en haut), vos onglets existants seront préservés et les 3 nouveaux onglets (Encaissements, Dépenses, Fond de caisse) seront automatiquement mis à jour avec les données actuelles.
+        </p>
+        {hasBaseFile && (
+          <div style={{ background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: '0.4rem', padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#2D6A4F', fontWeight: 600, marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>✓ Fichier Excel enregistré</span>
+            <button onClick={removeExcel} style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', fontSize: '0.8rem' }}>✕ Supprimer</button>
+          </div>
+        )}
+        <form onSubmit={uploadExcel} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <input type="file" accept=".xlsx" onChange={e => setExcelFile(e.target.files?.[0] || null)} style={{ fontSize: '0.85rem', flex: 1, minWidth: 200 }} />
+          <button className="btn-primary" type="submit" disabled={!excelFile || excelUploading} style={{ background: '#2D6A4F', whiteSpace: 'nowrap' }}>
+            {excelUploading ? 'Upload…' : hasBaseFile ? '🔄 Remplacer' : '⬆️ Uploader'}
+          </button>
+        </form>
+        {excelMsg && <p style={{ color: 'var(--green)', fontSize: '0.825rem', marginTop: '0.5rem' }}>{excelMsg}</p>}
+        {excelError && <p style={{ color: 'var(--red)', fontSize: '0.825rem', marginTop: '0.5rem' }}>{excelError}</p>}
+      </div>
+
       <div className="card" style={{ maxWidth: 420, marginBottom: '1.5rem' }}>
         <h3 style={{ fontWeight: 700, marginBottom: '1rem' }}>Changer le PIN</h3>
         <form onSubmit={changePin} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>

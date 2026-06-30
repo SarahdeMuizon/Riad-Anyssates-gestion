@@ -129,11 +129,12 @@ export async function GET() {
     if (!isAuth) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
     // Fetch all data
-    const [encaissements, depenses, fonds, settingsRows] = await Promise.all([
+    const [encaissements, depenses, fonds, settingsRows, baseFileRows] = await Promise.all([
       sql`SELECT * FROM entries WHERE type='cash' ORDER BY date ASC`,
       sql`SELECT * FROM entries WHERE type='cb' ORDER BY date ASC`,
       sql`SELECT * FROM fonds_entries ORDER BY date ASC`,
       sql`SELECT key, value FROM settings WHERE key IN ('fond_caisse_mad', 'fond_caisse_eur')`,
+      sql`SELECT value FROM settings WHERE key = 'excel_base_file'`,
     ])
 
     const settings: Record<string, number> = { fond_caisse_mad: 2000, fond_caisse_eur: 200 }
@@ -142,6 +143,18 @@ export async function GET() {
     const wb = new ExcelJS.Workbook()
     wb.creator = 'Riad Anyssates'
     wb.created = new Date()
+
+    // Load base Excel file if uploaded, preserving existing sheets
+    if (baseFileRows.length > 0 && baseFileRows[0].value) {
+      const buf = Buffer.from(baseFileRows[0].value as string, 'base64')
+      await wb.xlsx.load(buf)
+      // Remove our managed sheets so we can regenerate them fresh
+      const managed = ['Encaissements', 'Dashboard Encaissements', 'Dépenses', 'Dashboard Dépenses', 'Fond de caisse', 'Dashboard Fond de caisse']
+      for (const name of managed) {
+        const ws = wb.getWorksheet(name)
+        if (ws) wb.removeWorksheet(ws.id)
+      }
+    }
 
     // ── Sheet: Encaissements ──────────────────────────────────────────────────
     const wsEnc = wb.addWorksheet('Encaissements', { views: [{ state: 'frozen', ySplit: 1 }] })

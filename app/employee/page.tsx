@@ -359,13 +359,13 @@ function EncaissementForm({ token }: { token: string }) {
     e.preventDefault()
     setError(''); setSuccess('')
 
+    if (!ticketFile) { setError('Le ticket CB est obligatoire.'); return }
+
     let invoice_url: string | undefined
-    if (ticketFile) {
-      setUploading(true)
-      try { invoice_url = await uploadToCloudinary(ticketFile) }
-      catch (err) { setError((err as Error).message || 'Erreur upload ticket.'); setUploading(false); return }
-      setUploading(false)
-    }
+    setUploading(true)
+    try { invoice_url = await uploadToCloudinary(ticketFile) }
+    catch (err) { setError((err as Error).message || 'Erreur upload ticket.'); setUploading(false); return }
+    setUploading(false)
 
     setSubmitting(true)
     try {
@@ -432,7 +432,7 @@ function EncaissementForm({ token }: { token: string }) {
         {/* Optional ticket CB upload */}
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-            Ticket CB <span style={{ color: '#888', fontWeight: 400 }}>(optionnel)</span>
+            Ticket CB * <span style={{ color: 'var(--red)' }}>(obligatoire)</span>
           </label>
           <div
             onClick={() => ticketRef.current?.click()}
@@ -447,7 +447,7 @@ function EncaissementForm({ token }: { token: string }) {
             ) : (
               <div>
                 <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>🧾</div>
-                <div style={{ fontSize: '0.85rem', color: '#666' }}>Photo du ticket CB (optionnel)</div>
+                <div style={{ fontSize: '0.85rem', color: '#666' }}>Cliquer pour ajouter le ticket CB</div>
               </div>
             )}
           </div>
