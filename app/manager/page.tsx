@@ -235,10 +235,15 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Reset currency to MAD every time form opens
+  // Reset defaults every time form opens
   useEffect(() => {
-    if (showForm) setFCurrency('MAD')
-  }, [showForm])
+    if (showForm) {
+      setFCurrency('MAD')
+      setFCategory(type === 'cb' ? DEPENSES_CATEGORIES[0] : ENCAISSEMENTS_CATEGORIES[0])
+      setFPayment('CB')
+      setFDate(new Date().toISOString().split('T')[0])
+    }
+  }, [showForm, type])
 
   async function toggleStatus(entry: Entry) {
     await fetch(`/api/entries/${entry.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: entry.status === 'pending' ? 'validated' : 'pending' }) })
