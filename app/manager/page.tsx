@@ -175,7 +175,7 @@ function DashboardTab() {
 const DEPENSES_CATEGORIES = ['Alimentation/Courses','Fournitures & bureautique','Entretien & maintenance','Transport','Restauration','Pharmacie/Hygiène','Décoration & fleurs','Autre']
 const ENCAISSEMENTS_CATEGORIES = ['Boissons bar','Repas/Restauration','Activité/Excursion','Service spa/Hammam','Transfert/Transport','Pourboire collectif','Autre encaissement']
 const PAYMENT_MODES = ['CB', 'Virement', 'Chèque']
-const CURRENCIES = ['EUR', 'MAD']
+const CURRENCIES = ['MAD', 'EUR']
 
 function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string; color: string }) {
   const now = new Date()
@@ -196,7 +196,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [fAmount, setFAmount] = useState('')
   const [fAmountHT, setFAmountHT] = useState('')
   const [fTvaRate, setFTvaRate] = useState('')
-  const [fCurrency, setFCurrency] = useState('EUR')
+  const [fCurrency, setFCurrency] = useState('MAD')
   const [fSupplier, setFSupplier] = useState('')
   const [fPayment, setFPayment] = useState('CB')
   const [fDescription, setFDescription] = useState('')

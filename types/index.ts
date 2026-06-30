@@ -90,7 +90,7 @@ export const FONDS_CATEGORIES = [
 
 export const PAYMENT_MODES = ['CB', 'Virement', 'Chèque']
 
-export const CURRENCIES: string[] = ['EUR', 'MAD']
+export const CURRENCIES: string[] = ['MAD', 'EUR']
 
 // Backwards compat aliases
 export const CB_CATEGORIES = DEPENSES_CATEGORIES

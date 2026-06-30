@@ -8,7 +8,7 @@ const DEPENSES_CATEGORIES = ['Alimentation/Courses','Fournitures & bureautique',
 const ENCAISSEMENTS_CATEGORIES = ['Boissons bar','Repas/Restauration','Activité/Excursion','Service spa/Hammam','Transfert/Transport','Pourboire collectif','Autre encaissement']
 const FONDS_CATEGORIES = ['Courses/Marché','Entretien','Personnel','Transport','Pourboire','Recette cash','Remboursement','Autre']
 const PAYMENT_MODES = ['CB', 'Virement', 'Chèque']
-const CURRENCIES = ['EUR', 'MAD']
+const CURRENCIES = ['MAD', 'EUR']
 
 type Tab = 'cb' | 'cash' | 'fonds' | 'history'
 
@@ -82,7 +82,7 @@ interface SplitLine { id: number; category: string; amount: string }
 function DepenseForm({ token }: { token: string }) {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [amount, setAmount] = useState('')
-  const [currency, setCurrency] = useState('EUR')
+  const [currency, setCurrency] = useState('MAD')
   const [category, setCategory] = useState(DEPENSES_CATEGORIES[0])
   const [supplier, setSupplier] = useState('')
   const [payment, setPayment] = useState(PAYMENT_MODES[0])
@@ -190,7 +190,7 @@ function DepenseForm({ token }: { token: string }) {
         if (results.every(r => r.ok)) {
           setSuccess(`Ticket ventilé en ${splitLines.length} postes ✓`)
           setAmount(''); setSupplier(''); setDescription(''); setInvoiceFile(null); setInvoicePreview(null)
-          setCategory(DEPENSES_CATEGORIES[0]); setPayment(PAYMENT_MODES[0]); setCurrency('EUR')
+          setCategory(DEPENSES_CATEGORIES[0]); setPayment(PAYMENT_MODES[0]); setCurrency('MAD')
           setDate(new Date().toISOString().split('T')[0]); setSplitMode(false)
           setSplitLines([{ id: 1, category: DEPENSES_CATEGORIES[0], amount: '' }, { id: 2, category: DEPENSES_CATEGORIES[1], amount: '' }])
           if (fileRef.current) fileRef.current.value = ''
@@ -204,7 +204,7 @@ function DepenseForm({ token }: { token: string }) {
         if (r.ok) {
           setSuccess('Dépense enregistrée avec succès !')
           setAmount(''); setAmountHT(''); setTvaRate(''); setSupplier(''); setDescription(''); setInvoiceFile(null); setInvoicePreview(null)
-          setCategory(DEPENSES_CATEGORIES[0]); setPayment(PAYMENT_MODES[0]); setCurrency('EUR')
+          setCategory(DEPENSES_CATEGORIES[0]); setPayment(PAYMENT_MODES[0]); setCurrency('MAD')
           setDate(new Date().toISOString().split('T')[0])
           if (fileRef.current) fileRef.current.value = ''
         } else { const d = await r.json(); setError(d.error || 'Erreur.') }
@@ -358,7 +358,7 @@ function DepenseForm({ token }: { token: string }) {
 function EncaissementForm({ token }: { token: string }) {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [amount, setAmount] = useState('')
-  const [currency, setCurrency] = useState('EUR')
+  const [currency, setCurrency] = useState('MAD')
   const [category, setCategory] = useState(ENCAISSEMENTS_CATEGORIES[0])
   const [payment, setPayment] = useState(PAYMENT_MODES[0])
   const [description, setDescription] = useState('')
@@ -427,7 +427,7 @@ function EncaissementForm({ token }: { token: string }) {
       })
       if (r.ok) {
         setSuccess('Encaissement enregistré !')
-        setAmount(''); setDescription(''); setCategory(ENCAISSEMENTS_CATEGORIES[0]); setPayment(PAYMENT_MODES[0]); setCurrency('EUR')
+        setAmount(''); setDescription(''); setCategory(ENCAISSEMENTS_CATEGORIES[0]); setPayment(PAYMENT_MODES[0]); setCurrency('MAD')
         setDate(new Date().toISOString().split('T')[0]); setTicketFile(null); setTicketPreview(null)
         if (ticketRef.current) ticketRef.current.value = ''
       } else { const d = await r.json(); setError(d.error || 'Erreur.') }
