@@ -130,7 +130,7 @@ function DepenseForm({ token }: { token: string }) {
       const fd = new FormData()
       fd.append('file', f)
       fd.append('type', 'cb')
-      const r = await fetch('/api/extract-invoice', { method: 'POST', body: fd })
+      const r = await fetch('/api/extract-invoice', { method: 'POST', body: fd, headers: { 'x-employee-token': token } })
       if (r.ok) {
         const data = await r.json()
         if (data.date) setDate(data.date)
@@ -154,7 +154,7 @@ function DepenseForm({ token }: { token: string }) {
     formData.append('folder', 'riad-factures')
 
     const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, { method: 'POST', body: formData })
-    if (!r.ok) throw new Error('Erreur upload Cloudinary')
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(`Erreur Cloudinary: ${e?.error?.message || r.status}`) }
     const data = await r.json()
     return data.secure_url as string
   }
@@ -382,7 +382,7 @@ function EncaissementForm({ token }: { token: string }) {
       const fd = new FormData()
       fd.append('file', f)
       fd.append('type', 'cash')
-      const r = await fetch('/api/extract-invoice', { method: 'POST', body: fd })
+      const r = await fetch('/api/extract-invoice', { method: 'POST', body: fd, headers: { 'x-employee-token': token } })
       if (r.ok) {
         const data = await r.json()
         if (data.date) setDate(data.date)

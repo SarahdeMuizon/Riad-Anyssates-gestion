@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getManagerSession } from '@/lib/auth'
+import sql from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
-  const isAuth = await getManagerSession()
-  if (!isAuth) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  // Accept manager session OR employee token
+  const isManager = await getManagerSession()
+  if (!isManager) {
+    // Check employee token from header or form
+    const token = req.headers.get('x-employee-token')
+    if (token) {
+      const emp = await sql`SELECT id FROM employees WHERE token = ${token} AND active = 1`
+      if (!emp[0]) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    } else {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+  }
 
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return NextResponse.json({ error: 'ANTHROPIC_API_KEY non configurée' }, { status: 500 })
