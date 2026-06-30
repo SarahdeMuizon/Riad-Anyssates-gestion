@@ -146,8 +146,9 @@ export async function GET() {
 
     // Load base Excel file if uploaded, preserving existing sheets
     if (baseFileRows.length > 0 && baseFileRows[0].value) {
-      const buf = Buffer.from(baseFileRows[0].value as string, 'base64') as unknown as Buffer
-      await wb.xlsx.load(buf)
+      const buf = Buffer.from(baseFileRows[0].value as string, 'base64')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await wb.xlsx.load(buf as any)
       // Remove our managed sheets so we can regenerate them fresh
       const managed = ['Encaissements', 'Dashboard Encaissements', 'Dépenses', 'Dashboard Dépenses', 'Fond de caisse', 'Dashboard Fond de caisse']
       for (const name of managed) {
