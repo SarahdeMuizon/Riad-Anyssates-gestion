@@ -98,8 +98,9 @@ function DepenseForm({ token }: { token: string }) {
   const [extracting, setExtracting] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
-  const [dragOver, setDragOver] = useState(false)
+  const [dragCounter, setDragCounter] = useState(0)
   const fileRef = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
 
   // Split feature
   const [splitMode, setSplitMode] = useState(false)
@@ -337,11 +338,12 @@ function DepenseForm({ token }: { token: string }) {
             Facture * <span style={{ color: 'var(--red)' }}>(obligatoire)</span>
           </label>
           <div
+            onDragEnter={e => { e.preventDefault(); setDragCounter(c => c + 1) }}
+            onDragOver={e => { e.preventDefault() }}
+            onDragLeave={e => { e.preventDefault(); setDragCounter(c => Math.max(0, c - 1)) }}
+            onDrop={e => { e.preventDefault(); setDragCounter(0); const f = e.dataTransfer.files[0]; if (f) processInvoiceFile(f) }}
+            style={{ border: `2px dashed ${dragCounter > 0 ? 'var(--terracotta)' : invoiceFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: dragCounter > 0 ? '#FFF5F0' : invoiceFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
             onClick={() => fileRef.current?.click()}
-            onDragOver={e => { e.preventDefault(); setDragOver(true) }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) processInvoiceFile(f) }}
-            style={{ border: `2px dashed ${dragOver ? 'var(--terracotta)' : invoiceFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: dragOver ? '#FFF5F0' : invoiceFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
           >
             {invoiceFile ? (
               <div>
@@ -354,12 +356,21 @@ function DepenseForm({ token }: { token: string }) {
               </div>
             ) : (
               <div>
-                <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>{dragOver ? '⬇️' : '📄'}</div>
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>{dragCounter > 0 ? '⬇️' : '📄'}</div>
                 <div style={{ fontSize: '0.85rem', color: '#666' }}>Glisser la facture ici ou cliquer pour parcourir</div>
               </div>
             )}
           </div>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+            <button type="button" onClick={() => cameraRef.current?.click()} style={{ flex: 1, padding: '0.6rem', background: '#FFF5F0', border: '1px solid var(--terracotta)', borderRadius: '0.5rem', color: 'var(--terracotta)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
+              📷 Prendre une photo
+            </button>
+            <button type="button" onClick={() => fileRef.current?.click()} style={{ flex: 1, padding: '0.6rem', background: '#F8F8F8', border: '1px solid #ddd', borderRadius: '0.5rem', color: '#555', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
+              📁 Choisir un fichier
+            </button>
+          </div>
           <input ref={fileRef} type="file" accept="image/*,application/pdf" onChange={handleFile} style={{ display: 'none' }} />
+          <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleFile} style={{ display: 'none' }} />
         </div>
 
         {extracting && <p style={{ color: '#888', fontSize: '0.8rem', textAlign: 'center' }}>🤖 Extraction IA en cours…</p>}
@@ -390,8 +401,9 @@ function EncaissementForm({ token }: { token: string }) {
   const [extracting, setExtracting] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
-  const [dragOver, setDragOver] = useState(false)
+  const [dragCounter, setDragCounter] = useState(0)
   const ticketRef = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
 
   async function processTicketFile(f: File) {
     setTicketFile(f)
@@ -514,11 +526,12 @@ function EncaissementForm({ token }: { token: string }) {
             Ticket CB * <span style={{ color: 'var(--red)' }}>(obligatoire)</span>
           </label>
           <div
+            onDragEnter={e => { e.preventDefault(); setDragCounter(c => c + 1) }}
+            onDragOver={e => { e.preventDefault() }}
+            onDragLeave={e => { e.preventDefault(); setDragCounter(c => Math.max(0, c - 1)) }}
+            onDrop={e => { e.preventDefault(); setDragCounter(0); const f = e.dataTransfer.files[0]; if (f) processTicketFile(f) }}
+            style={{ border: `2px dashed ${dragCounter > 0 ? 'var(--green)' : ticketFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: dragCounter > 0 ? '#F0FDF4' : ticketFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
             onClick={() => ticketRef.current?.click()}
-            onDragOver={e => { e.preventDefault(); setDragOver(true) }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) processTicketFile(f) }}
-            style={{ border: `2px dashed ${dragOver ? 'var(--green)' : ticketFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: dragOver ? '#F0FDF4' : ticketFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
           >
             {ticketFile ? (
               <div>
@@ -531,12 +544,21 @@ function EncaissementForm({ token }: { token: string }) {
               </div>
             ) : (
               <div>
-                <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>{dragOver ? '⬇️' : '🧾'}</div>
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>{dragCounter > 0 ? '⬇️' : '🧾'}</div>
                 <div style={{ fontSize: '0.85rem', color: '#666' }}>Glisser le ticket ici ou cliquer pour parcourir</div>
               </div>
             )}
           </div>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+            <button type="button" onClick={() => cameraRef.current?.click()} style={{ flex: 1, padding: '0.6rem', background: '#F0FDF4', border: '1px solid var(--green)', borderRadius: '0.5rem', color: 'var(--green)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
+              📷 Prendre une photo
+            </button>
+            <button type="button" onClick={() => ticketRef.current?.click()} style={{ flex: 1, padding: '0.6rem', background: '#F8F8F8', border: '1px solid #ddd', borderRadius: '0.5rem', color: '#555', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
+              📁 Choisir un fichier
+            </button>
+          </div>
           <input ref={ticketRef} type="file" accept="image/*,application/pdf" onChange={handleTicket} style={{ display: 'none' }} />
+          <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleTicket} style={{ display: 'none' }} />
         </div>
 
         {error && <p style={{ color: 'var(--red)', fontSize: '0.875rem' }}>{error}</p>}
