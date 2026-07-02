@@ -23,6 +23,17 @@ function EmployeeApp() {
   const [authError, setAuthError] = useState('')
   const [tab, setTab] = useState<Tab>('cb')
 
+  // Block Safari from navigating to dropped files (capture phase = before browser default)
+  useEffect(() => {
+    const prevent = (e: DragEvent) => e.preventDefault()
+    document.addEventListener('dragover', prevent, true)
+    document.addEventListener('drop', prevent, true)
+    return () => {
+      document.removeEventListener('dragover', prevent, true)
+      document.removeEventListener('drop', prevent, true)
+    }
+  }, [])
+
   useEffect(() => {
     if (!token) { setAuthError('Lien invalide.'); return }
     fetch(`/api/employees/verify?token=${token}`)
@@ -100,17 +111,6 @@ function DepenseForm({ token }: { token: string }) {
   const [error, setError] = useState('')
   const [dragCounter, setDragCounter] = useState(0)
   const fileRef = useRef<HTMLInputElement>(null)
-
-  // Prevent Safari from navigating to the dropped file URL
-  useEffect(() => {
-    const prevent = (e: DragEvent) => e.preventDefault()
-    document.addEventListener('dragover', prevent)
-    document.addEventListener('drop', prevent)
-    return () => {
-      document.removeEventListener('dragover', prevent)
-      document.removeEventListener('drop', prevent)
-    }
-  }, [])
 
   // Split feature
   const [splitMode, setSplitMode] = useState(false)
@@ -424,17 +424,6 @@ function EncaissementForm({ token }: { token: string }) {
   const [error, setError] = useState('')
   const [dragCounter, setDragCounter] = useState(0)
   const ticketRef = useRef<HTMLInputElement>(null)
-
-  // Prevent Safari from navigating to the dropped file URL
-  useEffect(() => {
-    const prevent = (e: DragEvent) => e.preventDefault()
-    document.addEventListener('dragover', prevent)
-    document.addEventListener('drop', prevent)
-    return () => {
-      document.removeEventListener('dragover', prevent)
-      document.removeEventListener('drop', prevent)
-    }
-  }, [])
 
   async function processTicketFile(f: File) {
     setTicketFile(f)
