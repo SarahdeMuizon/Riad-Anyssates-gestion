@@ -13,6 +13,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr">
+      <head>
+        {/* Prevent Safari from navigating to dropped files */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          document.addEventListener('dragover', function(e){ e.preventDefault(); }, true);
+          document.addEventListener('drop', function(e){ e.preventDefault(); }, true);
+        `}} />
+      </head>
       <body>{children}</body>
     </html>
   )

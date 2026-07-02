@@ -23,17 +23,6 @@ function EmployeeApp() {
   const [authError, setAuthError] = useState('')
   const [tab, setTab] = useState<Tab>('cb')
 
-  // Block Safari from navigating to dropped files (capture phase = before browser default)
-  useEffect(() => {
-    const prevent = (e: DragEvent) => e.preventDefault()
-    document.addEventListener('dragover', prevent, true)
-    document.addEventListener('drop', prevent, true)
-    return () => {
-      document.removeEventListener('dragover', prevent, true)
-      document.removeEventListener('drop', prevent, true)
-    }
-  }, [])
-
   useEffect(() => {
     if (!token) { setAuthError('Lien invalide.'); return }
     fetch(`/api/employees/verify?token=${token}`)
