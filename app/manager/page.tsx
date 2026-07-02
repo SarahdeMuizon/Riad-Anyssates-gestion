@@ -259,7 +259,66 @@ function DashboardTab() {
 // ─── Entries Tab ───────────────────────────────────────────────────────────────
 
 const DEPENSES_CATEGORIES = ['Alimentation/Courses','Fournitures & bureautique','Entretien & maintenance','Transport','Restauration','Pharmacie/Hygiène','Décoration & fleurs','Autre']
-const ENCAISSEMENTS_CATEGORIES = ['Boissons bar','Repas/Restauration','Activité/Excursion','Service spa/Hammam','Transfert/Transport','Pourboire collectif','Autre encaissement']
+
+interface InvoiceData {
+  date: string; amount: number; amountTransaction?: number
+  currency: string; category: string; description: string
+  clientName: string; tvaRate: number; nuits: number; personnes: number; payment: string
+}
+
+function generateInvoice(entry: InvoiceData) {
+  const invoiceAmount = entry.amountTransaction ?? entry.amount
+  const tvaFrac = entry.tvaRate / (100 + entry.tvaRate)
+  const tvaAmt = invoiceAmount * tvaFrac
+  const htAmt = invoiceAmount - tvaAmt
+  const taxeSejour = entry.nuits > 0 && entry.personnes > 0 ? entry.nuits * entry.personnes * 2.5 : 0
+  const num = `RIA-${entry.date.replace(/-/g,'')}${Math.floor(Math.random()*9000+1000)}`
+  const fmtN = (n: number) => n.toFixed(2).replace('.',',')
+  const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Facture ${num}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;max-width:640px;margin:40px auto;padding:20px;color:#222;font-size:14px}
+  .top{text-align:center;padding-bottom:20px;border-bottom:3px solid #8B4513;margin-bottom:24px}
+  .top h1{color:#8B4513;font-size:1.6rem;letter-spacing:1px}
+  .top p{color:#888;font-size:.85rem}
+  h2{color:#8B4513;font-size:1rem;font-weight:700;margin-bottom:8px}
+  .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:24px}
+  .meta div{background:#faf8f6;padding:10px;border-radius:6px}
+  .meta .lbl{font-size:.75rem;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .meta .val{font-size:.95rem;font-weight:600;margin-top:2px}
+  table{width:100%;border-collapse:collapse;margin-bottom:20px}
+  td{padding:9px 4px;border-bottom:1px solid #eee}
+  td:last-child{text-align:right;font-weight:600}
+  tr.total td{border-top:2px solid #8B4513;border-bottom:none;font-size:1.05rem;font-weight:700;color:#8B4513;padding-top:12px}
+  .footer{text-align:center;margin-top:30px;color:#888;font-size:.8rem;border-top:1px solid #eee;padding-top:16px}
+  .btn{display:block;margin:20px auto 0;padding:10px 28px;background:#8B4513;color:white;border:none;border-radius:6px;cursor:pointer;font-size:.95rem}
+  @media print{.btn{display:none}}
+</style></head><body>
+<div class="top"><h1>🏰 Riad Anyssates</h1><p>Marrakech, Maroc &nbsp;|&nbsp; contact@riadanyssates.com</p></div>
+<h2>FACTURE N° ${num}</h2>
+<div class="meta">
+  <div><div class="lbl">Date</div><div class="val">${entry.date.split('-').reverse().join('/')}</div></div>
+  <div><div class="lbl">Client</div><div class="val">${entry.clientName || '—'}</div></div>
+  <div><div class="lbl">Prestation</div><div class="val">${entry.category}</div></div>
+  <div><div class="lbl">Mode de paiement</div><div class="val">${entry.payment}</div></div>
+  ${entry.description ? `<div style="grid-column:1/-1"><div class="lbl">Détails</div><div class="val">${entry.description}</div></div>` : ''}
+</div>
+<table>
+  <tr><td>Montant HT</td><td>${fmtN(htAmt)} ${entry.currency}</td></tr>
+  <tr><td>TVA (${entry.tvaRate}%)</td><td>${fmtN(tvaAmt)} ${entry.currency}</td></tr>
+  ${taxeSejour > 0 ? `<tr><td>Taxe de séjour — ${entry.nuits} nuit(s) × ${entry.personnes} pers. × 2,50€</td><td>${fmtN(taxeSejour)} €</td></tr>` : ''}
+  <tr class="total">
+    <td>TOTAL TTC</td>
+    <td>${fmtN(invoiceAmount)} ${entry.currency}${taxeSejour > 0 ? ` + ${fmtN(taxeSejour)} €` : ''}</td>
+  </tr>
+</table>
+<div class="footer">Merci pour votre confiance · Riad Anyssates · Marrakech</div>
+<button class="btn" onclick="window.print()">🖨️ Imprimer / Enregistrer en PDF</button>
+</body></html>`
+  const w = window.open('','_blank')
+  if (w) { w.document.write(html); w.document.close() }
+}
+const ENCAISSEMENTS_CATEGORIES = ['Réservation','Boissons bar','Repas/Restauration','Activité/Excursion','Service spa/Hammam','Transfert/Transport','Pourboire collectif','Autre encaissement']
 const PAYMENT_MODES = ['CB', 'Virement', 'Chèque', 'Espèces']
 const CURRENCIES = ['MAD', 'EUR']
 
@@ -293,6 +352,13 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [fExtracted, setFExtracted] = useState(false)
   const [fDragCounter, setFDragCounter] = useState(0)
   const [fTransactionAmount, setFTransactionAmount] = useState('')
+  const [fClientName, setFClientName] = useState('')
+  const [fInvoiceTvaRate, setFInvoiceTvaRate] = useState('10')
+  const [fNuits, setFNuits] = useState('')
+  const [fPersonnes, setFPersonnes] = useState('')
+  const [fLastEntry, setFLastEntry] = useState<InvoiceData | null>(null)
+  const fTaxeSejour = fCategory === 'Réservation' && fNuits && fPersonnes
+    ? parseFloat(fNuits) * parseFloat(fPersonnes) * 2.5 : 0
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [formSuccess, setFormSuccess] = useState('')
@@ -462,6 +528,10 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     setSubmitting(true)
     setFormError('')
     setFormSuccess('')
+    if (!fFile && fPayment !== 'Espèces') {
+      setFormError('Le justificatif est obligatoire (sauf paiement en espèces).')
+      setSubmitting(false); return
+    }
     let invoice_url: string | undefined
     if (fFile) {
       setFUploading(true)
@@ -474,7 +544,14 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       ? parseFloat(fTransactionAmount) * 0.97
       : parseFloat(fAmount)
 
-    const body: Record<string, unknown> = { type, date: fDate, employee_name: fEmployee, category: fCategory, amount: finalAmount, currency: fCurrency, description: fDescription || null, invoice_url }
+    // Description enrichie réservation
+    let finalDescription = fDescription || null
+    if (type === 'cash' && fCategory === 'Réservation' && fNuits && fPersonnes) {
+      const ts = parseFloat(fNuits) * parseFloat(fPersonnes) * 2.5
+      finalDescription = `${fNuits} nuit(s) × ${fPersonnes} personne(s) — Taxe séjour: ${ts.toFixed(2)}€${fDescription ? ' — ' + fDescription : ''}`
+    }
+
+    const body: Record<string, unknown> = { type, date: fDate, employee_name: fEmployee, category: fCategory, amount: finalAmount, currency: fCurrency, description: finalDescription, invoice_url }
     if (type === 'cb') {
       body.supplier = fSupplier || null
       body.payment = fPayment
@@ -482,17 +559,30 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       if (fTvaRate) body.tva_rate = parseFloat(fTvaRate)
     } else {
       body.payment = fPayment
+      body.supplier = fClientName || null
       if (fPayment === 'CB' && fTransactionAmount) {
         body.amount_ht = parseFloat(fTransactionAmount)
         body.tva_rate = 3
+      } else if (fInvoiceTvaRate) {
+        body.tva_rate = parseFloat(fInvoiceTvaRate)
       }
     }
+
+    const invoiceEntry: InvoiceData = {
+      date: fDate, amount: finalAmount,
+      amountTransaction: type === 'cash' && fPayment === 'CB' && fTransactionAmount ? parseFloat(fTransactionAmount) : undefined,
+      currency: fCurrency, category: fCategory, description: finalDescription || '',
+      clientName: fClientName || '', tvaRate: parseFloat(fInvoiceTvaRate) || 10,
+      nuits: fNuits ? parseFloat(fNuits) : 0, personnes: fPersonnes ? parseFloat(fPersonnes) : 0, payment: fPayment,
+    }
+
     try {
       const r = await fetch('/api/entries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       if (r.ok) {
+        if (type === 'cash') setFLastEntry(invoiceEntry)
         setFAmount(''); setFAmountHT(''); setFTvaRate(''); setFSupplier(''); setFDescription('')
         setFFile(null); setFFilePreview(null); setFExtracted(false); setShowForm(false)
-        setFTransactionAmount('')
+        setFTransactionAmount(''); setFClientName(''); setFInvoiceTvaRate('10'); setFNuits(''); setFPersonnes('')
         setFilterStatus(''); setFilterEmployee('')
         setFormSuccess('✓ Entrée ajoutée avec succès !')
         setTimeout(() => setFormSuccess(''), 4000)
@@ -531,8 +621,8 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
             {/* Upload zone — identique page employé */}
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>
-                {type === 'cb' ? 'Facture' : 'Ticket CB'}
-                {type === 'cb' && fPayment !== 'Espèces'
+                {type === 'cb' ? 'Facture' : 'Ticket'}
+                {fPayment !== 'Espèces'
                   ? <span style={{ color: 'var(--red)', fontWeight: 400 }}> * (obligatoire)</span>
                   : <span style={{ color: '#888', fontWeight: 400 }}> (optionnel)</span>}
               </label>
@@ -667,7 +757,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Catégorie *</label>
-                <select className="form-input" value={fCategory} onChange={e => setFCategory(e.target.value)}>
+                <select className="form-input" value={fCategory} onChange={e => { setFCategory(e.target.value); setFNuits(''); setFPersonnes('') }}>
                   {categories.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
@@ -677,7 +767,50 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
               </div>
             </div>
 
+            {/* Champs réservation */}
+            {type === 'cash' && fCategory === 'Réservation' && (
+              <div style={{ background: '#FFF5F0', border: '1px solid #fed7aa', borderRadius: '0.5rem', padding: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#C2410C' }}>🏨 Détails réservation</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Nuits *</label>
+                    <input className="form-input" type="number" min="1" step="1" value={fNuits} onChange={e => setFNuits(e.target.value)} placeholder="1" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Personnes *</label>
+                    <input className="form-input" type="number" min="1" step="1" value={fPersonnes} onChange={e => setFPersonnes(e.target.value)} placeholder="2" />
+                  </div>
+                </div>
+                {fNuits && fPersonnes && (
+                  <div style={{ background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: '0.375rem', padding: '0.5rem 0.75rem', fontSize: '0.875rem', fontWeight: 600, color: '#92400E' }}>
+                    🏷️ Taxe de séjour : {fTaxeSejour.toFixed(2)} € ({fNuits} nuit(s) × {fPersonnes} pers. × 2,50€)
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TVA facture + Nom client (pour encaissements) */}
+            {type === 'cash' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>TVA facture (%)</label>
+                  <select className="form-input" value={fInvoiceTvaRate} onChange={e => setFInvoiceTvaRate(e.target.value)}>
+                    {['0','7','10','14','20'].map(r => <option key={r} value={r}>{r}%</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Nom du client</label>
+                  <input className="form-input" type="text" value={fClientName} onChange={e => setFClientName(e.target.value)} placeholder="(optionnel)" />
+                </div>
+              </div>
+            )}
+
             {formError && <p style={{ color: 'var(--red)', fontSize: '0.875rem' }}>{formError}</p>}
+            {formSuccess && fLastEntry && (
+              <button type="button" onClick={() => generateInvoice(fLastEntry!)} style={{ width: '100%', padding: '0.6rem', background: '#8B4513', color: 'white', border: 'none', borderRadius: '0.5rem', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}>
+                📄 Générer la facture comptable
+              </button>
+            )}
             <button className="btn-primary" type="submit" disabled={submitting || fUploading || fExtracting}>{fExtracting ? '🤖 Analyse document…' : fUploading ? '⬆️ Upload…' : submitting ? 'Enregistrement…' : 'Enregistrer'}</button>
           </form>
         </div>

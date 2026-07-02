@@ -7,10 +7,73 @@ import { Suspense } from 'react'
 const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const DEPENSES_CATEGORIES = ['Alimentation/Courses','Fournitures & bureautique','Entretien & maintenance','Transport','Restauration','Pharmacie/Hygiène','Décoration & fleurs','Autre']
-const ENCAISSEMENTS_CATEGORIES = ['Boissons bar','Repas/Restauration','Activité/Excursion','Service spa/Hammam','Transfert/Transport','Pourboire collectif','Autre encaissement']
+const ENCAISSEMENTS_CATEGORIES = ['Réservation','Boissons bar','Repas/Restauration','Activité/Excursion','Service spa/Hammam','Transfert/Transport','Pourboire collectif','Autre encaissement']
 const FONDS_CATEGORIES = ['Courses/Marché','Entretien','Personnel','Transport','Pourboire','Recette cash','Remboursement','Autre']
 const PAYMENT_MODES = ['CB', 'Virement', 'Chèque', 'Espèces']
 const CURRENCIES = ['MAD', 'EUR']
+
+interface InvoiceData {
+  date: string; amount: number; amountTransaction?: number
+  currency: string; category: string; description: string
+  clientName: string; tvaRate: number; nuits: number; personnes: number; payment: string
+}
+
+function generateInvoice(entry: InvoiceData) {
+  const invoiceAmount = entry.amountTransaction ?? entry.amount
+  const tvaFrac = entry.tvaRate / (100 + entry.tvaRate)
+  const tvaAmt = invoiceAmount * tvaFrac
+  const htAmt = invoiceAmount - tvaAmt
+  const taxeSejour = entry.nuits > 0 && entry.personnes > 0 ? entry.nuits * entry.personnes * 2.5 : 0
+  const num = `RIA-${entry.date.replace(/-/g,'')}${Math.floor(Math.random()*9000+1000)}`
+  const fmtN = (n: number) => n.toFixed(2).replace('.',',')
+  const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Facture ${num}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;max-width:640px;margin:40px auto;padding:20px;color:#222;font-size:14px}
+  .top{text-align:center;padding-bottom:20px;border-bottom:3px solid #8B4513;margin-bottom:24px}
+  .top h1{color:#8B4513;font-size:1.6rem;letter-spacing:1px}
+  .top p{color:#888;font-size:.85rem}
+  h2{color:#8B4513;font-size:1rem;font-weight:700;margin-bottom:8px}
+  .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:24px}
+  .meta div{background:#faf8f6;padding:10px;border-radius:6px}
+  .meta .lbl{font-size:.75rem;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .meta .val{font-size:.95rem;font-weight:600;margin-top:2px}
+  table{width:100%;border-collapse:collapse;margin-bottom:20px}
+  td{padding:9px 4px;border-bottom:1px solid #eee}
+  td:last-child{text-align:right;font-weight:600}
+  tr.total td{border-top:2px solid #8B4513;border-bottom:none;font-size:1.05rem;font-weight:700;color:#8B4513;padding-top:12px}
+  tr.sub td{background:#fdf9f7;font-size:.9rem;color:#555}
+  .footer{text-align:center;margin-top:30px;color:#888;font-size:.8rem;border-top:1px solid #eee;padding-top:16px}
+  .btn{display:block;margin:20px auto 0;padding:10px 28px;background:#8B4513;color:white;border:none;border-radius:6px;cursor:pointer;font-size:.95rem}
+  @media print{.btn{display:none}}
+</style></head><body>
+<div class="top"><h1>🏰 Riad Anyssates</h1><p>Marrakech, Maroc &nbsp;|&nbsp; contact@riadanyssates.com</p></div>
+<h2>FACTURE N° ${num}</h2>
+<div class="meta">
+  <div><div class="lbl">Date</div><div class="val">${entry.date.split('-').reverse().join('/')}</div></div>
+  <div><div class="lbl">Client</div><div class="val">${entry.clientName || '—'}</div></div>
+  <div><div class="lbl">Prestation</div><div class="val">${entry.category}</div></div>
+  <div><div class="lbl">Mode de paiement</div><div class="val">${entry.payment}</div></div>
+  ${entry.description ? `<div style="grid-column:1/-1"><div class="lbl">Détails</div><div class="val">${entry.description}</div></div>` : ''}
+</div>
+<table>
+  ${taxeSejour > 0 ? `
+  <tr class="sub"><td>Hébergement</td><td></td></tr>
+  ` : ''}
+  <tr><td>Montant HT</td><td>${fmtN(htAmt)} ${entry.currency}</td></tr>
+  <tr><td>TVA (${entry.tvaRate}%)</td><td>${fmtN(tvaAmt)} ${entry.currency}</td></tr>
+  ${taxeSejour > 0 ? `<tr><td>Taxe de séjour — ${entry.nuits} nuit(s) × ${entry.personnes} pers. × 2,50€</td><td>${fmtN(taxeSejour)} €</td></tr>` : ''}
+  <tr class="total">
+    <td>TOTAL TTC</td>
+    <td>${fmtN(invoiceAmount)} ${entry.currency}${taxeSejour > 0 ? ` + ${fmtN(taxeSejour)} €` : ''}</td>
+  </tr>
+</table>
+<div class="footer">Merci pour votre confiance · Riad Anyssates · Marrakech</div>
+<button class="btn" onclick="window.print()">🖨️ Imprimer / Enregistrer en PDF</button>
+</body></html>`
+  const w = window.open('','_blank')
+  if (w) { w.document.write(html); w.document.close() }
+}
 
 type Tab = 'cb' | 'cash' | 'fonds' | 'history'
 
@@ -444,6 +507,13 @@ function EncaissementForm({ token }: { token: string }) {
   const [error, setError] = useState('')
   const [dragCounter, setDragCounter] = useState(0)
   const [transactionAmount, setTransactionAmount] = useState('')
+  const [clientName, setClientName] = useState('')
+  const [invoiceTvaRate, setInvoiceTvaRate] = useState('10')
+  const [nuits, setNuits] = useState('')
+  const [personnes, setPersonnes] = useState('')
+  const [lastEntry, setLastEntry] = useState<InvoiceData | null>(null)
+  const taxeSejour = category === 'Réservation' && nuits && personnes
+    ? parseFloat(nuits) * parseFloat(personnes) * 2.5 : 0
   const ticketRef = useRef<HTMLInputElement>(null)
   const ticketDropZoneRef = useRef<HTMLDivElement>(null)
   const processTicketFileRef = useRef<(f: File) => void>((_f: File) => {})
@@ -555,20 +625,37 @@ function EncaissementForm({ token }: { token: string }) {
       setUploading(false)
     }
 
+    // Description enrichie pour réservation
+    let finalDescription = description
+    if (category === 'Réservation' && nuits && personnes) {
+      const ts = parseFloat(nuits) * parseFloat(personnes) * 2.5
+      finalDescription = `${nuits} nuit(s) × ${personnes} personne(s) — Taxe séjour: ${ts.toFixed(2)}€${description ? ' — ' + description : ''}`
+    }
+
     const extraFields = payment === 'CB' && transactionAmount
       ? { amount_ht: parseFloat(transactionAmount), tva_rate: 3 }
-      : {}
+      : { tva_rate: invoiceTvaRate ? parseFloat(invoiceTvaRate) : null }
+
+    const invoiceEntry: InvoiceData = {
+      date, amount: finalAmount,
+      amountTransaction: payment === 'CB' && transactionAmount ? parseFloat(transactionAmount) : undefined,
+      currency, category, description: finalDescription,
+      clientName: clientName || '', tvaRate: parseFloat(invoiceTvaRate) || 10,
+      nuits: nuits ? parseFloat(nuits) : 0, personnes: personnes ? parseFloat(personnes) : 0, payment,
+    }
 
     setSubmitting(true)
     try {
       const r = await fetch('/api/entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'cash', date, amount: finalAmount, currency, category, payment, description, invoice_url, token, ...extraFields }),
+        body: JSON.stringify({ type: 'cash', date, amount: finalAmount, currency, category, payment, description: finalDescription, invoice_url, token, supplier: clientName || null, ...extraFields }),
       })
       if (r.ok) {
         setSuccess('Encaissement enregistré !')
+        setLastEntry(invoiceEntry)
         setAmount(''); setTransactionAmount(''); setDescription('')
+        setClientName(''); setInvoiceTvaRate('10'); setNuits(''); setPersonnes('')
         setCategory(ENCAISSEMENTS_CATEGORIES[0]); setPayment('CB'); setCurrency('MAD')
         setDate(new Date().toISOString().split('T')[0]); setTicketFile(null); setTicketPreview(null)
         if (ticketRef.current) ticketRef.current.value = ''
@@ -637,9 +724,45 @@ function EncaissementForm({ token }: { token: string }) {
 
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Catégorie *</label>
-          <select className="form-input" value={category} onChange={e => setCategory(e.target.value)}>
+          <select className="form-input" value={category} onChange={e => { setCategory(e.target.value); setNuits(''); setPersonnes('') }}>
             {ENCAISSEMENTS_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
+        </div>
+
+        {/* Champs réservation */}
+        {category === 'Réservation' && (
+          <div style={{ background: '#FFF5F0', border: '1px solid #fed7aa', borderRadius: '0.5rem', padding: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+            <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#C2410C', marginBottom: '0.1rem' }}>🏨 Détails de la réservation</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Nombre de nuits *</label>
+                <input className="form-input" type="number" min="1" step="1" value={nuits} onChange={e => setNuits(e.target.value)} placeholder="1" />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Nombre de personnes *</label>
+                <input className="form-input" type="number" min="1" step="1" value={personnes} onChange={e => setPersonnes(e.target.value)} placeholder="2" />
+              </div>
+            </div>
+            {nuits && personnes && (
+              <div style={{ background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: '0.375rem', padding: '0.5rem 0.75rem', fontSize: '0.875rem', fontWeight: 600, color: '#92400E' }}>
+                🏷️ Taxe de séjour : {taxeSejour.toFixed(2)} € ({nuits} nuit(s) × {personnes} pers. × 2,50€)
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TVA facture + Nom client */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>TVA facture (%)</label>
+            <select className="form-input" value={invoiceTvaRate} onChange={e => setInvoiceTvaRate(e.target.value)}>
+              {['0','7','10','14','20'].map(r => <option key={r} value={r}>{r}%</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Nom du client</label>
+            <input className="form-input" type="text" value={clientName} onChange={e => setClientName(e.target.value)} placeholder="(optionnel)" />
+          </div>
         </div>
 
         <div>
@@ -689,7 +812,16 @@ function EncaissementForm({ token }: { token: string }) {
         </div>
 
         {error && <p style={{ color: 'var(--red)', fontSize: '0.875rem' }}>{error}</p>}
-        {success && <p style={{ color: 'var(--green)', fontSize: '0.875rem', fontWeight: 600 }}>{success}</p>}
+        {success && (
+          <div>
+            <p style={{ color: 'var(--green)', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>{success}</p>
+            {lastEntry && (
+              <button type="button" onClick={() => generateInvoice(lastEntry!)} style={{ width: '100%', padding: '0.6rem', background: '#8B4513', color: 'white', border: 'none', borderRadius: '0.5rem', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}>
+                📄 Générer la facture comptable
+              </button>
+            )}
+          </div>
+        )}
 
         <button className="btn-primary" type="submit" disabled={uploading || submitting || extracting} style={{ background: 'var(--green)' }}>
           {extracting ? '🤖 Analyse ticket…' : uploading ? '⬆️ Upload ticket…' : submitting ? 'Envoi…' : 'Soumettre'}
