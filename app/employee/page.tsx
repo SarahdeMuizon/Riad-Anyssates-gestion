@@ -828,7 +828,7 @@ function FondsCaisse({ token }: { token: string }) {
       {/* Remise en coffre (Nicolas) */}
       <div className="card">
         <h2 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.5rem', color: '#6366F1' }}>🔒 Remise en coffre</h2>
-        <p style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.75rem' }}>Remet le fond de caisse à {fmt(TARGET_MAD)} MAD / {fmt(TARGET_EUR)} EUR et place l'excédent en coffre.</p>
+        <p style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.75rem' }}>Remet le fond de caisse à {fmt(TARGET_MAD)} MAD / {fmt(TARGET_EUR)} EUR et place l&apos;excédent en coffre.</p>
         <div style={{ background: '#F8F8F8', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: '0.75rem' }}>
           {[{ label: 'Excédent MAD', val: excessMAD }, { label: 'Excédent EUR', val: excessEUR }].map(({ label, val }) => (
             <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
