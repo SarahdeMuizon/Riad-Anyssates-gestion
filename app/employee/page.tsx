@@ -223,15 +223,17 @@ function DepenseForm({ token }: { token: string }) {
     if (!invoiceFile && payment !== 'Espèces') { setError('La facture est obligatoire.'); return }
     if (splitMode && !splitValid) { setError(`La somme des lignes (${fmt(splitTotal)}) doit égaler le total du ticket (${amount}).`); return }
 
-    setUploading(true)
-    let invoice_url: string
-    try {
-      invoice_url = await fileToBase64(invoiceFile)
-    } catch (err) {
-      setError((err as Error).message || 'Erreur traitement facture.')
-      setUploading(false); return
+    let invoice_url: string | undefined
+    if (invoiceFile) {
+      setUploading(true)
+      try {
+        invoice_url = await fileToBase64(invoiceFile)
+      } catch (err) {
+        setError((err as Error).message || 'Erreur traitement facture.')
+        setUploading(false); return
+      }
+      setUploading(false)
     }
-    setUploading(false)
     setSubmitting(true)
 
     try {
@@ -546,10 +548,12 @@ function EncaissementForm({ token }: { token: string }) {
     if (!ticketFile && payment !== 'Espèces') { setError('Le ticket est obligatoire.'); return }
 
     let invoice_url: string | undefined
-    setUploading(true)
-    try { invoice_url = await fileToBase64(ticketFile) }
-    catch (err) { setError((err as Error).message || 'Erreur traitement ticket.'); setUploading(false); return }
-    setUploading(false)
+    if (ticketFile) {
+      setUploading(true)
+      try { invoice_url = await fileToBase64(ticketFile) }
+      catch (err) { setError((err as Error).message || 'Erreur traitement ticket.'); setUploading(false); return }
+      setUploading(false)
+    }
 
     const extraFields = payment === 'CB' && transactionAmount
       ? { amount_ht: parseFloat(transactionAmount), tva_rate: 3 }
@@ -720,9 +724,11 @@ function FondsCaisse({ token }: { token: string }) {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  // Balance calculée : cash reçu (encaissements Espèces) - cash dépensé (dépenses Espèces) + fonds_entries
+  const TARGET_MAD = 3000, TARGET_EUR = 100
+
+  // Balance = dotation journalière (3000 MAD / 100 EUR) + encaissements Espèces - dépenses Espèces + ajustements fonds
   const balanceMAD = useMemo(() => {
-    let b = 0
+    let b = TARGET_MAD
     entries.forEach(e => {
       if (e.payment !== 'Espèces') return
       const cur = (e.currency as string) || 'MAD'
@@ -738,7 +744,7 @@ function FondsCaisse({ token }: { token: string }) {
   }, [entries, fondsEntries])
 
   const balanceEUR = useMemo(() => {
-    let b = 0
+    let b = TARGET_EUR
     entries.forEach(e => {
       if (e.payment !== 'Espèces') return
       if ((e.currency as string) !== 'EUR') return
@@ -757,7 +763,6 @@ function FondsCaisse({ token }: { token: string }) {
   const diffEUR = compteEUR !== '' ? parseFloat(compteEUR) - balanceEUR : null
 
   // Remise au fond
-  const TARGET_MAD = 3000, TARGET_EUR = 100
   const excessMAD = Math.max(0, balanceMAD - TARGET_MAD)
   const excessEUR = Math.max(0, balanceEUR - TARGET_EUR)
 

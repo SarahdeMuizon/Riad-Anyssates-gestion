@@ -787,15 +787,15 @@ function FondsTab() {
     const cashIn = cashEntries.filter(e => e.type === 'cash' && e.payment === 'Espèces' && (e.currency === 'MAD' || !e.currency)).reduce((s, e) => s + Number(e.amount), 0)
     const cashOut = cashEntries.filter(e => e.type === 'cb' && e.payment === 'Espèces' && (e.currency === 'MAD' || !e.currency)).reduce((s, e) => s + Number(e.amount), 0)
     const adj = fondsEntries.filter(e => (e.currency === 'MAD' || !e.currency)).reduce((s, e) => s + (e.direction === 'in' ? Number(e.amount) : -Number(e.amount)), 0)
-    return cashIn - cashOut + adj
-  }, [cashEntries, fondsEntries])
+    return targetMAD + cashIn - cashOut + adj
+  }, [cashEntries, fondsEntries, targetMAD])
 
   const balanceEUR = useMemo(() => {
     const cashIn = cashEntries.filter(e => e.type === 'cash' && e.payment === 'Espèces' && e.currency === 'EUR').reduce((s, e) => s + Number(e.amount), 0)
     const cashOut = cashEntries.filter(e => e.type === 'cb' && e.payment === 'Espèces' && e.currency === 'EUR').reduce((s, e) => s + Number(e.amount), 0)
     const adj = fondsEntries.filter(e => e.currency === 'EUR').reduce((s, e) => s + (e.direction === 'in' ? Number(e.amount) : -Number(e.amount)), 0)
-    return cashIn - cashOut + adj
-  }, [cashEntries, fondsEntries])
+    return targetEUR + cashIn - cashOut + adj
+  }, [cashEntries, fondsEntries, targetEUR])
 
   const excessMAD = Math.max(0, balanceMAD - targetMAD)
   const excessEUR = Math.max(0, balanceEUR - targetEUR)
