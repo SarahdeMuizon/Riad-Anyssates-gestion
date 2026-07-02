@@ -100,7 +100,6 @@ function DepenseForm({ token }: { token: string }) {
   const [error, setError] = useState('')
   const [dragCounter, setDragCounter] = useState(0)
   const fileRef = useRef<HTMLInputElement>(null)
-  const cameraRef = useRef<HTMLInputElement>(null)
 
   // Split feature
   const [splitMode, setSplitMode] = useState(false)
@@ -161,20 +160,31 @@ function DepenseForm({ token }: { token: string }) {
     if (f) processInvoiceFile(f)
   }
 
-  async function uploadToCloudinary(file: File): Promise<string> {
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
-    const preset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
-    if (!cloudName || !preset) throw new Error('Cloudinary non configuré')
-
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('upload_preset', preset)
-    formData.append('folder', 'riad-factures')
-
-    const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, { method: 'POST', body: formData })
-    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(`Erreur Cloudinary: ${e?.error?.message || r.status}`) }
-    const data = await r.json()
-    return data.secure_url as string
+  async function fileToBase64(file: File): Promise<string> {
+    if (file.type.startsWith('image/')) {
+      return new Promise((resolve, reject) => {
+        const img = new Image()
+        const url = URL.createObjectURL(file)
+        img.onload = () => {
+          const maxW = 1200
+          const scale = Math.min(1, maxW / img.width)
+          const canvas = document.createElement('canvas')
+          canvas.width = Math.round(img.width * scale)
+          canvas.height = Math.round(img.height * scale)
+          canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+          URL.revokeObjectURL(url)
+          resolve(canvas.toDataURL('image/jpeg', 0.75))
+        }
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Erreur image')) }
+        img.src = url
+      })
+    }
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = () => reject(new Error('Erreur lecture fichier'))
+      reader.readAsDataURL(file)
+    })
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -187,9 +197,9 @@ function DepenseForm({ token }: { token: string }) {
     setUploading(true)
     let invoice_url: string
     try {
-      invoice_url = await uploadToCloudinary(invoiceFile)
+      invoice_url = await fileToBase64(invoiceFile)
     } catch (err) {
-      setError((err as Error).message || 'Erreur upload facture.')
+      setError((err as Error).message || 'Erreur traitement facture.')
       setUploading(false); return
     }
     setUploading(false)
@@ -337,13 +347,12 @@ function DepenseForm({ token }: { token: string }) {
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
             Facture * <span style={{ color: 'var(--red)' }}>(obligatoire)</span>
           </label>
-          <div
+          <label
             onDragEnter={e => { e.preventDefault(); setDragCounter(c => c + 1) }}
             onDragOver={e => { e.preventDefault() }}
             onDragLeave={e => { e.preventDefault(); setDragCounter(c => Math.max(0, c - 1)) }}
-            onDrop={e => { e.preventDefault(); setDragCounter(0); const f = e.dataTransfer.files[0]; if (f) processInvoiceFile(f) }}
-            style={{ border: `2px dashed ${dragCounter > 0 ? 'var(--terracotta)' : invoiceFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: dragCounter > 0 ? '#FFF5F0' : invoiceFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
-            onClick={() => fileRef.current?.click()}
+            onDrop={e => { e.preventDefault(); setDragCounter(0); const f = e.dataTransfer.files[0]; if (f) { processInvoiceFile(f) } }}
+            style={{ border: `2px dashed ${dragCounter > 0 ? 'var(--terracotta)' : invoiceFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: dragCounter > 0 ? '#FFF5F0' : invoiceFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s', display: 'block' }}
           >
             {invoiceFile ? (
               <div>
@@ -357,20 +366,21 @@ function DepenseForm({ token }: { token: string }) {
             ) : (
               <div>
                 <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>{dragCounter > 0 ? '⬇️' : '📄'}</div>
-                <div style={{ fontSize: '0.85rem', color: '#666' }}>Glisser la facture ici ou cliquer pour parcourir</div>
+                <div style={{ fontSize: '0.85rem', color: '#666' }}>Glisser ici, prendre une photo ou choisir un fichier</div>
               </div>
             )}
-          </div>
+            <input ref={fileRef} type="file" accept="image/*,application/pdf" onChange={handleFile} style={{ display: 'none' }} />
+          </label>
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-            <button type="button" onClick={() => cameraRef.current?.click()} style={{ flex: 1, padding: '0.6rem', background: '#FFF5F0', border: '1px solid var(--terracotta)', borderRadius: '0.5rem', color: 'var(--terracotta)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
-              📷 Prendre une photo
-            </button>
-            <button type="button" onClick={() => fileRef.current?.click()} style={{ flex: 1, padding: '0.6rem', background: '#F8F8F8', border: '1px solid #ddd', borderRadius: '0.5rem', color: '#555', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
-              📁 Choisir un fichier
-            </button>
+            <label style={{ flex: 1, padding: '0.6rem', background: '#FFF5F0', border: '1px solid var(--terracotta)', borderRadius: '0.5rem', color: 'var(--terracotta)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', textAlign: 'center', display: 'block' }}>
+              📷 Photo
+              <input type="file" accept="image/*" capture="environment" onChange={handleFile} style={{ display: 'none' }} />
+            </label>
+            <label style={{ flex: 1, padding: '0.6rem', background: '#F8F8F8', border: '1px solid #ddd', borderRadius: '0.5rem', color: '#555', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', textAlign: 'center', display: 'block' }}>
+              📁 Fichier
+              <input type="file" accept="image/*,application/pdf" onChange={handleFile} style={{ display: 'none' }} />
+            </label>
           </div>
-          <input ref={fileRef} type="file" accept="image/*,application/pdf" onChange={handleFile} style={{ display: 'none' }} />
-          <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleFile} style={{ display: 'none' }} />
         </div>
 
         {extracting && <p style={{ color: '#888', fontSize: '0.8rem', textAlign: 'center' }}>🤖 Extraction IA en cours…</p>}
@@ -403,7 +413,6 @@ function EncaissementForm({ token }: { token: string }) {
   const [error, setError] = useState('')
   const [dragCounter, setDragCounter] = useState(0)
   const ticketRef = useRef<HTMLInputElement>(null)
-  const cameraRef = useRef<HTMLInputElement>(null)
 
   async function processTicketFile(f: File) {
     setTicketFile(f)
@@ -432,18 +441,31 @@ function EncaissementForm({ token }: { token: string }) {
     if (f) processTicketFile(f)
   }
 
-  async function uploadToCloudinary(file: File): Promise<string> {
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
-    const preset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
-    if (!cloudName || !preset) throw new Error('Cloudinary non configuré')
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('upload_preset', preset)
-    formData.append('folder', 'riad-tickets')
-    const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, { method: 'POST', body: formData })
-    if (!r.ok) throw new Error('Erreur upload ticket')
-    const data = await r.json()
-    return data.secure_url as string
+  async function fileToBase64(file: File): Promise<string> {
+    if (file.type.startsWith('image/')) {
+      return new Promise((resolve, reject) => {
+        const img = new Image()
+        const url = URL.createObjectURL(file)
+        img.onload = () => {
+          const maxW = 1200
+          const scale = Math.min(1, maxW / img.width)
+          const canvas = document.createElement('canvas')
+          canvas.width = Math.round(img.width * scale)
+          canvas.height = Math.round(img.height * scale)
+          canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+          URL.revokeObjectURL(url)
+          resolve(canvas.toDataURL('image/jpeg', 0.75))
+        }
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Erreur image')) }
+        img.src = url
+      })
+    }
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = () => reject(new Error('Erreur lecture fichier'))
+      reader.readAsDataURL(file)
+    })
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -454,8 +476,8 @@ function EncaissementForm({ token }: { token: string }) {
 
     let invoice_url: string | undefined
     setUploading(true)
-    try { invoice_url = await uploadToCloudinary(ticketFile) }
-    catch (err) { setError((err as Error).message || 'Erreur upload ticket.'); setUploading(false); return }
+    try { invoice_url = await fileToBase64(ticketFile) }
+    catch (err) { setError((err as Error).message || 'Erreur traitement ticket.'); setUploading(false); return }
     setUploading(false)
 
     setSubmitting(true)
@@ -525,13 +547,12 @@ function EncaissementForm({ token }: { token: string }) {
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
             Ticket CB * <span style={{ color: 'var(--red)' }}>(obligatoire)</span>
           </label>
-          <div
+          <label
             onDragEnter={e => { e.preventDefault(); setDragCounter(c => c + 1) }}
             onDragOver={e => { e.preventDefault() }}
             onDragLeave={e => { e.preventDefault(); setDragCounter(c => Math.max(0, c - 1)) }}
             onDrop={e => { e.preventDefault(); setDragCounter(0); const f = e.dataTransfer.files[0]; if (f) processTicketFile(f) }}
-            style={{ border: `2px dashed ${dragCounter > 0 ? 'var(--green)' : ticketFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: dragCounter > 0 ? '#F0FDF4' : ticketFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
-            onClick={() => ticketRef.current?.click()}
+            style={{ border: `2px dashed ${dragCounter > 0 ? 'var(--green)' : ticketFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: dragCounter > 0 ? '#F0FDF4' : ticketFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s', display: 'block' }}
           >
             {ticketFile ? (
               <div>
@@ -545,20 +566,21 @@ function EncaissementForm({ token }: { token: string }) {
             ) : (
               <div>
                 <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>{dragCounter > 0 ? '⬇️' : '🧾'}</div>
-                <div style={{ fontSize: '0.85rem', color: '#666' }}>Glisser le ticket ici ou cliquer pour parcourir</div>
+                <div style={{ fontSize: '0.85rem', color: '#666' }}>Glisser ici, prendre une photo ou choisir un fichier</div>
               </div>
             )}
-          </div>
+            <input ref={ticketRef} type="file" accept="image/*,application/pdf" onChange={handleTicket} style={{ display: 'none' }} />
+          </label>
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-            <button type="button" onClick={() => cameraRef.current?.click()} style={{ flex: 1, padding: '0.6rem', background: '#F0FDF4', border: '1px solid var(--green)', borderRadius: '0.5rem', color: 'var(--green)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
-              📷 Prendre une photo
-            </button>
-            <button type="button" onClick={() => ticketRef.current?.click()} style={{ flex: 1, padding: '0.6rem', background: '#F8F8F8', border: '1px solid #ddd', borderRadius: '0.5rem', color: '#555', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
-              📁 Choisir un fichier
-            </button>
+            <label style={{ flex: 1, padding: '0.6rem', background: '#F0FDF4', border: '1px solid var(--green)', borderRadius: '0.5rem', color: 'var(--green)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', textAlign: 'center', display: 'block' }}>
+              📷 Photo
+              <input type="file" accept="image/*" capture="environment" onChange={handleTicket} style={{ display: 'none' }} />
+            </label>
+            <label style={{ flex: 1, padding: '0.6rem', background: '#F8F8F8', border: '1px solid #ddd', borderRadius: '0.5rem', color: '#555', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', textAlign: 'center', display: 'block' }}>
+              📁 Fichier
+              <input type="file" accept="image/*,application/pdf" onChange={handleTicket} style={{ display: 'none' }} />
+            </label>
           </div>
-          <input ref={ticketRef} type="file" accept="image/*,application/pdf" onChange={handleTicket} style={{ display: 'none' }} />
-          <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleTicket} style={{ display: 'none' }} />
         </div>
 
         {error && <p style={{ color: 'var(--red)', fontSize: '0.875rem' }}>{error}</p>}
