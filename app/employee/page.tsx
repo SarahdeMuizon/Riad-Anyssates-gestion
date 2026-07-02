@@ -101,6 +101,17 @@ function DepenseForm({ token }: { token: string }) {
   const [dragCounter, setDragCounter] = useState(0)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  // Prevent Safari from navigating to the dropped file URL
+  useEffect(() => {
+    const prevent = (e: DragEvent) => e.preventDefault()
+    document.addEventListener('dragover', prevent)
+    document.addEventListener('drop', prevent)
+    return () => {
+      document.removeEventListener('dragover', prevent)
+      document.removeEventListener('drop', prevent)
+    }
+  }, [])
+
   // Split feature
   const [splitMode, setSplitMode] = useState(false)
   const [splitLines, setSplitLines] = useState<SplitLine[]>([
@@ -413,6 +424,17 @@ function EncaissementForm({ token }: { token: string }) {
   const [error, setError] = useState('')
   const [dragCounter, setDragCounter] = useState(0)
   const ticketRef = useRef<HTMLInputElement>(null)
+
+  // Prevent Safari from navigating to the dropped file URL
+  useEffect(() => {
+    const prevent = (e: DragEvent) => e.preventDefault()
+    document.addEventListener('dragover', prevent)
+    document.addEventListener('drop', prevent)
+    return () => {
+      document.removeEventListener('dragover', prevent)
+      document.removeEventListener('drop', prevent)
+    }
+  }, [])
 
   async function processTicketFile(f: File) {
     setTicketFile(f)
