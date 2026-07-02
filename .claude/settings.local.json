@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m 'fix: add 20s timeout on extract-invoice to unblock submit button *)",
+      "Bash(git push *)",
+      "mcp__da82f6b0-7ca1-4d46-ac82-8e7e267e3631__list_deployments",
+      "mcp__da82f6b0-7ca1-4d46-ac82-8e7e267e3631__get_runtime_errors",
+      "mcp__da82f6b0-7ca1-4d46-ac82-8e7e267e3631__get_runtime_logs",
+      "Bash(git commit *)",
+      "mcp__da82f6b0-7ca1-4d46-ac82-8e7e267e3631__get_deployment_build_logs"
+    ]
+  }
+}

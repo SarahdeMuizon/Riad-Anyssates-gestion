@@ -152,6 +152,20 @@ export async function initDb() {
     {
       sql: `INSERT OR IGNORE INTO settings (key, value) VALUES ('fond_caisse_eur', '200')`,
     },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS coffre_entries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        employee_name TEXT NOT NULL,
+        direction TEXT NOT NULL CHECK (direction IN ('in', 'out')),
+        date TEXT NOT NULL,
+        amount REAL NOT NULL,
+        currency TEXT DEFAULT 'MAD',
+        category TEXT NOT NULL,
+        description TEXT,
+        status TEXT DEFAULT 'pending',
+        created_at TEXT DEFAULT (datetime('now'))
+      )`,
+    },
   ])
 
   for (const r of results) {

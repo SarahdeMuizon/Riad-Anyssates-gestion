@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import type { Entry, Employee, DashboardStats, FondsEntry } from '@/types'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 
-type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'employees' | 'settings'
+type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'coffre' | 'employees' | 'settings'
 
 const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
@@ -48,6 +48,7 @@ export default function ManagerPage() {
     { id: 'depenses', label: '💳 Dépenses' },
     { id: 'encaissements', label: '💵 Encaissements' },
     { id: 'fonds', label: '💰 Fond de caisse' },
+    { id: 'coffre', label: '🔐 Coffre fort' },
     { id: 'employees', label: '👥 Employés' },
     { id: 'settings', label: '⚙️ Paramètres' },
   ]
@@ -76,6 +77,7 @@ export default function ManagerPage() {
         {tab === 'depenses' && <EntriesTab type="cb" label="Dépenses" color="var(--terracotta)" />}
         {tab === 'encaissements' && <EntriesTab type="cash" label="Encaissements" color="var(--green)" />}
         {tab === 'fonds' && <FondsTab />}
+        {tab === 'coffre' && <CoffreTab />}
         {tab === 'employees' && <EmployeesTab />}
         {tab === 'settings' && <SettingsTab onLogout={logout} />}
       </main>
@@ -449,10 +451,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
           <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color }}>{formatMonth(month)}</h2>
           <button onClick={() => setMonth(shiftMonth(month, 1))} disabled={month === currentMonth} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: month === currentMonth ? 'default' : 'pointer', opacity: month === currentMonth ? 0.4 : 1, fontWeight: 600 }}>›</button>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn-secondary" onClick={exportCSV} style={{ fontSize: '0.85rem' }}>⬇️ CSV</button>
-          <button className="btn-primary" onClick={() => setShowForm(!showForm)}>{showForm ? 'Annuler' : '+ Ajouter'}</button>
-        </div>
+        <button className="btn-primary" onClick={() => setShowForm(!showForm)}>{showForm ? 'Annuler' : '+ Ajouter'}</button>
       </div>
 
       {formSuccess && <p style={{ color: 'var(--green)', fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: '#F0FDF4', borderRadius: '0.4rem', border: '1px solid #86efac' }}>{formSuccess}</p>}
@@ -771,10 +770,7 @@ function FondsTab() {
           <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#6366F1' }}>💰 Fond de caisse — {formatMonth(month)}</h2>
           <button onClick={() => setMonth(shiftMonth(month, 1))} disabled={month === currentMonth} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: month === currentMonth ? 'default' : 'pointer', opacity: month === currentMonth ? 0.4 : 1, fontWeight: 600 }}>›</button>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn-secondary" onClick={() => window.location.href = `/api/export/fonds?month=${month}`} style={{ fontSize: '0.85rem' }}>⬇️ CSV</button>
-          <button className="btn-primary" onClick={() => setShowForm(!showForm)}>{showForm ? 'Annuler' : '+ Ajouter'}</button>
-        </div>
+        <button className="btn-primary" onClick={() => setShowForm(!showForm)}>{showForm ? 'Annuler' : '+ Ajouter'}</button>
       </div>
 
       {/* Dotation initiale */}
@@ -892,6 +888,212 @@ function FondsTab() {
                   <td>{e.employee_name}</td>
                   <td><span style={{ fontWeight: 600, fontSize: '0.8rem', background: '#F3F4F6', padding: '0.15rem 0.4rem', borderRadius: '0.3rem' }}>{(e.currency as string) || 'MAD'}</span></td>
                   <td style={{ fontWeight: 600, color: e.direction === 'in' ? 'var(--green)' : 'var(--red)' }}>{e.direction === 'in' ? '+' : '-'}{fmt(Number(e.amount))}</td>
+                  <td style={{ fontSize: '0.85rem', color: '#666' }}>{e.description || '—'}</td>
+                  <td><span className={e.status === 'validated' ? 'badge-validated' : 'badge-pending'}>{e.status === 'validated' ? 'Validé' : 'En attente'}</span></td>
+                  <td style={{ display: 'flex', gap: '0.4rem' }}>
+                    <button onClick={() => toggleStatus(e)} style={{ background: e.status === 'pending' ? 'var(--green)' : '#888', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.8rem' }}>{e.status === 'pending' ? '✓' : '↩'}</button>
+                    <button onClick={() => setDeleteModal(e.id)} style={{ background: 'var(--red)', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.8rem' }}>🗑</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {deleteModal !== null && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+          <div className="card" style={{ maxWidth: 340, width: '90%', textAlign: 'center' }}>
+            <p style={{ marginBottom: '1rem', fontWeight: 600 }}>Supprimer ce mouvement ?</p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button className="btn-secondary" onClick={() => setDeleteModal(null)}>Annuler</button>
+              <button className="btn-red" onClick={() => deleteEntry(deleteModal)}>Supprimer</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Coffre Fort Tab ──────────────────────────────────────────────────────────
+
+const COFFRE_CATEGORIES = ['Dépôt espèces', 'Retrait espèces', 'Chèque', 'Document', 'Bijou / objet de valeur', 'Autre']
+
+interface CoffreEntry {
+  id: number
+  employee_name: string
+  direction: 'in' | 'out'
+  date: string
+  amount: number
+  currency: string
+  category: string
+  description: string | null
+  status: string
+  created_at: string
+}
+
+function CoffreTab() {
+  const now = new Date()
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const [month, setMonth] = useState(currentMonth)
+  const [entries, setEntries] = useState<CoffreEntry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [deleteModal, setDeleteModal] = useState<number | null>(null)
+  const [showForm, setShowForm] = useState(false)
+  const [coffreEmployees, setCoffreEmployees] = useState<string[]>([])
+
+  const [direction, setDirection] = useState<'in' | 'out'>('in')
+  const [date, setDate] = useState(now.toISOString().split('T')[0])
+  const [amount, setAmount] = useState('')
+  const [currency, setCurrency] = useState('MAD')
+  const [category, setCategory] = useState(COFFRE_CATEGORIES[0])
+  const [description, setDescription] = useState('')
+  const [employeeName, setEmployeeName] = useState('Administrateur')
+  const [submitting, setSubmitting] = useState(false)
+  const [formError, setFormError] = useState('')
+
+  const fetchEntries = useCallback(async () => {
+    setLoading(true)
+    const r = await fetch(`/api/coffre?month=${month}`)
+    setEntries(await r.json())
+    setLoading(false)
+  }, [month])
+
+  useEffect(() => { fetchEntries() }, [fetchEntries])
+  useEffect(() => {
+    fetch('/api/employees').then(r => r.json()).then((emps: Employee[]) => {
+      setCoffreEmployees(emps.filter(e => e.active).map(e => e.name))
+    })
+  }, [])
+
+  const totalIn  = entries.filter(e => e.direction === 'in').reduce((s, e) => s + Number(e.amount), 0)
+  const totalOut = entries.filter(e => e.direction === 'out').reduce((s, e) => s + Number(e.amount), 0)
+  const solde    = totalIn - totalOut
+
+  async function toggleStatus(entry: CoffreEntry) {
+    await fetch(`/api/coffre/${entry.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: entry.status === 'pending' ? 'validated' : 'pending' }) })
+    fetchEntries()
+  }
+
+  async function deleteEntry(id: number) {
+    await fetch(`/api/coffre/${id}`, { method: 'DELETE' })
+    setDeleteModal(null)
+    fetchEntries()
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setSubmitting(true); setFormError('')
+    const r = await fetch('/api/coffre', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ direction, date, amount: parseFloat(amount), currency, category, description, employee_name: employeeName }),
+    })
+    if (r.ok) {
+      setAmount(''); setDescription(''); setShowForm(false)
+      fetchEntries()
+    } else {
+      const d = await r.json()
+      setFormError(d.error || 'Erreur')
+    }
+    setSubmitting(false)
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <button onClick={() => setMonth(shiftMonth(month, -1))} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: 'pointer', fontWeight: 600 }}>‹</button>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#374151' }}>🔐 Coffre fort — {formatMonth(month)}</h2>
+          <button onClick={() => setMonth(shiftMonth(month, 1))} disabled={month === currentMonth} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: month === currentMonth ? 'default' : 'pointer', opacity: month === currentMonth ? 0.4 : 1, fontWeight: 600 }}>›</button>
+        </div>
+        <button className="btn-primary" onClick={() => setShowForm(!showForm)} style={{ background: '#374151' }}>{showForm ? 'Annuler' : '+ Ajouter'}</button>
+      </div>
+
+      {/* Solde */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1.25rem' }}>
+        <div className="stat-card" style={{ borderLeftColor: 'var(--green)' }}>
+          <div style={{ fontSize: '0.8rem', color: '#888' }}>Dépôts</div>
+          <div style={{ fontWeight: 700, fontSize: '1.5rem', color: 'var(--green)' }}>+{totalIn.toFixed(2)}</div>
+        </div>
+        <div className="stat-card" style={{ borderLeftColor: 'var(--red)' }}>
+          <div style={{ fontSize: '0.8rem', color: '#888' }}>Retraits</div>
+          <div style={{ fontWeight: 700, fontSize: '1.5rem', color: 'var(--red)' }}>-{totalOut.toFixed(2)}</div>
+        </div>
+        <div className="stat-card" style={{ borderLeftColor: solde >= 0 ? '#374151' : 'var(--red)' }}>
+          <div style={{ fontSize: '0.8rem', color: '#888' }}>Solde estimé</div>
+          <div style={{ fontWeight: 700, fontSize: '1.5rem', color: solde >= 0 ? '#374151' : 'var(--red)' }}>{solde >= 0 ? '+' : ''}{solde.toFixed(2)}</div>
+        </div>
+      </div>
+
+      {showForm && (
+        <div className="card" style={{ marginBottom: '1.25rem' }}>
+          <form onSubmit={handleSubmit}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Sens *</label>
+                <select className="form-input" value={direction} onChange={e => setDirection(e.target.value as 'in' | 'out')}>
+                  <option value="in">🔒 Dépôt (entrée)</option>
+                  <option value="out">🔓 Retrait (sortie)</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Date *</label>
+                <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Montant *</label>
+                <input className="form-input" type="number" step="0.01" min="0" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" required />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Devise</label>
+                <select className="form-input" value={currency} onChange={e => setCurrency(e.target.value)}>
+                  <option value="MAD">MAD</option>
+                  <option value="EUR">EUR</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Catégorie *</label>
+                <select className="form-input" value={category} onChange={e => setCategory(e.target.value)}>
+                  {COFFRE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Par</label>
+                <select className="form-input" value={employeeName} onChange={e => setEmployeeName(e.target.value)}>
+                  <option value="Administrateur">Administrateur</option>
+                  {coffreEmployees.map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Description</label>
+                <input className="form-input" value={description} onChange={e => setDescription(e.target.value)} placeholder="Note optionnelle" />
+              </div>
+            </div>
+            {formError && <p style={{ color: 'var(--red)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{formError}</p>}
+            <button className="btn-primary" type="submit" disabled={submitting} style={{ background: '#374151' }}>{submitting ? 'Enregistrement…' : 'Enregistrer'}</button>
+          </form>
+        </div>
+      )}
+
+      {loading ? <p>Chargement…</p> : entries.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>Aucun mouvement pour ce mois</div>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Sens</th><th>Catégorie</th><th>Par</th><th>Devise</th><th>Montant</th><th>Description</th><th>Statut</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              {entries.map(e => (
+                <tr key={e.id}>
+                  <td style={{ whiteSpace: 'nowrap' }}>{new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR')}</td>
+                  <td><span style={{ fontWeight: 600, color: e.direction === 'in' ? 'var(--green)' : 'var(--red)', fontSize: '0.85rem' }}>{e.direction === 'in' ? '🔒 Dépôt' : '🔓 Retrait'}</span></td>
+                  <td>{e.category}</td>
+                  <td>{e.employee_name}</td>
+                  <td><span style={{ fontWeight: 600, fontSize: '0.8rem', background: '#F3F4F6', padding: '0.15rem 0.4rem', borderRadius: '0.3rem' }}>{e.currency}</span></td>
+                  <td style={{ fontWeight: 600, color: e.direction === 'in' ? 'var(--green)' : 'var(--red)' }}>{e.direction === 'in' ? '+' : '-'}{Number(e.amount).toFixed(2)}</td>
                   <td style={{ fontSize: '0.85rem', color: '#666' }}>{e.description || '—'}</td>
                   <td><span className={e.status === 'validated' ? 'badge-validated' : 'badge-pending'}>{e.status === 'validated' ? 'Validé' : 'En attente'}</span></td>
                   <td style={{ display: 'flex', gap: '0.4rem' }}>

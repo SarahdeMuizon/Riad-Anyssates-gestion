@@ -98,6 +98,7 @@ function DepenseForm({ token }: { token: string }) {
   const [extracting, setExtracting] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
+  const [dragOver, setDragOver] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Split feature
@@ -121,9 +122,7 @@ function DepenseForm({ token }: { token: string }) {
     setSplitLines(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l))
   }
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0]
-    if (!f) return
+  async function processInvoiceFile(f: File) {
     setInvoiceFile(f)
     if (f.type.startsWith('image/')) setInvoicePreview(URL.createObjectURL(f))
     else setInvoicePreview(null)
@@ -154,6 +153,11 @@ function DepenseForm({ token }: { token: string }) {
       }
     } catch { /* silent */ }
     setExtracting(false)
+  }
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    if (f) processInvoiceFile(f)
   }
 
   async function uploadToCloudinary(file: File): Promise<string> {
@@ -334,7 +338,10 @@ function DepenseForm({ token }: { token: string }) {
           </label>
           <div
             onClick={() => fileRef.current?.click()}
-            style={{ border: `2px dashed ${invoiceFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: invoiceFile ? '#F0FDF4' : '#FAFAFA' }}
+            onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) processInvoiceFile(f) }}
+            style={{ border: `2px dashed ${dragOver ? 'var(--terracotta)' : invoiceFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: dragOver ? '#FFF5F0' : invoiceFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
           >
             {invoiceFile ? (
               <div>
@@ -342,13 +349,13 @@ function DepenseForm({ token }: { token: string }) {
                 <div style={{ fontSize: '0.85rem', color: 'var(--green)', fontWeight: 600 }}>✓ {invoiceFile.name}</div>
                 {extracting
                   ? <div style={{ fontSize: '0.75rem', color: 'var(--terracotta)', marginTop: '0.2rem' }}>⏳ Analyse en cours…</div>
-                  : <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.2rem' }}>Cliquer pour changer</div>
+                  : <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.2rem' }}>Cliquer ou glisser pour changer</div>
                 }
               </div>
             ) : (
               <div>
-                <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>📄</div>
-                <div style={{ fontSize: '0.85rem', color: '#666' }}>Cliquer pour ajouter une photo ou PDF de la facture</div>
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>{dragOver ? '⬇️' : '📄'}</div>
+                <div style={{ fontSize: '0.85rem', color: '#666' }}>Glisser la facture ici ou cliquer pour parcourir</div>
               </div>
             )}
           </div>
@@ -383,11 +390,10 @@ function EncaissementForm({ token }: { token: string }) {
   const [extracting, setExtracting] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
+  const [dragOver, setDragOver] = useState(false)
   const ticketRef = useRef<HTMLInputElement>(null)
 
-  async function handleTicket(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0]
-    if (!f) return
+  async function processTicketFile(f: File) {
     setTicketFile(f)
     if (f.type.startsWith('image/')) setTicketPreview(URL.createObjectURL(f))
     else setTicketPreview(null)
@@ -407,6 +413,11 @@ function EncaissementForm({ token }: { token: string }) {
       }
     } catch { /* silent */ }
     setExtracting(false)
+  }
+
+  function handleTicket(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    if (f) processTicketFile(f)
   }
 
   async function uploadToCloudinary(file: File): Promise<string> {
@@ -504,7 +515,10 @@ function EncaissementForm({ token }: { token: string }) {
           </label>
           <div
             onClick={() => ticketRef.current?.click()}
-            style={{ border: `2px dashed ${ticketFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: ticketFile ? '#F0FDF4' : '#FAFAFA' }}
+            onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) processTicketFile(f) }}
+            style={{ border: `2px dashed ${dragOver ? 'var(--green)' : ticketFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: dragOver ? '#F0FDF4' : ticketFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
           >
             {ticketFile ? (
               <div>
@@ -517,8 +531,8 @@ function EncaissementForm({ token }: { token: string }) {
               </div>
             ) : (
               <div>
-                <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>🧾</div>
-                <div style={{ fontSize: '0.85rem', color: '#666' }}>Cliquer pour ajouter le ticket CB</div>
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>{dragOver ? '⬇️' : '🧾'}</div>
+                <div style={{ fontSize: '0.85rem', color: '#666' }}>Glisser le ticket ici ou cliquer pour parcourir</div>
               </div>
             )}
           </div>
