@@ -220,7 +220,7 @@ function DepenseForm({ token }: { token: string }) {
     e.preventDefault()
     setError(''); setSuccess('')
 
-    if (!invoiceFile) { setError('La facture est obligatoire.'); return }
+    if (!invoiceFile && payment !== 'Espèces') { setError('La facture est obligatoire.'); return }
     if (splitMode && !splitValid) { setError(`La somme des lignes (${fmt(splitTotal)}) doit égaler le total du ticket (${amount}).`); return }
 
     setUploading(true)
@@ -374,7 +374,7 @@ function DepenseForm({ token }: { token: string }) {
         {/* Mandatory invoice upload */}
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-            Facture * <span style={{ color: 'var(--red)' }}>(obligatoire)</span>
+            Facture {payment !== 'Espèces' && '* '}<span style={{ color: payment === 'Espèces' ? '#888' : 'var(--red)', fontWeight: 400 }}>({payment === 'Espèces' ? 'optionnel' : 'obligatoire'})</span>
           </label>
           <div
             ref={dropZoneRef}
@@ -543,7 +543,7 @@ function EncaissementForm({ token }: { token: string }) {
       ? parseFloat(transactionAmount) * 0.97
       : parseFloat(amount)
     if (!finalAmount || isNaN(finalAmount)) { setError('Veuillez saisir un montant.'); return }
-    if (!ticketFile) { setError('Le ticket est obligatoire.'); return }
+    if (!ticketFile && payment !== 'Espèces') { setError('Le ticket est obligatoire.'); return }
 
     let invoice_url: string | undefined
     setUploading(true)
@@ -646,7 +646,7 @@ function EncaissementForm({ token }: { token: string }) {
         {/* Ticket upload */}
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-            Ticket * <span style={{ color: 'var(--red)' }}>(obligatoire)</span>
+            Ticket {payment !== 'Espèces' && '* '}<span style={{ color: payment === 'Espèces' ? '#888' : 'var(--red)', fontWeight: 400 }}>({payment === 'Espèces' ? 'optionnel' : 'obligatoire'})</span>
           </label>
           <div
             ref={ticketDropZoneRef}

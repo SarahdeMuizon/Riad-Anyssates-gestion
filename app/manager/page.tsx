@@ -532,7 +532,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>
                 {type === 'cb' ? 'Facture' : 'Ticket CB'}
-                {type === 'cb'
+                {type === 'cb' && fPayment !== 'Espèces'
                   ? <span style={{ color: 'var(--red)', fontWeight: 400 }}> * (obligatoire)</span>
                   : <span style={{ color: '#888', fontWeight: 400 }}> (optionnel)</span>}
               </label>
