@@ -318,7 +318,7 @@ function generateInvoice(entry: InvoiceData) {
   const w = window.open('','_blank')
   if (w) { w.document.write(html); w.document.close() }
 }
-const ENCAISSEMENTS_CATEGORIES = ['Réservation','Boissons bar','Repas/Restauration','Activité/Excursion','Service spa/Hammam','Transfert/Transport','Pourboire collectif','Autre encaissement']
+const ENCAISSEMENTS_CATEGORIES = ['Boissons bar','Repas/Restauration','Activité/Excursion','Service spa/Hammam','Transfert/Transport','Pourboire collectif','Autre encaissement']
 const PAYMENT_MODES = ['CB', 'Virement', 'Chèque', 'Espèces']
 const CURRENCIES = ['MAD', 'EUR']
 
@@ -353,12 +353,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [fDragCounter, setFDragCounter] = useState(0)
   const [fTransactionAmount, setFTransactionAmount] = useState('')
   const [fClientName, setFClientName] = useState('')
-  const [fInvoiceTvaRate, setFInvoiceTvaRate] = useState('10')
-  const [fNuits, setFNuits] = useState('')
-  const [fPersonnes, setFPersonnes] = useState('')
   const [fLastEntry, setFLastEntry] = useState<InvoiceData | null>(null)
-  const fTaxeSejour = fCategory === 'Réservation' && fNuits && fPersonnes
-    ? parseFloat(fNuits) * parseFloat(fPersonnes) * 2.5 : 0
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [formSuccess, setFormSuccess] = useState('')
@@ -544,14 +539,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       ? parseFloat(fTransactionAmount) * 0.97
       : parseFloat(fAmount)
 
-    // Description enrichie réservation
-    let finalDescription = fDescription || null
-    if (type === 'cash' && fCategory === 'Réservation' && fNuits && fPersonnes) {
-      const ts = parseFloat(fNuits) * parseFloat(fPersonnes) * 2.5
-      finalDescription = `${fNuits} nuit(s) × ${fPersonnes} personne(s) — Taxe séjour: ${ts.toFixed(2)}€${fDescription ? ' — ' + fDescription : ''}`
-    }
-
-    const body: Record<string, unknown> = { type, date: fDate, employee_name: fEmployee, category: fCategory, amount: finalAmount, currency: fCurrency, description: finalDescription, invoice_url }
+    const body: Record<string, unknown> = { type, date: fDate, employee_name: fEmployee, category: fCategory, amount: finalAmount, currency: fCurrency, description: fDescription || null, invoice_url }
     if (type === 'cb') {
       body.supplier = fSupplier || null
       body.payment = fPayment
@@ -563,17 +551,15 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       if (fPayment === 'CB' && fTransactionAmount) {
         body.amount_ht = parseFloat(fTransactionAmount)
         body.tva_rate = 3
-      } else if (fInvoiceTvaRate) {
-        body.tva_rate = parseFloat(fInvoiceTvaRate)
       }
     }
 
     const invoiceEntry: InvoiceData = {
       date: fDate, amount: finalAmount,
       amountTransaction: type === 'cash' && fPayment === 'CB' && fTransactionAmount ? parseFloat(fTransactionAmount) : undefined,
-      currency: fCurrency, category: fCategory, description: finalDescription || '',
-      clientName: fClientName || '', tvaRate: parseFloat(fInvoiceTvaRate) || 10,
-      nuits: fNuits ? parseFloat(fNuits) : 0, personnes: fPersonnes ? parseFloat(fPersonnes) : 0, payment: fPayment,
+      currency: fCurrency, category: fCategory, description: fDescription || '',
+      clientName: fClientName || '', tvaRate: 0,
+      nuits: 0, personnes: 0, payment: fPayment,
     }
 
     try {
@@ -582,7 +568,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
         if (type === 'cash') setFLastEntry(invoiceEntry)
         setFAmount(''); setFAmountHT(''); setFTvaRate(''); setFSupplier(''); setFDescription('')
         setFFile(null); setFFilePreview(null); setFExtracted(false); setShowForm(false)
-        setFTransactionAmount(''); setFClientName(''); setFInvoiceTvaRate('10'); setFNuits(''); setFPersonnes('')
+        setFTransactionAmount(''); setFClientName('')
         setFilterStatus(''); setFilterEmployee('')
         setFormSuccess('✓ Entrée ajoutée avec succès !')
         setTimeout(() => setFormSuccess(''), 4000)
@@ -757,7 +743,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Catégorie *</label>
-                <select className="form-input" value={fCategory} onChange={e => { setFCategory(e.target.value); setFNuits(''); setFPersonnes('') }}>
+                <select className="form-input" value={fCategory} onChange={e => setFCategory(e.target.value)}>
                   {categories.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
@@ -767,41 +753,11 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
               </div>
             </div>
 
-            {/* Champs réservation */}
-            {type === 'cash' && fCategory === 'Réservation' && (
-              <div style={{ background: '#FFF5F0', border: '1px solid #fed7aa', borderRadius: '0.5rem', padding: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#C2410C' }}>🏨 Détails réservation</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Nuits *</label>
-                    <input className="form-input" type="number" min="1" step="1" value={fNuits} onChange={e => setFNuits(e.target.value)} placeholder="1" />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Personnes *</label>
-                    <input className="form-input" type="number" min="1" step="1" value={fPersonnes} onChange={e => setFPersonnes(e.target.value)} placeholder="2" />
-                  </div>
-                </div>
-                {fNuits && fPersonnes && (
-                  <div style={{ background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: '0.375rem', padding: '0.5rem 0.75rem', fontSize: '0.875rem', fontWeight: 600, color: '#92400E' }}>
-                    🏷️ Taxe de séjour : {fTaxeSejour.toFixed(2)} € ({fNuits} nuit(s) × {fPersonnes} pers. × 2,50€)
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* TVA facture + Nom client (pour encaissements) */}
+            {/* Nom du client (pour encaissements) */}
             {type === 'cash' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>TVA facture (%)</label>
-                  <select className="form-input" value={fInvoiceTvaRate} onChange={e => setFInvoiceTvaRate(e.target.value)}>
-                    {['0','7','10','14','20'].map(r => <option key={r} value={r}>{r}%</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Nom du client</label>
-                  <input className="form-input" type="text" value={fClientName} onChange={e => setFClientName(e.target.value)} placeholder="(optionnel)" />
-                </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Nom du client</label>
+                <input className="form-input" type="text" value={fClientName} onChange={e => setFClientName(e.target.value)} placeholder="(optionnel)" />
               </div>
             )}
 

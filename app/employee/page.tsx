@@ -7,7 +7,7 @@ import { Suspense } from 'react'
 const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const DEPENSES_CATEGORIES = ['Alimentation/Courses','Fournitures & bureautique','Entretien & maintenance','Transport','Restauration','Pharmacie/Hygiène','Décoration & fleurs','Autre']
-const ENCAISSEMENTS_CATEGORIES = ['Réservation','Boissons bar','Repas/Restauration','Activité/Excursion','Service spa/Hammam','Transfert/Transport','Pourboire collectif','Autre encaissement']
+const ENCAISSEMENTS_CATEGORIES = ['Boissons bar','Repas/Restauration','Activité/Excursion','Service spa/Hammam','Transfert/Transport','Pourboire collectif','Autre encaissement']
 const FONDS_CATEGORIES = ['Courses/Marché','Entretien','Personnel','Transport','Pourboire','Recette cash','Remboursement','Autre']
 const PAYMENT_MODES = ['CB', 'Virement', 'Chèque', 'Espèces']
 const CURRENCIES = ['MAD', 'EUR']
@@ -508,12 +508,7 @@ function EncaissementForm({ token }: { token: string }) {
   const [dragCounter, setDragCounter] = useState(0)
   const [transactionAmount, setTransactionAmount] = useState('')
   const [clientName, setClientName] = useState('')
-  const [invoiceTvaRate, setInvoiceTvaRate] = useState('10')
-  const [nuits, setNuits] = useState('')
-  const [personnes, setPersonnes] = useState('')
   const [lastEntry, setLastEntry] = useState<InvoiceData | null>(null)
-  const taxeSejour = category === 'Réservation' && nuits && personnes
-    ? parseFloat(nuits) * parseFloat(personnes) * 2.5 : 0
   const ticketRef = useRef<HTMLInputElement>(null)
   const ticketDropZoneRef = useRef<HTMLDivElement>(null)
   const processTicketFileRef = useRef<(f: File) => void>((_f: File) => {})
@@ -625,23 +620,16 @@ function EncaissementForm({ token }: { token: string }) {
       setUploading(false)
     }
 
-    // Description enrichie pour réservation
-    let finalDescription = description
-    if (category === 'Réservation' && nuits && personnes) {
-      const ts = parseFloat(nuits) * parseFloat(personnes) * 2.5
-      finalDescription = `${nuits} nuit(s) × ${personnes} personne(s) — Taxe séjour: ${ts.toFixed(2)}€${description ? ' — ' + description : ''}`
-    }
-
     const extraFields = payment === 'CB' && transactionAmount
       ? { amount_ht: parseFloat(transactionAmount), tva_rate: 3 }
-      : { tva_rate: invoiceTvaRate ? parseFloat(invoiceTvaRate) : null }
+      : {}
 
     const invoiceEntry: InvoiceData = {
       date, amount: finalAmount,
       amountTransaction: payment === 'CB' && transactionAmount ? parseFloat(transactionAmount) : undefined,
-      currency, category, description: finalDescription,
-      clientName: clientName || '', tvaRate: parseFloat(invoiceTvaRate) || 10,
-      nuits: nuits ? parseFloat(nuits) : 0, personnes: personnes ? parseFloat(personnes) : 0, payment,
+      currency, category, description,
+      clientName: clientName || '', tvaRate: 0,
+      nuits: 0, personnes: 0, payment,
     }
 
     setSubmitting(true)
@@ -649,13 +637,13 @@ function EncaissementForm({ token }: { token: string }) {
       const r = await fetch('/api/entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'cash', date, amount: finalAmount, currency, category, payment, description: finalDescription, invoice_url, token, supplier: clientName || null, ...extraFields }),
+        body: JSON.stringify({ type: 'cash', date, amount: finalAmount, currency, category, payment, description, invoice_url, token, supplier: clientName || null, ...extraFields }),
       })
       if (r.ok) {
         setSuccess('Encaissement enregistré !')
         setLastEntry(invoiceEntry)
         setAmount(''); setTransactionAmount(''); setDescription('')
-        setClientName(''); setInvoiceTvaRate('10'); setNuits(''); setPersonnes('')
+        setClientName('')
         setCategory(ENCAISSEMENTS_CATEGORIES[0]); setPayment('CB'); setCurrency('MAD')
         setDate(new Date().toISOString().split('T')[0]); setTicketFile(null); setTicketPreview(null)
         if (ticketRef.current) ticketRef.current.value = ''
@@ -724,45 +712,14 @@ function EncaissementForm({ token }: { token: string }) {
 
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Catégorie *</label>
-          <select className="form-input" value={category} onChange={e => { setCategory(e.target.value); setNuits(''); setPersonnes('') }}>
+          <select className="form-input" value={category} onChange={e => setCategory(e.target.value)}>
             {ENCAISSEMENTS_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
 
-        {/* Champs réservation */}
-        {category === 'Réservation' && (
-          <div style={{ background: '#FFF5F0', border: '1px solid #fed7aa', borderRadius: '0.5rem', padding: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-            <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#C2410C', marginBottom: '0.1rem' }}>🏨 Détails de la réservation</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Nombre de nuits *</label>
-                <input className="form-input" type="number" min="1" step="1" value={nuits} onChange={e => setNuits(e.target.value)} placeholder="1" />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Nombre de personnes *</label>
-                <input className="form-input" type="number" min="1" step="1" value={personnes} onChange={e => setPersonnes(e.target.value)} placeholder="2" />
-              </div>
-            </div>
-            {nuits && personnes && (
-              <div style={{ background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: '0.375rem', padding: '0.5rem 0.75rem', fontSize: '0.875rem', fontWeight: 600, color: '#92400E' }}>
-                🏷️ Taxe de séjour : {taxeSejour.toFixed(2)} € ({nuits} nuit(s) × {personnes} pers. × 2,50€)
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TVA facture + Nom client */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>TVA facture (%)</label>
-            <select className="form-input" value={invoiceTvaRate} onChange={e => setInvoiceTvaRate(e.target.value)}>
-              {['0','7','10','14','20'].map(r => <option key={r} value={r}>{r}%</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Nom du client</label>
-            <input className="form-input" type="text" value={clientName} onChange={e => setClientName(e.target.value)} placeholder="(optionnel)" />
-          </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Nom du client</label>
+          <input className="form-input" type="text" value={clientName} onChange={e => setClientName(e.target.value)} placeholder="(optionnel)" />
         </div>
 
         <div>
