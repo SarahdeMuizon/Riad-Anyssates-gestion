@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import type { Entry, FondsEntry } from '@/types'
 import { Suspense } from 'react'
@@ -9,7 +9,7 @@ const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2,
 const DEPENSES_CATEGORIES = ['Alimentation/Courses','Fournitures & bureautique','Entretien & maintenance','Transport','Restauration','Pharmacie/Hygiène','Décoration & fleurs','Autre']
 const ENCAISSEMENTS_CATEGORIES = ['Boissons bar','Repas/Restauration','Activité/Excursion','Service spa/Hammam','Transfert/Transport','Pourboire collectif','Autre encaissement']
 const FONDS_CATEGORIES = ['Courses/Marché','Entretien','Personnel','Transport','Pourboire','Recette cash','Remboursement','Autre']
-const PAYMENT_MODES = ['CB', 'Virement', 'Chèque']
+const PAYMENT_MODES = ['CB', 'Virement', 'Chèque', 'Espèces']
 const CURRENCIES = ['MAD', 'EUR']
 
 type Tab = 'cb' | 'cash' | 'fonds' | 'history'
@@ -70,7 +70,7 @@ function EmployeeApp() {
       <main style={{ padding: '1.5rem', maxWidth: 640, margin: '0 auto' }}>
         {tab === 'cb' && <DepenseForm token={token!} />}
         {tab === 'cash' && <EncaissementForm token={token!} />}
-        {tab === 'fonds' && <FondsForm token={token!} />}
+        {tab === 'fonds' && <FondsCaisse token={token!} />}
         {tab === 'history' && <EmployeeHistory token={token!} />}
       </main>
     </div>
@@ -378,8 +378,11 @@ function DepenseForm({ token }: { token: string }) {
           </label>
           <div
             ref={dropZoneRef}
-            style={{ border: `2px dashed ${dragCounter > 0 ? 'var(--terracotta)' : invoiceFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', background: dragCounter > 0 ? '#FFF5F0' : invoiceFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
+            style={{ position: 'relative', border: `2px dashed ${dragCounter > 0 ? 'var(--terracotta)' : invoiceFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', background: dragCounter > 0 ? '#FFF5F0' : invoiceFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
           >
+            {invoiceFile && !extracting && (
+              <button type="button" onClick={e => { e.stopPropagation(); setInvoiceFile(null); setInvoicePreview(null); if (fileRef.current) fileRef.current.value = '' }} style={{ position: 'absolute', top: '0.35rem', left: '0.35rem', background: 'rgba(239,68,68,0.9)', border: 'none', borderRadius: '50%', width: '1.3rem', height: '1.3rem', color: 'white', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, lineHeight: 1, padding: 0 }}>×</button>
+            )}
             {invoiceFile ? (
               <div onClick={() => fileRef.current?.click()} style={{ cursor: 'pointer' }}>
                 {invoicePreview && <img src={invoicePreview} alt="Aperçu" style={{ maxHeight: 120, maxWidth: '100%', marginBottom: '0.5rem', borderRadius: '0.3rem' }} />}
@@ -438,6 +441,7 @@ function EncaissementForm({ token }: { token: string }) {
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
   const [dragCounter, setDragCounter] = useState(0)
+  const [transactionAmount, setTransactionAmount] = useState('')
   const ticketRef = useRef<HTMLInputElement>(null)
   const ticketDropZoneRef = useRef<HTMLDivElement>(null)
   const processTicketFileRef = useRef<(f: File) => void>((_f: File) => {})
@@ -458,7 +462,14 @@ function EncaissementForm({ token }: { token: string }) {
       if (r.ok) {
         const data = await r.json()
         if (data.date) setDate(data.date)
-        if (data.amount_ttc) setAmount(String(data.amount_ttc))
+        if (data.amount_ttc) {
+          if (payment === 'CB') {
+            setTransactionAmount(String(data.amount_ttc))
+            setAmount(String((data.amount_ttc * 0.97).toFixed(2)))
+          } else {
+            setAmount(String(data.amount_ttc))
+          }
+        }
       }
     } catch { /* silent */ }
     setExtracting(false)
@@ -527,7 +538,12 @@ function EncaissementForm({ token }: { token: string }) {
     e.preventDefault()
     setError(''); setSuccess('')
 
-    if (!ticketFile) { setError('Le ticket CB est obligatoire.'); return }
+    // For CB: use net amount (after 3% fees); for Espèces: use direct amount
+    const finalAmount = payment === 'CB' && transactionAmount
+      ? parseFloat(transactionAmount) * 0.97
+      : parseFloat(amount)
+    if (!finalAmount || isNaN(finalAmount)) { setError('Veuillez saisir un montant.'); return }
+    if (!ticketFile) { setError('Le ticket est obligatoire.'); return }
 
     let invoice_url: string | undefined
     setUploading(true)
@@ -535,16 +551,21 @@ function EncaissementForm({ token }: { token: string }) {
     catch (err) { setError((err as Error).message || 'Erreur traitement ticket.'); setUploading(false); return }
     setUploading(false)
 
+    const extraFields = payment === 'CB' && transactionAmount
+      ? { amount_ht: parseFloat(transactionAmount), tva_rate: 3 }
+      : {}
+
     setSubmitting(true)
     try {
       const r = await fetch('/api/entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'cash', date, amount: parseFloat(amount), currency, category, payment, description, invoice_url, token }),
+        body: JSON.stringify({ type: 'cash', date, amount: finalAmount, currency, category, payment, description, invoice_url, token, ...extraFields }),
       })
       if (r.ok) {
         setSuccess('Encaissement enregistré !')
-        setAmount(''); setDescription(''); setCategory(ENCAISSEMENTS_CATEGORIES[0]); setPayment(PAYMENT_MODES[0]); setCurrency('MAD')
+        setAmount(''); setTransactionAmount(''); setDescription('')
+        setCategory(ENCAISSEMENTS_CATEGORIES[0]); setPayment('CB'); setCurrency('MAD')
         setDate(new Date().toISOString().split('T')[0]); setTicketFile(null); setTicketPreview(null)
         if (ticketRef.current) ticketRef.current.value = ''
       } else { const d = await r.json(); setError(d.error || 'Erreur.') }
@@ -556,16 +577,50 @@ function EncaissementForm({ token }: { token: string }) {
     <div className="card">
       <h2 style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '1.25rem', color: 'var(--green)' }}>💵 Nouvel encaissement</h2>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Date *</label>
-            <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Montant *</label>
-            <input className="form-input" type="number" step="0.01" min="0" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" required />
+
+        <div>
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Mode de paiement *</label>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {(['CB', 'Espèces'] as const).map(p => (
+              <button key={p} type="button" onClick={() => { setPayment(p); setTransactionAmount(''); setAmount('') }} style={{ flex: 1, padding: '0.6rem', border: `2px solid ${payment === p ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', background: payment === p ? '#F0FDF4' : 'white', fontWeight: payment === p ? 700 : 400, cursor: 'pointer', color: payment === p ? 'var(--green)' : 'var(--text)', fontSize: '0.9rem' }}>
+                {p === 'CB' ? '💳 CB' : '💵 Espèces'}
+              </button>
+            ))}
           </div>
         </div>
+
+        <div>
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Date *</label>
+          <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
+        </div>
+
+        {payment === 'CB' ? (
+          <div style={{ background: '#F0FDF4', border: '1px solid #86efac', borderRadius: '0.5rem', padding: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Montant de la transaction *</label>
+              <input className="form-input" type="number" step="0.01" min="0" value={transactionAmount} onChange={e => { setTransactionAmount(e.target.value); setAmount(e.target.value ? String((parseFloat(e.target.value) * 0.97).toFixed(2)) : '') }} placeholder="0.00" required />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem', color: 'var(--red)' }}>Frais bancaires (3%)</label>
+                <div style={{ background: '#FEF2F2', border: '1px solid #fca5a5', borderRadius: '0.5rem', padding: '0.5rem 0.75rem', fontWeight: 600, color: 'var(--red)', fontSize: '0.95rem' }}>
+                  {transactionAmount ? `− ${fmt(parseFloat(transactionAmount) * 0.03)}` : '—'}
+                </div>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem', color: 'var(--green)' }}>Encaissement perçu</label>
+                <div style={{ background: '#F0FDF4', border: '2px solid var(--green)', borderRadius: '0.5rem', padding: '0.5rem 0.75rem', fontWeight: 700, color: 'var(--green)', fontSize: '1rem' }}>
+                  {transactionAmount ? fmt(parseFloat(transactionAmount) * 0.97) : '—'}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Montant encaissé *</label>
+            <input className="form-input" type="number" step="0.01" min="0" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" required />
+          </div>
+        )}
 
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Devise</label>
@@ -584,28 +639,22 @@ function EncaissementForm({ token }: { token: string }) {
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Mode de paiement</label>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            {PAYMENT_MODES.map(p => (
-              <button key={p} type="button" onClick={() => setPayment(p)} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${payment === p ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', background: payment === p ? '#F0FDF4' : 'white', fontWeight: payment === p ? 700 : 400, cursor: 'pointer', color: payment === p ? 'var(--green)' : 'var(--text)', fontSize: '0.85rem' }}>{p}</button>
-            ))}
-          </div>
-        </div>
-
-        <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Description</label>
           <textarea className="form-input" rows={2} value={description} onChange={e => setDescription(e.target.value)} placeholder="Notes optionnelles…" />
         </div>
 
-        {/* Optional ticket CB upload */}
+        {/* Ticket upload */}
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-            Ticket CB * <span style={{ color: 'var(--red)' }}>(obligatoire)</span>
+            Ticket * <span style={{ color: 'var(--red)' }}>(obligatoire)</span>
           </label>
           <div
             ref={ticketDropZoneRef}
-            style={{ border: `2px dashed ${dragCounter > 0 ? 'var(--green)' : ticketFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', background: dragCounter > 0 ? '#F0FDF4' : ticketFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
+            style={{ position: 'relative', border: `2px dashed ${dragCounter > 0 ? 'var(--green)' : ticketFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', background: dragCounter > 0 ? '#F0FDF4' : ticketFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
           >
+            {ticketFile && !extracting && (
+              <button type="button" onClick={e => { e.stopPropagation(); setTicketFile(null); setTicketPreview(null); if (ticketRef.current) ticketRef.current.value = '' }} style={{ position: 'absolute', top: '0.35rem', left: '0.35rem', background: 'rgba(239,68,68,0.9)', border: 'none', borderRadius: '50%', width: '1.3rem', height: '1.3rem', color: 'white', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, lineHeight: 1, padding: 0 }}>×</button>
+            )}
             {ticketFile ? (
               <div onClick={() => ticketRef.current?.click()} style={{ cursor: 'pointer' }}>
                 {ticketPreview && <img src={ticketPreview} alt="Aperçu" style={{ maxHeight: 100, maxWidth: '100%', marginBottom: '0.5rem', borderRadius: '0.3rem' }} />}
@@ -646,88 +695,153 @@ function EncaissementForm({ token }: { token: string }) {
   )
 }
 
-// ─── Fond de caisse Form ──────────────────────────────────────────────────────
+// ─── Fond de caisse (automatique) ─────────────────────────────────────────────
 
-function FondsForm({ token }: { token: string }) {
-  const [direction, setDirection] = useState<'out' | 'in'>('out')
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [amount, setAmount] = useState('')
-  const [currency, setCurrency] = useState('MAD')
-  const [category, setCategory] = useState(FONDS_CATEGORIES[0])
-  const [description, setDescription] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [success, setSuccess] = useState('')
-  const [error, setError] = useState('')
+function FondsCaisse({ token }: { token: string }) {
+  const [entries, setEntries] = useState<Entry[]>([])
+  const [fondsEntries, setFondsEntries] = useState<FondsEntry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [compteMAD, setCompteMAD] = useState('')
+  const [compteEUR, setCompteEUR] = useState('')
+  const [remiseLoading, setRemiseLoading] = useState(false)
+  const [msg, setMsg] = useState('')
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setSubmitting(true); setError(''); setSuccess('')
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    const [r1, r2] = await Promise.all([
+      fetch(`/api/entries?token=${token}`),
+      fetch(`/api/fonds?token=${token}`)
+    ])
+    const e = await r1.json(); const f = await r2.json()
+    setEntries(Array.isArray(e) ? e : [])
+    setFondsEntries(Array.isArray(f) ? f : [])
+    setLoading(false)
+  }, [token])
+
+  useEffect(() => { fetchData() }, [fetchData])
+
+  // Balance calculée : cash reçu (encaissements Espèces) - cash dépensé (dépenses Espèces) + fonds_entries
+  const balanceMAD = useMemo(() => {
+    let b = 0
+    entries.forEach(e => {
+      if (e.payment !== 'Espèces') return
+      const cur = (e.currency as string) || 'MAD'
+      if (cur !== 'MAD') return
+      if (e.type === 'cash') b += Number(e.amount)
+      else if (e.type === 'cb') b -= Number(e.amount)
+    })
+    fondsEntries.forEach(f => {
+      if (((f.currency as string) || 'MAD') !== 'MAD') return
+      b += f.direction === 'in' ? Number(f.amount) : -Number(f.amount)
+    })
+    return b
+  }, [entries, fondsEntries])
+
+  const balanceEUR = useMemo(() => {
+    let b = 0
+    entries.forEach(e => {
+      if (e.payment !== 'Espèces') return
+      if ((e.currency as string) !== 'EUR') return
+      if (e.type === 'cash') b += Number(e.amount)
+      else if (e.type === 'cb') b -= Number(e.amount)
+    })
+    fondsEntries.forEach(f => {
+      if ((f.currency as string) !== 'EUR') return
+      b += f.direction === 'in' ? Number(f.amount) : -Number(f.amount)
+    })
+    return b
+  }, [entries, fondsEntries])
+
+  // Rapprochement
+  const diffMAD = compteMAD !== '' ? parseFloat(compteMAD) - balanceMAD : null
+  const diffEUR = compteEUR !== '' ? parseFloat(compteEUR) - balanceEUR : null
+
+  // Remise au fond
+  const TARGET_MAD = 3000, TARGET_EUR = 100
+  const excessMAD = Math.max(0, balanceMAD - TARGET_MAD)
+  const excessEUR = Math.max(0, balanceEUR - TARGET_EUR)
+
+  async function handleRemise() {
+    setRemiseLoading(true); setMsg('')
+    const today = new Date().toISOString().split('T')[0]
     try {
-      const r = await fetch('/api/fonds', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ direction, date, amount: parseFloat(amount), currency, category, description, token }),
-      })
-      if (r.ok) {
-        setSuccess('Mouvement enregistré !')
-        setAmount(''); setDescription(''); setCategory(FONDS_CATEGORIES[0])
-        setDate(new Date().toISOString().split('T')[0])
-      } else { const d = await r.json(); setError(d.error || 'Erreur.') }
-    } catch { setError('Erreur de connexion.') }
-    setSubmitting(false)
+      const ops = []
+      if (excessMAD > 0) ops.push(fetch('/api/fonds', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ direction: 'out', date: today, amount: excessMAD, currency: 'MAD', category: 'Remise en coffre', description: `Fond de caisse → ${TARGET_MAD} MAD`, token }) }))
+      if (excessEUR > 0) ops.push(fetch('/api/fonds', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ direction: 'out', date: today, amount: excessEUR, currency: 'EUR', category: 'Remise en coffre', description: `Fond de caisse → ${TARGET_EUR} EUR`, token }) }))
+      await Promise.all(ops)
+      setMsg(`✓ Remise effectuée — Fond de caisse : ${TARGET_MAD} MAD / ${TARGET_EUR} EUR`)
+      await fetchData()
+    } catch { setMsg('Erreur lors de la remise.') }
+    setRemiseLoading(false)
   }
 
+  if (loading) return <div className="card" style={{ textAlign: 'center', color: '#888' }}>Chargement…</div>
+
   return (
-    <div className="card">
-      <h2 style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '1.25rem', color: '#6366F1' }}>💰 Fond de caisse</h2>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-        <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Sens du mouvement *</label>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button type="button" onClick={() => setDirection('out')} style={{ flex: 1, padding: '0.6rem', border: `2px solid ${direction === 'out' ? 'var(--red)' : '#ddd'}`, borderRadius: '0.5rem', background: direction === 'out' ? '#FEF2F2' : 'white', fontWeight: direction === 'out' ? 700 : 400, cursor: 'pointer', color: direction === 'out' ? 'var(--red)' : 'var(--text)' }}>💸 Sortie (dépense)</button>
-            <button type="button" onClick={() => setDirection('in')} style={{ flex: 1, padding: '0.6rem', border: `2px solid ${direction === 'in' ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', background: direction === 'in' ? '#F0FDF4' : 'white', fontWeight: direction === 'in' ? 700 : 400, cursor: 'pointer', color: direction === 'in' ? 'var(--green)' : 'var(--text)' }}>💰 Entrée (recette)</button>
-          </div>
-        </div>
-
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      {/* Solde actuel */}
+      <div className="card">
+        <h2 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.875rem', color: '#6366F1' }}>💰 Solde fond de caisse</h2>
+        <p style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.75rem' }}>Calculé automatiquement depuis les encaissements et dépenses en espèces.</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          {[{ cur: 'MAD', bal: balanceMAD, target: TARGET_MAD }, { cur: 'EUR', bal: balanceEUR, target: TARGET_EUR }].map(({ cur, bal, target }) => (
+            <div key={cur} style={{ background: bal >= 0 ? '#F0FDF4' : '#FEF2F2', border: `2px solid ${bal >= 0 ? 'var(--green)' : 'var(--red)'}`, borderRadius: '0.5rem', padding: '0.875rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#888', marginBottom: '0.2rem' }}>{cur} (cible : {target})</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 700, color: bal >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmt(bal)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Rapprochement */}
+      <div className="card">
+        <h2 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.5rem', color: '#6366F1' }}>🔍 Rapprochement caisse</h2>
+        <p style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.75rem' }}>Comptez le contenu physique de la caisse et saisissez les montants.</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Date *</label>
-            <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>MAD compté</label>
+            <input className="form-input" type="number" step="0.01" value={compteMAD} onChange={e => setCompteMAD(e.target.value)} placeholder="0.00" />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Montant *</label>
-            <input className="form-input" type="number" step="0.01" min="0" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" required />
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>EUR compté</label>
+            <input className="form-input" type="number" step="0.01" value={compteEUR} onChange={e => setCompteEUR(e.target.value)} placeholder="0.00" />
           </div>
         </div>
-
-        <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Devise</label>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            {(['MAD', 'EUR'] as const).map(c => (
-              <button key={c} type="button" onClick={() => setCurrency(c)} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${currency === c ? '#6366F1' : '#ddd'}`, borderRadius: '0.5rem', background: currency === c ? '#EEF2FF' : 'white', fontWeight: currency === c ? 700 : 400, cursor: 'pointer', color: currency === c ? '#6366F1' : 'var(--text)' }}>{c}</button>
-            ))}
+        {(diffMAD !== null || diffEUR !== null) && (
+          <div style={{ background: '#F8F8F8', borderRadius: '0.5rem', padding: '0.75rem' }}>
+            {diffMAD !== null && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                <span style={{ fontSize: '0.85rem' }}>Écart MAD</span>
+                <span style={{ fontWeight: 700, color: Math.abs(diffMAD) < 1 ? 'var(--green)' : 'var(--red)' }}>{diffMAD > 0 ? '+' : ''}{fmt(diffMAD)} {Math.abs(diffMAD) < 1 ? '✓' : '⚠️'}</span>
+              </div>
+            )}
+            {diffEUR !== null && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem' }}>Écart EUR</span>
+                <span style={{ fontWeight: 700, color: Math.abs(diffEUR) < 0.5 ? 'var(--green)' : 'var(--red)' }}>{diffEUR > 0 ? '+' : ''}{fmt(diffEUR)} {Math.abs(diffEUR) < 0.5 ? '✓' : '⚠️'}</span>
+              </div>
+            )}
           </div>
+        )}
+      </div>
+
+      {/* Remise en coffre (Nicolas) */}
+      <div className="card">
+        <h2 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.5rem', color: '#6366F1' }}>🔒 Remise en coffre</h2>
+        <p style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.75rem' }}>Remet le fond de caisse à {fmt(TARGET_MAD)} MAD / {fmt(TARGET_EUR)} EUR et place l'excédent en coffre.</p>
+        <div style={{ background: '#F8F8F8', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: '0.75rem' }}>
+          {[{ label: 'Excédent MAD', val: excessMAD }, { label: 'Excédent EUR', val: excessEUR }].map(({ label, val }) => (
+            <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+              <span>{label}</span>
+              <span style={{ fontWeight: 700, color: val > 0 ? '#6366F1' : '#aaa' }}>{val > 0 ? fmt(val) : '—'}</span>
+            </div>
+          ))}
         </div>
-
-        <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Catégorie *</label>
-          <select className="form-input" value={category} onChange={e => setCategory(e.target.value)}>
-            {FONDS_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-
-        <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Description</label>
-          <textarea className="form-input" rows={2} value={description} onChange={e => setDescription(e.target.value)} placeholder="Notes optionnelles…" />
-        </div>
-
-        {error && <p style={{ color: 'var(--red)', fontSize: '0.875rem' }}>{error}</p>}
-        {success && <p style={{ color: 'var(--green)', fontSize: '0.875rem', fontWeight: 600 }}>{success}</p>}
-
-        <button className="btn-primary" type="submit" disabled={submitting} style={{ background: '#6366F1' }}>
-          {submitting ? 'Envoi…' : 'Soumettre'}
+        {msg && <p style={{ color: msg.startsWith('✓') ? 'var(--green)' : 'var(--red)', fontSize: '0.875rem', marginBottom: '0.5rem', fontWeight: 600 }}>{msg}</p>}
+        <button type="button" onClick={handleRemise} disabled={remiseLoading || (excessMAD <= 0 && excessEUR <= 0)} className="btn-primary" style={{ background: '#6366F1' }}>
+          {remiseLoading ? 'Traitement…' : '🔒 Remettre au fond de caisse'}
         </button>
-      </form>
+      </div>
     </div>
   )
 }
