@@ -291,12 +291,15 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [fUploading, setFUploading] = useState(false)
   const [fExtracting, setFExtracting] = useState(false)
   const [fExtracted, setFExtracted] = useState(false)
+  const [fDragCounter, setFDragCounter] = useState(0)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [formSuccess, setFormSuccess] = useState('')
   const [uploadingEntryId, setUploadingEntryId] = useState<number | null>(null)
   const rowFileRef = useRef<HTMLInputElement>(null)
   const fFileRef = useRef<HTMLInputElement>(null)
+  const fDropZoneRef = useRef<HTMLDivElement>(null)
+  const processFileRef = useRef<(f: File) => void>((_f: File) => {})
   const [pendingUploadEntry, setPendingUploadEntry] = useState<number | null>(null)
 
   const categories = type === 'cb' ? DEPENSES_CATEGORIES : ENCAISSEMENTS_CATEGORIES
@@ -342,9 +345,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     fetchEntries()
   }
 
-  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+  async function processFile(file: File) {
     setFFile(file)
     setFExtracted(false)
     if (file.type.startsWith('image/')) {
@@ -373,15 +374,64 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     setFExtracting(false)
   }
 
-  async function uploadToCloudinary(file: File, folder: string): Promise<string> {
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
-    const preset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
-    if (!cloudName || !preset) throw new Error('Cloudinary non configuré')
-    const fd = new FormData()
-    fd.append('file', file); fd.append('upload_preset', preset); fd.append('folder', folder)
-    const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, { method: 'POST', body: fd })
-    if (!r.ok) throw new Error('Erreur upload')
-    return (await r.json()).secure_url as string
+  processFileRef.current = processFile
+
+  useEffect(() => {
+    const el = fDropZoneRef.current
+    if (!el) return
+    const onDragEnter = (e: DragEvent) => { e.preventDefault(); setFDragCounter(c => c + 1) }
+    const onDragOver = (e: DragEvent) => { e.preventDefault() }
+    const onDragLeave = (e: DragEvent) => { e.preventDefault(); setFDragCounter(c => Math.max(0, c - 1)) }
+    const onDrop = (e: DragEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setFDragCounter(0)
+      const f = e.dataTransfer?.files[0]
+      if (f) processFileRef.current(f)
+    }
+    el.addEventListener('dragenter', onDragEnter)
+    el.addEventListener('dragover', onDragOver)
+    el.addEventListener('dragleave', onDragLeave)
+    el.addEventListener('drop', onDrop)
+    return () => {
+      el.removeEventListener('dragenter', onDragEnter)
+      el.removeEventListener('dragover', onDragOver)
+      el.removeEventListener('dragleave', onDragLeave)
+      el.removeEventListener('drop', onDrop)
+    }
+  }, [showForm])
+
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    processFile(file)
+  }
+
+  async function fileToBase64(file: File): Promise<string> {
+    if (file.type.startsWith('image/')) {
+      return new Promise((resolve, reject) => {
+        const img = new Image()
+        const url = URL.createObjectURL(file)
+        img.onload = () => {
+          const maxW = 1200
+          const scale = Math.min(1, maxW / img.width)
+          const canvas = document.createElement('canvas')
+          canvas.width = Math.round(img.width * scale)
+          canvas.height = Math.round(img.height * scale)
+          canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+          URL.revokeObjectURL(url)
+          resolve(canvas.toDataURL('image/jpeg', 0.75))
+        }
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Erreur image')) }
+        img.src = url
+      })
+    }
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = () => reject(new Error('Erreur lecture fichier'))
+      reader.readAsDataURL(file)
+    })
   }
 
   async function handleRowUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -389,8 +439,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     if (!file || pendingUploadEntry === null) return
     setUploadingEntryId(pendingUploadEntry)
     try {
-      const folder = type === 'cb' ? 'riad-factures' : 'riad-tickets'
-      const url = await uploadToCloudinary(file, folder)
+      const url = await fileToBase64(file)
       await fetch(`/api/entries/${pendingUploadEntry}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ invoice_url: url }) })
       fetchEntries()
     } catch { /* ignore */ }
@@ -408,8 +457,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     if (fFile) {
       setFUploading(true)
       try {
-        const folder = type === 'cb' ? 'riad-factures' : 'riad-tickets'
-        invoice_url = await uploadToCloudinary(fFile, folder)
+        invoice_url = await fileToBase64(fFile)
       } catch (err) { setFormError((err as Error).message); setFUploading(false); setSubmitting(false); return }
       setFUploading(false)
     }
@@ -469,8 +517,8 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                   : <span style={{ color: '#888', fontWeight: 400 }}> (optionnel)</span>}
               </label>
               <div
-                onClick={() => fFileRef.current?.click()}
-                style={{ border: `2px dashed ${fFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1.25rem', textAlign: 'center', cursor: 'pointer', background: fExtracting ? '#FFFBF0' : fFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
+                ref={fDropZoneRef}
+                style={{ border: `2px dashed ${fDragCounter > 0 ? (type === 'cb' ? 'var(--terracotta)' : 'var(--green)') : fFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1.25rem', textAlign: 'center', background: fDragCounter > 0 ? (type === 'cb' ? '#FFF5F0' : '#F0FDF4') : fExtracting ? '#FFFBF0' : fFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
               >
                 {fExtracting ? (
                   <div>
@@ -478,17 +526,27 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                     <div style={{ fontSize: '0.85rem', color: '#888' }}>Analyse du document en cours…</div>
                   </div>
                 ) : fFile ? (
-                  <div>
+                  <div onClick={() => fFileRef.current?.click()} style={{ cursor: 'pointer' }}>
                     {fFilePreview && <img src={fFilePreview} alt="Aperçu" style={{ maxHeight: 120, maxWidth: '100%', marginBottom: '0.5rem', borderRadius: '0.3rem', objectFit: 'contain' }} />}
                     <div style={{ fontSize: '0.85rem', color: 'var(--green)', fontWeight: 600 }}>✓ {fFile.name}</div>
                     {fExtracted && <div style={{ fontSize: '0.75rem', color: 'var(--green)', marginTop: '0.2rem' }}>Données extraites automatiquement — vérifiez ci-dessous</div>}
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.2rem' }}>Cliquer pour changer</div>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.2rem' }}>Cliquer ou glisser pour changer</div>
                   </div>
                 ) : (
                   <div>
-                    <div style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }}>{type === 'cb' ? '📄' : '🧾'}</div>
-                    <div style={{ fontSize: '0.85rem', color: '#666' }}>{type === 'cb' ? 'Cliquer pour ajouter la facture' : 'Cliquer pour ajouter le ticket CB'}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '0.25rem' }}>Image ou PDF — les champs seront remplis automatiquement</div>
+                    <div style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }}>{fDragCounter > 0 ? '⬇️' : (type === 'cb' ? '📄' : '🧾')}</div>
+                    <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '0.75rem' }}>{type === 'cb' ? 'Glisser la facture ici' : 'Glisser le ticket ici'}</div>
+                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                      <label style={{ padding: '0.5rem 0.875rem', background: type === 'cb' ? '#FFF5F0' : '#F0FDF4', border: `1px solid ${type === 'cb' ? 'var(--terracotta)' : 'var(--green)'}`, borderRadius: '0.5rem', color: type === 'cb' ? 'var(--terracotta)' : 'var(--green)', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem' }}>
+                        📷 Photo
+                        <input type="file" accept="image/*" capture="environment" onChange={handleFileSelect} style={{ display: 'none' }} />
+                      </label>
+                      <label style={{ padding: '0.5rem 0.875rem', background: '#F8F8F8', border: '1px solid #ddd', borderRadius: '0.5rem', color: '#555', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem' }}>
+                        📁 Fichier
+                        <input type="file" accept="image/*,application/pdf" onChange={handleFileSelect} style={{ display: 'none' }} />
+                      </label>
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: '#aaa', marginTop: '0.5rem' }}>Image ou PDF — les champs seront remplis automatiquement</div>
                   </div>
                 )}
               </div>
