@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Entry, Employee, DashboardStats, FondsEntry } from '@/types'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
@@ -260,7 +260,7 @@ function DashboardTab() {
 
 const DEPENSES_CATEGORIES = ['Alimentation/Courses','Fournitures & bureautique','Entretien & maintenance','Transport','Restauration','Pharmacie/Hygiène','Décoration & fleurs','Autre']
 const ENCAISSEMENTS_CATEGORIES = ['Boissons bar','Repas/Restauration','Activité/Excursion','Service spa/Hammam','Transfert/Transport','Pourboire collectif','Autre encaissement']
-const PAYMENT_MODES = ['CB', 'Virement', 'Chèque']
+const PAYMENT_MODES = ['CB', 'Virement', 'Chèque', 'Espèces']
 const CURRENCIES = ['MAD', 'EUR']
 
 function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string; color: string }) {
@@ -292,6 +292,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [fExtracting, setFExtracting] = useState(false)
   const [fExtracted, setFExtracted] = useState(false)
   const [fDragCounter, setFDragCounter] = useState(0)
+  const [fTransactionAmount, setFTransactionAmount] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [formSuccess, setFormSuccess] = useState('')
@@ -331,6 +332,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       setFCategory(type === 'cb' ? DEPENSES_CATEGORIES[0] : ENCAISSEMENTS_CATEGORIES[0])
       setFPayment('CB')
       setFDate(new Date().toISOString().split('T')[0])
+      setFTransactionAmount('')
     }
   }, [showForm, type])
 
@@ -363,7 +365,14 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
         const data = await r.json()
         if (data.date) setFDate(data.date)
         if (data.supplier) setFSupplier(data.supplier)
-        if (data.amount_ttc) setFAmount(String(data.amount_ttc))
+        if (data.amount_ttc) {
+          if (type === 'cash' && fPayment === 'CB') {
+            setFTransactionAmount(String(data.amount_ttc))
+            setFAmount(String((data.amount_ttc * 0.97).toFixed(2)))
+          } else {
+            setFAmount(String(data.amount_ttc))
+          }
+        }
         if (type === 'cb') {
           if (data.amount_ht) setFAmountHT(String(data.amount_ht))
           if (data.tva_rate) setFTvaRate(String(data.tva_rate))
@@ -461,18 +470,29 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       } catch (err) { setFormError((err as Error).message); setFUploading(false); setSubmitting(false); return }
       setFUploading(false)
     }
-    const body: Record<string, unknown> = { type, date: fDate, employee_name: fEmployee, category: fCategory, amount: parseFloat(fAmount), currency: fCurrency, description: fDescription || null, invoice_url }
+    const finalAmount = type === 'cash' && fPayment === 'CB' && fTransactionAmount
+      ? parseFloat(fTransactionAmount) * 0.97
+      : parseFloat(fAmount)
+
+    const body: Record<string, unknown> = { type, date: fDate, employee_name: fEmployee, category: fCategory, amount: finalAmount, currency: fCurrency, description: fDescription || null, invoice_url }
     if (type === 'cb') {
       body.supplier = fSupplier || null
       body.payment = fPayment
       if (fAmountHT) body.amount_ht = parseFloat(fAmountHT)
       if (fTvaRate) body.tva_rate = parseFloat(fTvaRate)
+    } else {
+      body.payment = fPayment
+      if (fPayment === 'CB' && fTransactionAmount) {
+        body.amount_ht = parseFloat(fTransactionAmount)
+        body.tva_rate = 3
+      }
     }
     try {
       const r = await fetch('/api/entries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       if (r.ok) {
         setFAmount(''); setFAmountHT(''); setFTvaRate(''); setFSupplier(''); setFDescription('')
         setFFile(null); setFFilePreview(null); setFExtracted(false); setShowForm(false)
+        setFTransactionAmount('')
         setFilterStatus(''); setFilterEmployee('')
         setFormSuccess('✓ Entrée ajoutée avec succès !')
         setTimeout(() => setFormSuccess(''), 4000)
@@ -518,8 +538,12 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
               </label>
               <div
                 ref={fDropZoneRef}
-                style={{ border: `2px dashed ${fDragCounter > 0 ? (type === 'cb' ? 'var(--terracotta)' : 'var(--green)') : fFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1.25rem', textAlign: 'center', background: fDragCounter > 0 ? (type === 'cb' ? '#FFF5F0' : '#F0FDF4') : fExtracting ? '#FFFBF0' : fFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
+                style={{ position: 'relative', border: `2px dashed ${fDragCounter > 0 ? (type === 'cb' ? 'var(--terracotta)' : 'var(--green)') : fFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1.25rem', textAlign: 'center', background: fDragCounter > 0 ? (type === 'cb' ? '#FFF5F0' : '#F0FDF4') : fExtracting ? '#FFFBF0' : fFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
               >
+                {fFile && !fExtracting && (
+                  <button type="button" onClick={e => { e.stopPropagation(); setFFile(null); setFFilePreview(null); if (fFileRef.current) fFileRef.current.value = '' }}
+                    style={{ position: 'absolute', top: '0.35rem', left: '0.35rem', background: 'rgba(239,68,68,0.9)', border: 'none', borderRadius: '50%', width: '1.3rem', height: '1.3rem', color: 'white', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, lineHeight: 1, padding: 0 }}>×</button>
+                )}
                 {fExtracting ? (
                   <div>
                     <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>⏳</div>
@@ -603,6 +627,16 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                   </div>
                 </div>
               </div>
+            ) : fPayment === 'CB' ? (
+              <div style={{ background: '#F0FDF4', border: '1px solid #86efac', borderRadius: '0.5rem', padding: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#16a34a', marginBottom: '0.1rem' }}>Encaissement CB — frais bancaires 3%</p>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '0.2rem' }}>Montant de la transaction *</label>
+                  <input className="form-input" type="number" step="0.01" min="0" value={fTransactionAmount} onChange={e => { setFTransactionAmount(e.target.value); setFAmount(e.target.value ? String((parseFloat(e.target.value) * 0.97).toFixed(2)) : '') }} placeholder="0.00" required />
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#555' }}>Frais bancaires (3%) : {fTransactionAmount ? `− ${fmt(parseFloat(fTransactionAmount) * 0.03)}` : '—'}</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#16a34a' }}>Encaissement perçu : {fTransactionAmount ? fmt(parseFloat(fTransactionAmount) * 0.97) : '—'}</div>
+              </div>
             ) : (
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Montant *</label>
@@ -619,17 +653,15 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
               </div>
             </div>
 
-            {/* Mode paiement (dépenses) — boutons */}
-            {type === 'cb' && (
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>Mode de paiement</label>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {PAYMENT_MODES.map(p => (
-                    <button key={p} type="button" onClick={() => setFPayment(p)} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fPayment === p ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: fPayment === p ? '#FFF5F0' : 'white', fontWeight: fPayment === p ? 700 : 400, cursor: 'pointer', color: fPayment === p ? 'var(--terracotta)' : 'var(--text)', fontSize: '0.85rem' }}>{p}</button>
-                  ))}
-                </div>
+            {/* Mode paiement */}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>Mode de paiement</label>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {PAYMENT_MODES.map(p => (
+                  <button key={p} type="button" onClick={() => { setFPayment(p); if (p !== 'CB') setFTransactionAmount('') }} style={{ flex: 1, minWidth: '4rem', padding: '0.5rem', border: `2px solid ${fPayment === p ? color : '#ddd'}`, borderRadius: '0.5rem', background: fPayment === p ? (type === 'cb' ? '#FFF5F0' : '#F0FDF4') : 'white', fontWeight: fPayment === p ? 700 : 400, cursor: 'pointer', color: fPayment === p ? color : 'var(--text)', fontSize: '0.85rem' }}>{p}</button>
+                ))}
               </div>
-            )}
+            </div>
 
             {/* Catégorie + Description */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
@@ -724,249 +756,141 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
 
 // ─── Fond de caisse Tab ───────────────────────────────────────────────────────
 
-const FONDS_CATEGORIES = ['Courses/Marché','Entretien','Personnel','Transport','Pourboire','Recette cash','Remboursement','Autre']
-
 function FondsTab() {
-  const now = new Date()
-  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  const [month, setMonth] = useState(currentMonth)
-  const [entries, setEntries] = useState<FondsEntry[]>([])
+  const [cashEntries, setCashEntries] = useState<Entry[]>([])
+  const [fondsEntries, setFondsEntries] = useState<FondsEntry[]>([])
   const [loading, setLoading] = useState(true)
-  const [deleteModal, setDeleteModal] = useState<number | null>(null)
-  const [showForm, setShowForm] = useState(false)
+  const [compteMAD, setCompteMAD] = useState('')
+  const [compteEUR, setCompteEUR] = useState('')
+  const [remiseLoading, setRemiseLoading] = useState(false)
+  const [msg, setMsg] = useState('')
+  const [targetMAD, setTargetMAD] = useState(3000)
+  const [targetEUR, setTargetEUR] = useState(100)
 
-  // Dotation
-  const [dotationMAD, setDotationMAD] = useState(2000)
-  const [dotationEUR, setDotationEUR] = useState(200)
-  const [showDotationEdit, setShowDotationEdit] = useState(false)
-  const [editMAD, setEditMAD] = useState('')
-  const [editEUR, setEditEUR] = useState('')
-  const [savingDotation, setSavingDotation] = useState(false)
-
-  // Form state
-  const [direction, setDirection] = useState<'in' | 'out'>('out')
-  const [date, setDate] = useState(now.toISOString().split('T')[0])
-  const [amount, setAmount] = useState('')
-  const [currency, setCurrency] = useState('MAD')
-  const [category, setCategory] = useState(FONDS_CATEGORIES[0])
-  const [description, setDescription] = useState('')
-  const [employeeName, setEmployeeName] = useState('Administrateur')
-  const [fondsEmployees, setFondsEmployees] = useState<string[]>([])
-  const [submitting, setSubmitting] = useState(false)
-  const [formError, setFormError] = useState('')
-
-  const fetchEntries = useCallback(async () => {
+  const reload = useCallback(async () => {
     setLoading(true)
-    const r = await fetch(`/api/fonds?month=${month}`)
-    setEntries(await r.json())
+    const [ents, fonds, settings] = await Promise.all([
+      fetch('/api/entries').then(r => r.json()),
+      fetch('/api/fonds').then(r => r.json()),
+      fetch('/api/settings/fond-caisse').then(r => r.json()).catch(() => ({})),
+    ])
+    setCashEntries(Array.isArray(ents) ? ents : [])
+    setFondsEntries(Array.isArray(fonds) ? fonds : [])
+    if (settings?.fond_caisse_mad) setTargetMAD(settings.fond_caisse_mad)
+    if (settings?.fond_caisse_eur) setTargetEUR(settings.fond_caisse_eur)
     setLoading(false)
-  }, [month])
-
-  useEffect(() => { fetchEntries() }, [fetchEntries])
-  useEffect(() => {
-    fetch('/api/employees').then(r => r.json()).then((emps: Employee[]) => {
-      setFondsEmployees(emps.filter(e => e.active).map(e => e.name))
-    })
-    fetch('/api/settings/fond-caisse').then(r => r.json()).then(d => {
-      setDotationMAD(d.fond_caisse_mad ?? 2000)
-      setDotationEUR(d.fond_caisse_eur ?? 200)
-    })
   }, [])
 
-  async function saveDotation() {
-    setSavingDotation(true)
-    await fetch('/api/settings/fond-caisse', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fond_caisse_mad: parseFloat(editMAD), fond_caisse_eur: parseFloat(editEUR) }),
-    })
-    setDotationMAD(parseFloat(editMAD))
-    setDotationEUR(parseFloat(editEUR))
-    setShowDotationEdit(false)
-    setSavingDotation(false)
+  useEffect(() => { reload() }, [reload])
+
+  const balanceMAD = useMemo(() => {
+    const cashIn = cashEntries.filter(e => e.type === 'cash' && e.payment === 'Espèces' && (e.currency === 'MAD' || !e.currency)).reduce((s, e) => s + Number(e.amount), 0)
+    const cashOut = cashEntries.filter(e => e.type === 'cb' && e.payment === 'Espèces' && (e.currency === 'MAD' || !e.currency)).reduce((s, e) => s + Number(e.amount), 0)
+    const adj = fondsEntries.filter(e => (e.currency === 'MAD' || !e.currency)).reduce((s, e) => s + (e.direction === 'in' ? Number(e.amount) : -Number(e.amount)), 0)
+    return cashIn - cashOut + adj
+  }, [cashEntries, fondsEntries])
+
+  const balanceEUR = useMemo(() => {
+    const cashIn = cashEntries.filter(e => e.type === 'cash' && e.payment === 'Espèces' && e.currency === 'EUR').reduce((s, e) => s + Number(e.amount), 0)
+    const cashOut = cashEntries.filter(e => e.type === 'cb' && e.payment === 'Espèces' && e.currency === 'EUR').reduce((s, e) => s + Number(e.amount), 0)
+    const adj = fondsEntries.filter(e => e.currency === 'EUR').reduce((s, e) => s + (e.direction === 'in' ? Number(e.amount) : -Number(e.amount)), 0)
+    return cashIn - cashOut + adj
+  }, [cashEntries, fondsEntries])
+
+  const excessMAD = Math.max(0, balanceMAD - targetMAD)
+  const excessEUR = Math.max(0, balanceEUR - targetEUR)
+
+  async function handleRemise() {
+    if (excessMAD <= 0 && excessEUR <= 0) return
+    setRemiseLoading(true)
+    const today = new Date().toISOString().split('T')[0]
+    const promises = []
+    if (excessMAD > 0) promises.push(fetch('/api/fonds', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ direction: 'out', date: today, amount: excessMAD, currency: 'MAD', category: 'Remise en coffre', description: `Remise coffre — solde ramené à ${targetMAD} MAD`, employee_name: 'Administrateur' }) }))
+    if (excessEUR > 0) promises.push(fetch('/api/fonds', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ direction: 'out', date: today, amount: excessEUR, currency: 'EUR', category: 'Remise en coffre', description: `Remise coffre — solde ramené à ${targetEUR} EUR`, employee_name: 'Administrateur' }) }))
+    await Promise.all(promises)
+    await reload()
+    setMsg('✓ Remise enregistrée')
+    setTimeout(() => setMsg(''), 4000)
+    setRemiseLoading(false)
   }
 
-  const totalIn = entries.filter(e => e.direction === 'in').reduce((s, e) => s + Number(e.amount), 0)
-  const totalOut = entries.filter(e => e.direction === 'out').reduce((s, e) => s + Number(e.amount), 0)
-  const solde = totalIn - totalOut
-
-  async function toggleStatus(entry: FondsEntry) {
-    await fetch(`/api/fonds/${entry.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: entry.status === 'pending' ? 'validated' : 'pending' }) })
-    fetchEntries()
-  }
-
-  async function deleteEntry(id: number) {
-    await fetch(`/api/fonds/${id}`, { method: 'DELETE' })
-    setDeleteModal(null)
-    fetchEntries()
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setSubmitting(true)
-    setFormError('')
-    const r = await fetch('/api/fonds', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ direction, date, amount: parseFloat(amount), currency, category, description, employee_name: employeeName }),
-    })
-    if (r.ok) {
-      setAmount(''); setDescription(''); setShowForm(false)
-      fetchEntries()
-    } else {
-      const d = await r.json()
-      setFormError(d.error || 'Erreur')
-    }
-    setSubmitting(false)
-  }
+  if (loading) return <p>Chargement…</p>
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button onClick={() => setMonth(shiftMonth(month, -1))} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: 'pointer', fontWeight: 600 }}>‹</button>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#6366F1' }}>💰 Fond de caisse — {formatMonth(month)}</h2>
-          <button onClick={() => setMonth(shiftMonth(month, 1))} disabled={month === currentMonth} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: month === currentMonth ? 'default' : 'pointer', opacity: month === currentMonth ? 0.4 : 1, fontWeight: 600 }}>›</button>
-        </div>
-        <button className="btn-primary" onClick={() => setShowForm(!showForm)}>{showForm ? 'Annuler' : '+ Ajouter'}</button>
-      </div>
+      <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#6366F1', marginBottom: '1rem' }}>💰 Fond de caisse</h2>
 
-      {/* Dotation initiale */}
-      <div className="card" style={{ marginBottom: '1rem', background: '#EEF2FF', border: '1px solid #C7D2FE' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6366F1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Dotation fond de caisse</div>
-            {showDotationEdit ? (
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                <input type="number" min="0" step="0.01" value={editMAD} onChange={e => setEditMAD(e.target.value)} placeholder="MAD" style={{ width: '100px', padding: '0.3rem 0.5rem', border: '1px solid #C7D2FE', borderRadius: '0.4rem', fontSize: '0.9rem' }} />
-                <span style={{ fontWeight: 600, color: '#6366F1' }}>MAD</span>
-                <span style={{ color: '#aaa' }}>+</span>
-                <input type="number" min="0" step="0.01" value={editEUR} onChange={e => setEditEUR(e.target.value)} placeholder="EUR" style={{ width: '100px', padding: '0.3rem 0.5rem', border: '1px solid #C7D2FE', borderRadius: '0.4rem', fontSize: '0.9rem' }} />
-                <span style={{ fontWeight: 600, color: '#6366F1' }}>EUR</span>
-                <button onClick={saveDotation} disabled={savingDotation} style={{ background: '#6366F1', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.75rem', cursor: 'pointer', fontSize: '0.85rem' }}>{savingDotation ? '…' : 'Enregistrer'}</button>
-                <button onClick={() => setShowDotationEdit(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', fontSize: '0.85rem' }}>Annuler</button>
-              </div>
-            ) : (
-              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#4338CA' }}>
-                {dotationMAD.toLocaleString('fr-FR')} MAD &nbsp;+&nbsp; {dotationEUR.toLocaleString('fr-FR')} EUR
-              </div>
-            )}
+      {/* Soldes auto-calculés */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.25rem' }}>
+        {[{ cur: 'MAD', bal: balanceMAD }, { cur: 'EUR', bal: balanceEUR }].map(({ cur, bal }) => (
+          <div key={cur} className="stat-card" style={{ borderLeftColor: '#6366F1' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6366F1', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Solde {cur}</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#4338CA' }}>{fmt(bal)} {cur}</div>
           </div>
-          {!showDotationEdit && (
-            <button onClick={() => { setEditMAD(String(dotationMAD)); setEditEUR(String(dotationEUR)); setShowDotationEdit(true) }} style={{ background: 'white', border: '1px solid #C7D2FE', borderRadius: '0.4rem', padding: '0.35rem 0.75rem', cursor: 'pointer', fontSize: '0.8rem', color: '#6366F1', fontWeight: 600 }}>✏️ Modifier</button>
-          )}
+        ))}
+      </div>
+
+      {/* Rapprochement */}
+      <div className="card" style={{ marginBottom: '1.25rem' }}>
+        <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', color: '#374151' }}>🔍 Rapprochement caisse</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          {[{ cur: 'MAD', bal: balanceMAD, val: compteMAD, set: setCompteMAD }, { cur: 'EUR', bal: balanceEUR, val: compteEUR, set: setCompteEUR }].map(({ cur, bal, val, set }) => {
+            const diff = parseFloat(val || '0') - bal
+            return (
+              <div key={cur}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.3rem' }}>Montant compté {cur}</label>
+                <input className="form-input" type="number" step="0.01" value={val} onChange={e => set(e.target.value)} placeholder={`0.00 ${cur}`} />
+                {val && (
+                  <div style={{ marginTop: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: Math.abs(diff) < 0.01 ? 'var(--green)' : 'var(--red)' }}>
+                    {Math.abs(diff) < 0.01 ? '✓ OK' : `Écart : ${diff > 0 ? '+' : ''}${fmt(diff)} ${cur}`}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 
-      {/* Summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1.25rem' }}>
-        <div className="stat-card" style={{ borderLeftColor: 'var(--green)' }}>
-          <div style={{ fontSize: '0.8rem', color: '#888' }}>Entrées</div>
-          <div style={{ fontWeight: 700, fontSize: '1.5rem', color: 'var(--green)' }}>+{fmt(totalIn)}</div>
+      {/* Remise en coffre */}
+      <div className="card" style={{ marginBottom: '1.25rem' }}>
+        <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.5rem', color: '#6366F1' }}>🔒 Remise en coffre</h3>
+        <p style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.75rem' }}>Remet le fond de caisse à {fmt(targetMAD)} MAD / {fmt(targetEUR)} EUR et place l&apos;excédent en coffre.</p>
+        <div style={{ background: '#F8F8F8', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: '0.75rem' }}>
+          {[{ label: 'Excédent MAD', val: excessMAD }, { label: 'Excédent EUR', val: excessEUR }].map(({ label, val }) => (
+            <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+              <span>{label}</span>
+              <span style={{ fontWeight: 700, color: val > 0 ? '#6366F1' : '#aaa' }}>{val > 0 ? fmt(val) : '—'}</span>
+            </div>
+          ))}
         </div>
-        <div className="stat-card" style={{ borderLeftColor: 'var(--red)' }}>
-          <div style={{ fontSize: '0.8rem', color: '#888' }}>Sorties</div>
-          <div style={{ fontWeight: 700, fontSize: '1.5rem', color: 'var(--red)' }}>-{fmt(totalOut)}</div>
-        </div>
-        <div className="stat-card" style={{ borderLeftColor: solde >= 0 ? '#6366F1' : 'var(--red)' }}>
-          <div style={{ fontSize: '0.8rem', color: '#888' }}>Solde</div>
-          <div style={{ fontWeight: 700, fontSize: '1.5rem', color: solde >= 0 ? '#6366F1' : 'var(--red)' }}>{solde >= 0 ? '+' : ''}{fmt(solde)}</div>
-        </div>
+        {msg && <p style={{ color: 'var(--green)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>{msg}</p>}
+        <button onClick={handleRemise} disabled={remiseLoading || (excessMAD <= 0 && excessEUR <= 0)} className="btn-primary" style={{ opacity: (excessMAD <= 0 && excessEUR <= 0) ? 0.5 : 1 }}>
+          {remiseLoading ? 'Enregistrement…' : '🔒 Remettre en coffre'}
+        </button>
       </div>
 
-      {/* Add form */}
-      {showForm && (
-        <div className="card" style={{ marginBottom: '1.25rem' }}>
-          <form onSubmit={handleSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Sens *</label>
-                <select className="form-input" value={direction} onChange={e => setDirection(e.target.value as 'in' | 'out')}>
-                  <option value="out">💸 Sortie (dépense)</option>
-                  <option value="in">💰 Entrée (recette)</option>
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Date *</label>
-                <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Montant *</label>
-                <input className="form-input" type="number" step="0.01" min="0" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" required />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Devise</label>
-                <select className="form-input" value={currency} onChange={e => setCurrency(e.target.value)}>
-                  <option value="MAD">MAD</option>
-                  <option value="EUR">EUR</option>
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Catégorie *</label>
-                <select className="form-input" value={category} onChange={e => setCategory(e.target.value)}>
-                  {FONDS_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Employé *</label>
-                <select className="form-input" value={employeeName} onChange={e => setEmployeeName(e.target.value)}>
-                  <option value="Administrateur">Administrateur</option>
-                  {fondsEmployees.map(n => <option key={n} value={n}>{n}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Description</label>
-                <input className="form-input" value={description} onChange={e => setDescription(e.target.value)} placeholder="Note optionnelle" />
-              </div>
-            </div>
-            {formError && <p style={{ color: 'var(--red)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{formError}</p>}
-            <button className="btn-primary" type="submit" disabled={submitting}>{submitting ? 'Enregistrement…' : 'Enregistrer'}</button>
-          </form>
-        </div>
-      )}
-
-      {loading ? <p>Chargement…</p> : entries.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>Aucun mouvement pour ce mois</div>
-      ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table>
-            <thead>
-              <tr><th>Date</th><th>Sens</th><th>Catégorie</th><th>Employé</th><th>Devise</th><th>Montant</th><th>Description</th><th>Statut</th><th>Actions</th></tr>
-            </thead>
-            <tbody>
-              {entries.map(e => (
-                <tr key={e.id}>
-                  <td style={{ whiteSpace: 'nowrap' }}>{new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR')}</td>
-                  <td>
-                    <span style={{ fontWeight: 600, color: e.direction === 'in' ? 'var(--green)' : 'var(--red)', fontSize: '0.85rem' }}>
-                      {e.direction === 'in' ? '↑ Entrée' : '↓ Sortie'}
-                    </span>
-                  </td>
-                  <td>{e.category}</td>
-                  <td>{e.employee_name}</td>
-                  <td><span style={{ fontWeight: 600, fontSize: '0.8rem', background: '#F3F4F6', padding: '0.15rem 0.4rem', borderRadius: '0.3rem' }}>{(e.currency as string) || 'MAD'}</span></td>
-                  <td style={{ fontWeight: 600, color: e.direction === 'in' ? 'var(--green)' : 'var(--red)' }}>{e.direction === 'in' ? '+' : '-'}{fmt(Number(e.amount))}</td>
-                  <td style={{ fontSize: '0.85rem', color: '#666' }}>{e.description || '—'}</td>
-                  <td><span className={e.status === 'validated' ? 'badge-validated' : 'badge-pending'}>{e.status === 'validated' ? 'Validé' : 'En attente'}</span></td>
-                  <td style={{ display: 'flex', gap: '0.4rem' }}>
-                    <button onClick={() => toggleStatus(e)} style={{ background: e.status === 'pending' ? 'var(--green)' : '#888', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.8rem' }}>{e.status === 'pending' ? '✓' : '↩'}</button>
-                    <button onClick={() => setDeleteModal(e.id)} style={{ background: 'var(--red)', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.8rem' }}>🗑</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {deleteModal !== null && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
-          <div className="card" style={{ maxWidth: 340, width: '90%', textAlign: 'center' }}>
-            <p style={{ marginBottom: '1rem', fontWeight: 600 }}>Supprimer ce mouvement ?</p>
-            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
-              <button className="btn-secondary" onClick={() => setDeleteModal(null)}>Annuler</button>
-              <button className="btn-red" onClick={() => deleteEntry(deleteModal)}>Supprimer</button>
-            </div>
+      {/* Historique des ajustements (remises) */}
+      {fondsEntries.length > 0 && (
+        <div className="card">
+          <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', color: '#374151' }}>📋 Ajustements fond de caisse</h3>
+          <div style={{ overflowX: 'auto' }}>
+            <table>
+              <thead>
+                <tr><th>Date</th><th>Catégorie</th><th>Employé</th><th>Devise</th><th>Montant</th><th>Description</th></tr>
+              </thead>
+              <tbody>
+                {fondsEntries.map(e => (
+                  <tr key={e.id}>
+                    <td style={{ whiteSpace: 'nowrap' }}>{new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR')}</td>
+                    <td>{e.category}</td>
+                    <td>{e.employee_name}</td>
+                    <td>{(e.currency as string) || 'MAD'}</td>
+                    <td style={{ fontWeight: 600, color: e.direction === 'in' ? 'var(--green)' : 'var(--red)' }}>{e.direction === 'in' ? '+' : '-'}{fmt(Number(e.amount))}</td>
+                    <td style={{ fontSize: '0.85rem', color: '#666' }}>{e.description || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
