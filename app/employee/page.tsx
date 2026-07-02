@@ -347,12 +347,13 @@ function DepenseForm({ token }: { token: string }) {
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
             Facture * <span style={{ color: 'var(--red)' }}>(obligatoire)</span>
           </label>
-          <label
+          <div
             onDragEnter={e => { e.preventDefault(); setDragCounter(c => c + 1) }}
             onDragOver={e => { e.preventDefault() }}
             onDragLeave={e => { e.preventDefault(); setDragCounter(c => Math.max(0, c - 1)) }}
-            onDrop={e => { e.preventDefault(); setDragCounter(0); const f = e.dataTransfer.files[0]; if (f) { processInvoiceFile(f) } }}
-            style={{ border: `2px dashed ${dragCounter > 0 ? 'var(--terracotta)' : invoiceFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: dragCounter > 0 ? '#FFF5F0' : invoiceFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s', display: 'block' }}
+            onDrop={e => { e.preventDefault(); e.stopPropagation(); setDragCounter(0); const f = e.dataTransfer.files[0]; if (f) { processInvoiceFile(f) } }}
+            onClick={() => fileRef.current?.click()}
+            style={{ border: `2px dashed ${dragCounter > 0 ? 'var(--terracotta)' : invoiceFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: dragCounter > 0 ? '#FFF5F0' : invoiceFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
           >
             {invoiceFile ? (
               <div>
@@ -369,8 +370,8 @@ function DepenseForm({ token }: { token: string }) {
                 <div style={{ fontSize: '0.85rem', color: '#666' }}>Glisser ici, prendre une photo ou choisir un fichier</div>
               </div>
             )}
-            <input ref={fileRef} type="file" accept="image/*,application/pdf" onChange={handleFile} style={{ display: 'none' }} />
-          </label>
+          </div>
+          <input ref={fileRef} type="file" accept="image/*,application/pdf" onChange={handleFile} style={{ display: 'none' }} />
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
             <label style={{ flex: 1, padding: '0.6rem', background: '#FFF5F0', border: '1px solid var(--terracotta)', borderRadius: '0.5rem', color: 'var(--terracotta)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', textAlign: 'center', display: 'block' }}>
               📷 Photo
@@ -547,12 +548,13 @@ function EncaissementForm({ token }: { token: string }) {
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
             Ticket CB * <span style={{ color: 'var(--red)' }}>(obligatoire)</span>
           </label>
-          <label
+          <div
             onDragEnter={e => { e.preventDefault(); setDragCounter(c => c + 1) }}
             onDragOver={e => { e.preventDefault() }}
             onDragLeave={e => { e.preventDefault(); setDragCounter(c => Math.max(0, c - 1)) }}
-            onDrop={e => { e.preventDefault(); setDragCounter(0); const f = e.dataTransfer.files[0]; if (f) processTicketFile(f) }}
-            style={{ border: `2px dashed ${dragCounter > 0 ? 'var(--green)' : ticketFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: dragCounter > 0 ? '#F0FDF4' : ticketFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s', display: 'block' }}
+            onDrop={e => { e.preventDefault(); e.stopPropagation(); setDragCounter(0); const f = e.dataTransfer.files[0]; if (f) processTicketFile(f) }}
+            onClick={() => ticketRef.current?.click()}
+            style={{ border: `2px dashed ${dragCounter > 0 ? 'var(--green)' : ticketFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: dragCounter > 0 ? '#F0FDF4' : ticketFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
           >
             {ticketFile ? (
               <div>
@@ -569,8 +571,8 @@ function EncaissementForm({ token }: { token: string }) {
                 <div style={{ fontSize: '0.85rem', color: '#666' }}>Glisser ici, prendre une photo ou choisir un fichier</div>
               </div>
             )}
-            <input ref={ticketRef} type="file" accept="image/*,application/pdf" onChange={handleTicket} style={{ display: 'none' }} />
-          </label>
+          </div>
+          <input ref={ticketRef} type="file" accept="image/*,application/pdf" onChange={handleTicket} style={{ display: 'none' }} />
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
             <label style={{ flex: 1, padding: '0.6rem', background: '#F0FDF4', border: '1px solid var(--green)', borderRadius: '0.5rem', color: 'var(--green)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', textAlign: 'center', display: 'block' }}>
               📷 Photo
