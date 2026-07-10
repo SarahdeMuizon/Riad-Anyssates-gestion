@@ -1,0 +1,2038 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Riad Anyssates — Gestion</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --terracotta: #C1603A;
+      --terracotta-dark: #A04D2C;
+      --terracotta-light: #F0E0D8;
+      --gold: #B8955A;
+      --gold-light: #F5EDD9;
+      --bg: #FAF7F4;
+      --card: #FFFFFF;
+      --text: #2C2417;
+      --muted: #8A7968;
+      --border: #E8DDD4;
+      --green: #3A8A5A;
+      --green-light: #D8F0E4;
+      --red: #C13A3A;
+      --red-light: #F5D8D8;
+      --blue: #3A6AC1;
+      --blue-light: #D8E4F5;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── LOGIN ── */
+    #login-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #2C2417 0%, #4A3A28 50%, #C1603A 100%);
+      padding: 20px;
+    }
+
+    .login-card {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.25);
+    }
+
+    .login-logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .login-logo h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--terracotta);
+      letter-spacing: -0.5px;
+    }
+
+    .login-logo p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .ornament {
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--terracotta), var(--gold));
+      border-radius: 2px;
+      margin: 12px auto;
+    }
+
+    .role-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      background: var(--bg);
+      border-radius: 12px;
+      padding: 4px;
+    }
+
+    .role-tab {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background: transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+      transition: all 0.2s;
+    }
+
+    .role-tab.active {
+      background: var(--card);
+      color: var(--terracotta);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 15px;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 16px;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--terracotta);
+      background: #fff;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--terracotta);
+      color: white;
+    }
+
+    .btn-primary:hover { background: var(--terracotta-dark); transform: translateY(-1px); }
+
+    .btn-secondary {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover { background: #d9cfc6; }
+
+    .btn-sm {
+      width: auto;
+      padding: 7px 14px;
+      font-size: 13px;
+      border-radius: 8px;
+    }
+
+    .btn-success { background: var(--green); color: white; }
+    .btn-success:hover { background: #2d7048; }
+    .btn-danger { background: var(--red); color: white; }
+    .btn-danger:hover { background: #a02e2e; }
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--border);
+      color: var(--muted);
+    }
+    .btn-outline:hover { border-color: var(--terracotta); color: var(--terracotta); }
+
+    /* ── APP LAYOUT ── */
+    #app { display: none; min-height: 100vh; }
+
+    header {
+      background: var(--text);
+      color: white;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 16px; }
+
+    header h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .badge-role {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-manager { background: var(--gold); color: #2C2417; }
+    .badge-employee { background: var(--terracotta); color: white; }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-info {
+      font-size: 14px;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .user-info strong { color: white; }
+
+    .btn-logout {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.2s;
+    }
+
+    .btn-logout:hover { background: rgba(255,255,255,0.2); }
+
+    .main-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    /* ── TABS ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--card);
+      border-radius: 14px;
+      padding: 6px;
+      border: 1px solid var(--border);
+      margin-bottom: 28px;
+      width: fit-content;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      border: none;
+      background: transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .tab.active {
+      background: var(--terracotta);
+      color: white;
+    }
+
+    .tab:not(.active):hover { color: var(--terracotta); }
+
+    /* ── CARDS / STATS ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 20px 24px;
+      border: 1px solid var(--border);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .stat-value.red { color: var(--red); }
+    .stat-value.green { color: var(--green); }
+    .stat-value.gold { color: var(--gold); }
+
+    .stat-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ── FORM CARD ── */
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .icon-red { background: var(--red-light); }
+    .icon-green { background: var(--green-light); }
+    .icon-gold { background: var(--gold-light); }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .form-group { margin-bottom: 0; }
+
+    .form-group.full { grid-column: 1 / -1; }
+
+    .form-group label { margin-bottom: 6px; }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      margin-bottom: 0;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 15px;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      resize: vertical;
+      min-height: 80px;
+      font-family: inherit;
+    }
+
+    textarea:focus { border-color: var(--terracotta); background: #fff; }
+
+    .form-actions {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    /* ── TABLE ── */
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+    }
+
+    th {
+      background: var(--bg);
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 14px 16px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    tr:hover td { background: var(--bg); }
+
+    .amount-cell {
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .amount-debit { color: var(--red); }
+    .amount-credit { color: var(--green); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-pending { background: #FFF3CD; color: #856404; }
+    .badge-validated { background: var(--green-light); color: var(--green); }
+    .badge-cb { background: var(--blue-light); color: var(--blue); }
+    .badge-cash { background: var(--gold-light); color: #7A6030; }
+
+    /* ── FILTER BAR ── */
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .filter-bar .form-group { margin-bottom: 0; min-width: 160px; }
+    .filter-bar input, .filter-bar select { margin-bottom: 0; font-size: 14px; }
+
+    /* ── EMPTY STATE ── */
+    .empty {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--muted);
+    }
+
+    .empty-icon { font-size: 40px; margin-bottom: 12px; }
+    .empty h3 { font-size: 16px; margin-bottom: 6px; color: var(--text); }
+    .empty p { font-size: 14px; }
+
+    /* ── ALERT ── */
+    .alert {
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .alert-success { background: var(--green-light); color: var(--green); border: 1px solid #b0dfc4; }
+    .alert-error { background: var(--red-light); color: var(--red); border: 1px solid #f0b8b8; }
+
+    /* ── SECTION TITLE ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      header { padding: 0 16px; }
+      header h1 { font-size: 14px; }
+      .main-container { padding: 16px; }
+      .tabs { width: 100%; overflow-x: auto; }
+      .login-card { padding: 32px 24px; }
+    }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 32px;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+    }
+
+    .modal h2 { font-size: 18px; margin-bottom: 20px; }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 20px 0;
+    }
+
+    .date-display {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .employee-name {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .category-tag {
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--bg);
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    .emp-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+    }
+
+    .emp-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .emp-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--terracotta-light);
+      color: var(--terracotta);
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .emp-info { flex: 1; margin-left: 12px; }
+    .emp-name { font-weight: 700; font-size: 15px; }
+    .emp-poste { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .emp-link-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-top: 8px;
+    }
+
+    .emp-link-text {
+      font-size: 12px;
+      color: var(--muted);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: monospace;
+    }
+
+    .btn-copy {
+      background: var(--terracotta);
+      color: white;
+      border: none;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .btn-copy:hover { background: var(--terracotta-dark); }
+    .btn-copy.copied { background: var(--green); }
+
+    .badge-inactive { background: #f0f0f0; color: #999; }
+
+    .fee-block {
+      grid-column: 1 / -1;
+      background: var(--blue-light);
+      border: 1px solid #b8cef0;
+      border-radius: 12px;
+      padding: 16px 20px;
+    }
+
+    .fee-block-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--blue);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .fee-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 4px 0;
+      color: var(--text);
+    }
+
+    .fee-row.total {
+      border-top: 1px solid #b8cef0;
+      margin-top: 8px;
+      padding-top: 10px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .fee-row.total .fee-val { color: var(--green); }
+
+    .fee-val { font-weight: 600; }
+    .fee-val.neg { color: var(--red); }
+
+    .card-type-selector {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .card-type-btn {
+      flex: 1;
+      padding: 10px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: white;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .card-type-btn.selected {
+      border-color: var(--blue);
+      color: var(--blue);
+      background: var(--blue-light);
+    }
+
+    .ticket-upload {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      background: white;
+      transition: border-color 0.2s;
+      position: relative;
+    }
+
+    .ticket-upload:hover { border-color: var(--terracotta); }
+    .ticket-upload input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; margin: 0; padding: 0; border: none;
+    }
+
+    .ticket-preview {
+      max-width: 100%;
+      max-height: 120px;
+      border-radius: 8px;
+      margin-top: 8px;
+      object-fit: contain;
+    }
+
+    .export-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--text);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .export-btn:hover { background: #4A3A28; }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════ LOGIN ════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <h1>Riad Anyssates</h1>
+      <div class="ornament"></div>
+      <p>Espace de gestion — Accès manager</p>
+    </div>
+
+    <div class="form-group">
+      <label>Code d'accès</label>
+      <input type="password" id="login-pin" placeholder="••••••••" onkeydown="if(event.key==='Enter') loginManager()" autocomplete="off">
+    </div>
+    <div id="login-error-mgr" class="alert alert-error">Code incorrect. Réessayez.</div>
+    <button class="btn btn-primary" onclick="loginManager()">Accéder au tableau de bord</button>
+    <p style="margin-top:16px; font-size:12px; color:var(--muted); text-align:center">
+      Les employés accèdent via leur lien personnel.
+    </p>
+  </div>
+</div>
+
+<!-- ════════════════ APP ════════════════ -->
+<div id="app">
+  <header>
+    <div class="header-left">
+      <h1>🏰 Riad Anyssates</h1>
+      <span id="header-badge" class="badge-role"></span>
+    </div>
+    <div class="header-right">
+      <span class="user-info">Connecté : <strong id="header-user"></strong></span>
+      <button class="btn-logout" onclick="logout()">Déconnexion</button>
+    </div>
+  </header>
+
+  <div class="main-container">
+
+    <!-- ══ VUE EMPLOYÉ ══ -->
+    <div id="view-employee" style="display:none">
+      <div class="tabs">
+        <button class="tab active" onclick="empTab('cb')">💳 Dépenses</button>
+        <button class="tab" onclick="empTab('cash')">💵 Encaissements</button>
+        <button class="tab" onclick="empTab('history')">📋 Mon historique</button>
+      </div>
+
+      <!-- TAB: Dépenses -->
+      <div id="emp-cb">
+        <div class="card">
+          <div class="card-title">
+            <div class="icon icon-red">💳</div>
+            Nouvelle dépense
+          </div>
+          <div id="alert-cb" class="alert"></div>
+          <form onsubmit="submitCB(event)">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Date de la dépense</label>
+                <input type="date" id="cb-date" required>
+              </div>
+              <div class="form-group">
+                <label>Montant (MAD)</label>
+                <input type="number" id="cb-amount" placeholder="0.00" step="0.01" min="0.01" required>
+              </div>
+              <div class="form-group">
+                <label>Catégorie</label>
+                <select id="cb-category" required>
+                  <option value="">Choisir une catégorie</option>
+                  <option>Alimentation / Courses</option>
+                  <option>Fournitures & bureautique</option>
+                  <option>Entretien & maintenance</option>
+                  <option>Transport</option>
+                  <option>Restauration</option>
+                  <option>Pharmacie / Hygiène</option>
+                  <option>Décoration & fleurs</option>
+                  <option>Autre</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Fournisseur / Lieu</label>
+                <input type="text" id="cb-supplier" placeholder="ex: Marjane, Brico…">
+              </div>
+              <div class="form-group full">
+                <label>Description</label>
+                <textarea id="cb-desc" placeholder="Décrivez la dépense en quelques mots…"></textarea>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" style="width:auto; padding:12px 28px">
+                ✓ Enregistrer la dépense
+              </button>
+              <button type="button" class="btn btn-secondary" style="width:auto; padding:12px 20px" onclick="resetCBForm()">
+                Annuler
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- TAB: Encaissements -->
+      <div id="emp-cash" style="display:none">
+        <div class="card">
+          <div class="card-title">
+            <div class="icon icon-green">💵</div>
+            Nouvel encaissement
+          </div>
+          <div id="alert-cash" class="alert"></div>
+          <form onsubmit="submitCash(event)">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="cash-date" required>
+              </div>
+              <div class="form-group">
+                <label>Montant encaissé (MAD)</label>
+                <input type="number" id="cash-amount" placeholder="0.00" step="0.01" min="0.01" required oninput="updateFeeCalculation()">
+              </div>
+              <div class="form-group">
+                <label>Type d'encaissement</label>
+                <select id="cash-type" required>
+                  <option value="">Choisir un type</option>
+                  <option>Boissons bar</option>
+                  <option>Repas / Restauration</option>
+                  <option>Activité / Excursion</option>
+                  <option>Service spa / Hammam</option>
+                  <option>Transfert / Transport</option>
+                  <option>Pourboire collectif</option>
+                  <option>Autre encaissement</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Mode de règlement</label>
+                <select id="cash-payment" onchange="onPaymentModeChange()">
+                  <option>Espèces</option>
+                  <option value="Carte bancaire">Carte bancaire</option>
+                  <option>Virement</option>
+                  <option>Autre</option>
+                </select>
+              </div>
+              <div class="form-group full">
+                <label>Description / Détails</label>
+                <textarea id="cash-desc" placeholder="ex: 3 jus d'orange + 2 thé à la menthe, chambre 2…"></textarea>
+              </div>
+
+              <!-- BLOC CARTE BANCAIRE -->
+              <div class="fee-block" id="card-fee-block" style="display:none">
+                <div class="fee-block-title">💳 Frais bancaires</div>
+
+                <label style="margin-bottom:8px">Type de carte</label>
+                <div class="card-type-selector">
+                  <button type="button" class="card-type-btn selected" id="btn-amex" onclick="selectCard('amex')">
+                    🔵 American Express<br><span style="font-size:11px;font-weight:400">Taux 3,3%</span>
+                  </button>
+                  <button type="button" class="card-type-btn" id="btn-other" onclick="selectCard('other')">
+                    💳 Autre carte<br><span style="font-size:11px;font-weight:400">Taux 2,68%</span>
+                  </button>
+                </div>
+
+                <label style="margin-bottom:8px">Photo du ticket</label>
+                <div class="ticket-upload" id="ticket-upload-zone">
+                  <input type="file" id="ticket-photo" accept="image/*" capture="environment" onchange="previewTicket(this)">
+                  <div id="ticket-upload-label">
+                    📷 Appuyez pour prendre une photo ou choisir depuis la galerie
+                  </div>
+                  <img id="ticket-preview-img" class="ticket-preview" style="display:none">
+                </div>
+
+                <hr style="border:none;border-top:1px solid #b8cef0;margin:14px 0">
+
+                <div class="fee-row">
+                  <span>Montant encaissé</span>
+                  <span class="fee-val" id="fee-gross">—</span>
+                </div>
+                <div class="fee-row">
+                  <span id="fee-rate-label">Commission bancaire (3,3%)</span>
+                  <span class="fee-val neg" id="fee-commission">—</span>
+                </div>
+                <div class="fee-row">
+                  <span>TVA sur commission (10%)</span>
+                  <span class="fee-val neg" id="fee-tva">—</span>
+                </div>
+                <div class="fee-row total">
+                  <span>Montant net reçu</span>
+                  <span class="fee-val" id="fee-net">—</span>
+                </div>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" style="width:auto; padding:12px 28px; background:var(--green)">
+                ✓ Enregistrer l'encaissement
+              </button>
+              <button type="button" class="btn btn-secondary" style="width:auto; padding:12px 20px" onclick="resetCashForm()">
+                Annuler
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- TAB: Mon historique -->
+      <div id="emp-history" style="display:none">
+        <div class="section-header">
+          <span class="section-title">Mon historique</span>
+          <div style="display:flex; gap:8px">
+            <select id="hist-filter-type" onchange="renderHistory()" style="width:auto; margin:0; font-size:14px; padding:8px 12px">
+              <option value="">Tout</option>
+              <option value="cb">Dépenses</option>
+              <option value="cash">Encaissements</option>
+            </select>
+            <select id="hist-filter-month" onchange="renderHistory()" style="width:auto; margin:0; font-size:14px; padding:8px 12px">
+              <option value="">Tous les mois</option>
+            </select>
+          </div>
+        </div>
+        <div id="hist-stats" class="stats-grid" style="margin-bottom:20px"></div>
+        <div id="history-table-wrap" class="table-wrapper">
+          <div class="empty"><div class="empty-icon">📋</div><h3>Aucune entrée</h3></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ VUE MANAGER ══ -->
+    <div id="view-manager" style="display:none">
+      <div class="tabs">
+        <button class="tab active" onclick="mgrTab('dashboard')">📊 Tableau de bord</button>
+        <button class="tab" onclick="mgrTab('cb')">💳 Dépenses</button>
+        <button class="tab" onclick="mgrTab('cash')">💵 Encaissements</button>
+        <button class="tab" onclick="mgrTab('employees')">👥 Employés</button>
+        <button class="tab" onclick="mgrTab('settings')">⚙️ Paramètres</button>
+      </div>
+
+      <!-- DASHBOARD -->
+      <div id="mgr-dashboard">
+        <div id="mgr-stats" class="stats-grid"></div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px">
+          <div class="card">
+            <div class="card-title">
+              <div class="icon icon-red">💳</div>
+              Dernières dépenses
+            </div>
+            <div id="mgr-recent-cb"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">
+              <div class="icon icon-green">💵</div>
+              Derniers encaissements
+            </div>
+            <div id="mgr-recent-cash"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="margin-bottom:16px">
+            <div class="icon icon-gold">👥</div>
+            Activité par employé (ce mois)
+          </div>
+          <div id="mgr-by-employee"></div>
+        </div>
+      </div>
+
+      <!-- CB MANAGER -->
+      <div id="mgr-cb" style="display:none">
+        <div class="section-header">
+          <span class="section-title">Toutes les dépenses</span>
+          <button class="export-btn" onclick="exportCSV('cb')">⬇ Exporter CSV</button>
+        </div>
+        <div class="filter-bar">
+          <div class="form-group">
+            <label>Employé</label>
+            <select id="mgr-cb-emp" onchange="renderManagerCB()" style="margin:0">
+              <option value="">Tous</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Catégorie</label>
+            <select id="mgr-cb-cat" onchange="renderManagerCB()" style="margin:0">
+              <option value="">Toutes</option>
+              <option>Alimentation / Courses</option>
+              <option>Fournitures & bureautique</option>
+              <option>Entretien & maintenance</option>
+              <option>Transport</option>
+              <option>Restauration</option>
+              <option>Pharmacie / Hygiène</option>
+              <option>Décoration & fleurs</option>
+              <option>Autre</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Mois</label>
+            <select id="mgr-cb-month" onchange="renderManagerCB()" style="margin:0">
+              <option value="">Tous</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Statut</label>
+            <select id="mgr-cb-status" onchange="renderManagerCB()" style="margin:0">
+              <option value="">Tous</option>
+              <option value="pending">En attente</option>
+              <option value="validated">Validés</option>
+            </select>
+          </div>
+        </div>
+        <div id="mgr-cb-table" class="table-wrapper"></div>
+      </div>
+
+      <!-- CASH MANAGER -->
+      <div id="mgr-cash" style="display:none">
+        <div class="section-header">
+          <span class="section-title">Tous les encaissements</span>
+          <button class="export-btn" onclick="exportCSV('cash')">⬇ Exporter CSV</button>
+        </div>
+        <div class="filter-bar">
+          <div class="form-group">
+            <label>Employé</label>
+            <select id="mgr-cash-emp" onchange="renderManagerCash()" style="margin:0">
+              <option value="">Tous</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Type</label>
+            <select id="mgr-cash-type" onchange="renderManagerCash()" style="margin:0">
+              <option value="">Tous</option>
+              <option>Boissons bar</option>
+              <option>Repas / Restauration</option>
+              <option>Activité / Excursion</option>
+              <option>Service spa / Hammam</option>
+              <option>Transfert / Transport</option>
+              <option>Pourboire collectif</option>
+              <option>Autre encaissement</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Mois</label>
+            <select id="mgr-cash-month" onchange="renderManagerCash()" style="margin:0">
+              <option value="">Tous</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Statut</label>
+            <select id="mgr-cash-status" onchange="renderManagerCash()" style="margin:0">
+              <option value="">Tous</option>
+              <option value="pending">En attente</option>
+              <option value="validated">Validés</option>
+            </select>
+          </div>
+        </div>
+        <div id="mgr-cash-table" class="table-wrapper"></div>
+      </div>
+
+      <!-- EMPLOYEES -->
+      <div id="mgr-employees" style="display:none">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start">
+
+          <!-- Formulaire création -->
+          <div class="card">
+            <div class="card-title">
+              <div class="icon icon-gold">➕</div>
+              Créer un profil employé
+            </div>
+            <div id="emp-create-alert" class="alert"></div>
+            <div class="form-group">
+              <label>Prénom et nom</label>
+              <input type="text" id="new-emp-name" placeholder="ex: Fatima Zahra">
+            </div>
+            <div class="form-group">
+              <label>Poste</label>
+              <input type="text" id="new-emp-poste" placeholder="ex: Réceptionniste, Femme de chambre…">
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" style="width:auto;padding:12px 24px" onclick="addEmployee()">
+                ✓ Créer le profil
+              </button>
+            </div>
+          </div>
+
+          <!-- Liste employés -->
+          <div>
+            <div class="section-header" style="margin-bottom:16px">
+              <span class="section-title">Équipe (<span id="emp-count">0</span>)</span>
+            </div>
+            <div id="emp-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div id="mgr-settings" style="display:none">
+        <div class="card" style="max-width:480px">
+          <div class="card-title">⚙️ Paramètres</div>
+          <label>Changer le code manager</label>
+          <input type="password" id="new-pin" placeholder="Nouveau code (4 chiffres)">
+          <input type="password" id="confirm-pin" placeholder="Confirmer le code">
+          <div id="pin-alert" class="alert"></div>
+          <button class="btn btn-primary" style="width:auto; padding:12px 24px" onclick="changePin()">
+            Mettre à jour le code
+          </button>
+
+          <hr class="divider">
+
+          <label>Réinitialiser toutes les données</label>
+          <p style="font-size:13px; color:var(--muted); margin-bottom:12px">
+            Supprime toutes les entrées de dépenses et d'encaissements.
+          </p>
+          <button class="btn btn-danger btn-sm" onclick="confirmReset()">Réinitialiser les données</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal confirm -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal">
+    <h2 id="modal-title">Confirmer l'action</h2>
+    <p id="modal-body" style="font-size:14px; color:var(--muted); margin-bottom:24px"></p>
+    <div style="display:flex; gap:10px; justify-content:flex-end">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-danger btn-sm" id="modal-confirm-btn" onclick="">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+//  ÉTAT & STORAGE
+// ════════════════════════════════════════════
+const STORAGE_KEY = 'riad_anyssates_v1';
+const DEFAULT_PIN = 'gestion2026';
+let currentUser = null;
+let currentRole = null;
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { entries: [], employees: [], pin: DEFAULT_PIN };
+    const d = JSON.parse(raw);
+    if (!d.employees) d.employees = [];
+    return d;
+  } catch(e) {
+    return { entries: [], employees: [], pin: DEFAULT_PIN };
+  }
+}
+
+function saveData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function getData() { return loadData(); }
+
+// ════════════════════════════════════════════
+//  AUTO-LOGIN VIA TOKEN URL
+// ════════════════════════════════════════════
+let _autoLoginEmployee = null;
+(function checkURLToken() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('emp');
+  if (!token) return;
+  const data = getData();
+  const emp = data.employees && data.employees.find(e => e.token === token && e.active !== false);
+  if (emp) _autoLoginEmployee = emp;
+})();
+
+// ════════════════════════════════════════════
+//  LOGIN
+// ════════════════════════════════════════════
+function loginManager() {
+  const pin = document.getElementById('login-pin').value;
+  const data = getData();
+  const err = document.getElementById('login-error-mgr');
+  if (pin !== (data.pin || DEFAULT_PIN)) {
+    err.style.display = 'block';
+    err.className = 'alert alert-error';
+    err.textContent = 'Code incorrect. Réessayez.';
+    document.getElementById('login-pin').value = '';
+    return;
+  }
+  err.style.display = 'none';
+  currentUser = 'Manager';
+  currentRole = 'manager';
+  showApp();
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('header-user').textContent = currentUser;
+
+  const badge = document.getElementById('header-badge');
+  if (currentRole === 'manager') {
+    badge.textContent = '👑 Manager';
+    badge.className = 'badge-role badge-manager';
+    document.getElementById('view-manager').style.display = '';
+    document.getElementById('view-employee').style.display = 'none';
+    initManager();
+  } else {
+    badge.textContent = '👤 Employé';
+    badge.className = 'badge-role badge-employee';
+    document.getElementById('view-employee').style.display = '';
+    document.getElementById('view-manager').style.display = 'none';
+    initEmployee();
+  }
+}
+
+function logout() {
+  currentUser = null;
+  currentRole = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-pin').value = '';
+}
+
+// ════════════════════════════════════════════
+//  EMPLOYEE INIT
+// ════════════════════════════════════════════
+function initEmployee() {
+  // Set today's date
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('cb-date').value = today;
+  document.getElementById('cash-date').value = today;
+  populateMonthFilter('hist-filter-month');
+  empTab('cb');
+}
+
+function empTab(tab) {
+  ['cb','cash','history'].forEach(t => {
+    document.getElementById('emp-'+t).style.display = t === tab ? '' : 'none';
+  });
+  document.querySelectorAll('#view-employee .tab').forEach((btn, i) => {
+    btn.classList.toggle('active', ['cb','cash','history'][i] === tab);
+  });
+  if (tab === 'history') { populateMonthFilter('hist-filter-month'); renderHistory(); }
+}
+
+// ════════════════════════════════════════════
+//  SUBMIT FORMS
+// ════════════════════════════════════════════
+function submitCB(e) {
+  e.preventDefault();
+  const data = getData();
+  const entry = {
+    id: Date.now().toString(),
+    employee: currentUser,
+    type: 'cb',
+    date: document.getElementById('cb-date').value,
+    amount: parseFloat(document.getElementById('cb-amount').value),
+    category: document.getElementById('cb-category').value,
+    supplier: document.getElementById('cb-supplier').value,
+    description: document.getElementById('cb-desc').value,
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  };
+  data.entries.push(entry);
+  saveData(data);
+  showAlert('alert-cb', 'success', '✓ Dépense enregistrée avec succès !');
+  resetCBForm();
+}
+
+function submitCash(e) {
+  e.preventDefault();
+  const data = getData();
+  const payment = document.getElementById('cash-payment').value;
+  const amount = parseFloat(document.getElementById('cash-amount').value);
+
+  const entry = {
+    id: Date.now().toString(),
+    employee: currentUser,
+    type: 'cash',
+    date: document.getElementById('cash-date').value,
+    amount,
+    category: document.getElementById('cash-type').value,
+    payment,
+    description: document.getElementById('cash-desc').value,
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  };
+
+  // Frais bancaires si paiement par CB
+  if (payment === 'Carte bancaire') {
+    const cardType = currentCardType || 'amex';
+    const rate = cardType === 'amex' ? 0.033 : 0.0268;
+    const commission = Math.round(amount * rate * 100) / 100;
+    const tva = Math.round(commission * 0.10 * 100) / 100;
+    const net = Math.round((amount - commission - tva) * 100) / 100;
+    entry.cardType = cardType;
+    entry.feeRate = rate;
+    entry.commission = commission;
+    entry.tva = tva;
+    entry.netAmount = net;
+    if (ticketPhotoBase64) entry.ticketPhoto = ticketPhotoBase64;
+  }
+
+  data.entries.push(entry);
+  saveData(data);
+  showAlert('alert-cash', 'success', '✓ Encaissement enregistré avec succès !');
+  resetCashForm();
+}
+
+function resetCBForm() {
+  document.getElementById('cb-amount').value = '';
+  document.getElementById('cb-category').value = '';
+  document.getElementById('cb-supplier').value = '';
+  document.getElementById('cb-desc').value = '';
+}
+
+function resetCashForm() {
+  document.getElementById('cash-amount').value = '';
+  document.getElementById('cash-type').value = '';
+  document.getElementById('cash-desc').value = '';
+  document.getElementById('cash-payment').value = 'Espèces';
+  document.getElementById('card-fee-block').style.display = 'none';
+  document.getElementById('ticket-photo').value = '';
+  document.getElementById('ticket-preview-img').style.display = 'none';
+  document.getElementById('ticket-upload-label').style.display = '';
+  ticketPhotoBase64 = null;
+  currentCardType = 'amex';
+  selectCard('amex');
+  updateFeeCalculation();
+}
+
+// ════════════════════════════════════════════
+//  FRAIS BANCAIRES
+// ════════════════════════════════════════════
+let currentCardType = 'amex';
+let ticketPhotoBase64 = null;
+
+function onPaymentModeChange() {
+  const val = document.getElementById('cash-payment').value;
+  const block = document.getElementById('card-fee-block');
+  block.style.display = val === 'Carte bancaire' ? '' : 'none';
+  if (val === 'Carte bancaire') updateFeeCalculation();
+}
+
+function selectCard(type) {
+  currentCardType = type;
+  document.getElementById('btn-amex').classList.toggle('selected', type === 'amex');
+  document.getElementById('btn-other').classList.toggle('selected', type === 'other');
+  updateFeeCalculation();
+}
+
+function updateFeeCalculation() {
+  const amount = parseFloat(document.getElementById('cash-amount').value) || 0;
+  const rate = currentCardType === 'amex' ? 0.033 : 0.0268;
+  const rateLabel = currentCardType === 'amex' ? '3,3%' : '2,68%';
+  const commission = Math.round(amount * rate * 100) / 100;
+  const tva = Math.round(commission * 0.10 * 100) / 100;
+  const net = Math.round((amount - commission - tva) * 100) / 100;
+
+  document.getElementById('fee-rate-label').textContent = `Commission bancaire (${rateLabel})`;
+  document.getElementById('fee-gross').textContent = amount > 0 ? fmt(amount) + ' MAD' : '—';
+  document.getElementById('fee-commission').textContent = amount > 0 ? '− ' + fmt(commission) + ' MAD' : '—';
+  document.getElementById('fee-tva').textContent = amount > 0 ? '− ' + fmt(tva) + ' MAD' : '—';
+  document.getElementById('fee-net').textContent = amount > 0 ? fmt(net) + ' MAD' : '—';
+}
+
+function previewTicket(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    ticketPhotoBase64 = e.target.result;
+    const img = document.getElementById('ticket-preview-img');
+    img.src = e.target.result;
+    img.style.display = 'block';
+    document.getElementById('ticket-upload-label').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function showAlert(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = 'alert alert-' + type;
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+
+// ════════════════════════════════════════════
+//  HISTORY (EMPLOYEE)
+// ════════════════════════════════════════════
+function renderHistory() {
+  const data = getData();
+  const typeFilter = document.getElementById('hist-filter-type').value;
+  const monthFilter = document.getElementById('hist-filter-month').value;
+
+  let entries = data.entries.filter(e => e.employee === currentUser);
+  if (typeFilter) entries = entries.filter(e => e.type === typeFilter);
+  if (monthFilter) entries = entries.filter(e => e.date && e.date.startsWith(monthFilter));
+  entries.sort((a,b) => b.date.localeCompare(a.date));
+
+  const totalCB = entries.filter(e => e.type === 'cb').reduce((s,e) => s + e.amount, 0);
+  const totalCash = entries.filter(e => e.type === 'cash').reduce((s,e) => s + e.amount, 0);
+
+  document.getElementById('hist-stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Mes dépenses</div>
+      <div class="stat-value red">${fmt(totalCB)} MAD</div>
+      <div class="stat-sub">${entries.filter(e=>e.type==='cb').length} entrée(s)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Mes encaissements</div>
+      <div class="stat-value green">${fmt(totalCash)} MAD</div>
+      <div class="stat-sub">${entries.filter(e=>e.type==='cash').length} entrée(s)</div>
+    </div>
+  `;
+
+  const wrap = document.getElementById('history-table-wrap');
+  if (entries.length === 0) {
+    wrap.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><h3>Aucune entrée</h3><p>Commencez par saisir une dépense ou un encaissement.</p></div>`;
+    return;
+  }
+
+  wrap.innerHTML = `<table>
+    <thead><tr>
+      <th>Date</th><th>Type</th><th>Catégorie</th><th>Description</th><th>Montant</th><th>Frais CB</th><th>Net reçu</th><th>Statut</th>
+    </tr></thead>
+    <tbody>
+      ${entries.map(e => `<tr>
+        <td class="date-display">${fmtDate(e.date)}</td>
+        <td>${e.type === 'cb'
+          ? '<span class="badge badge-cb">💳 Dépense</span>'
+          : e.payment === 'Carte bancaire'
+            ? `<span class="badge badge-cb">${e.cardType === 'amex' ? '🔵 AmEx' : '💳 CB'}</span>`
+            : '<span class="badge badge-cash">💵 Espèces</span>'}</td>
+        <td><span class="category-tag">${e.category}</span></td>
+        <td style="max-width:180px; color:var(--muted);">${e.description || '—'}</td>
+        <td class="amount-cell ${e.type==='cb'?'amount-debit':'amount-credit'}">${e.type==='cb'?'−':'+'} ${fmt(e.amount)} MAD</td>
+        <td style="font-size:12px;color:var(--red)">${e.commission ? `−${fmt(e.commission + e.tva)} MAD<br><span style="color:var(--muted)">comm.+TVA</span>` : '—'}</td>
+        <td class="amount-cell amount-credit">${e.netAmount ? fmt(e.netAmount)+' MAD' : e.type==='cash' ? fmt(e.amount)+' MAD' : '—'}</td>
+        <td>${e.status === 'validated'
+          ? '<span class="badge badge-validated">✓ Validé</span>'
+          : '<span class="badge badge-pending">⏳ En attente</span>'}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ════════════════════════════════════════════
+//  MANAGER INIT
+// ════════════════════════════════════════════
+function initManager() {
+  mgrTab('dashboard');
+}
+
+function mgrTab(tab) {
+  ['dashboard','cb','cash','employees','settings'].forEach(t => {
+    document.getElementById('mgr-'+t).style.display = t === tab ? '' : 'none';
+  });
+  document.querySelectorAll('#view-manager .tab').forEach((btn, i) => {
+    btn.classList.toggle('active', ['dashboard','cb','cash','employees','settings'][i] === tab);
+  });
+  if (tab === 'dashboard') renderDashboard();
+  if (tab === 'cb') { populateManagerFilters(); renderManagerCB(); }
+  if (tab === 'cash') { populateManagerFilters(); renderManagerCash(); }
+  if (tab === 'employees') renderEmployees();
+}
+
+function renderDashboard() {
+  const data = getData();
+  const now = new Date();
+  const thisMonth = now.toISOString().slice(0,7);
+  const monthEntries = data.entries.filter(e => e.date && e.date.startsWith(thisMonth));
+
+  const totalCB = data.entries.filter(e=>e.type==='cb').reduce((s,e)=>s+e.amount,0);
+  const totalCash = data.entries.filter(e=>e.type==='cash').reduce((s,e)=>s+e.amount,0);
+  const pendingCount = data.entries.filter(e=>e.status==='pending').length;
+  const monthCB = monthEntries.filter(e=>e.type==='cb').reduce((s,e)=>s+e.amount,0);
+  const monthCash = monthEntries.filter(e=>e.type==='cash').reduce((s,e)=>s+e.amount,0);
+
+  document.getElementById('mgr-stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Dépenses (total)</div>
+      <div class="stat-value red">${fmt(totalCB)} MAD</div>
+      <div class="stat-sub">Ce mois : ${fmt(monthCB)} MAD</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Encaissements (total)</div>
+      <div class="stat-value green">${fmt(totalCash)} MAD</div>
+      <div class="stat-sub">Ce mois : ${fmt(monthCash)} MAD</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Solde net</div>
+      <div class="stat-value gold">${fmt(totalCash - totalCB)} MAD</div>
+      <div class="stat-sub">Encaissements − Dépenses</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">En attente validation</div>
+      <div class="stat-value" style="color:var(--terracotta)">${pendingCount}</div>
+      <div class="stat-sub">entrée(s) à valider</div>
+    </div>
+  `;
+
+  // Recent CB
+  const recentCB = data.entries.filter(e=>e.type==='cb').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+  document.getElementById('mgr-recent-cb').innerHTML = recentCB.length === 0
+    ? '<div class="empty" style="padding:20px"><div class="empty-icon" style="font-size:24px">—</div><p>Aucune dépense</p></div>'
+    : recentCB.map(e => `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
+        <div>
+          <div style="font-size:13px; font-weight:600">${e.employee}</div>
+          <div style="font-size:12px; color:var(--muted)">${e.category} · ${fmtDate(e.date)}</div>
+        </div>
+        <div style="font-weight:700; color:var(--red);">−${fmt(e.amount)} MAD</div>
+      </div>`).join('');
+
+  // Recent Cash
+  const recentCash = data.entries.filter(e=>e.type==='cash').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+  document.getElementById('mgr-recent-cash').innerHTML = recentCash.length === 0
+    ? '<div class="empty" style="padding:20px"><div class="empty-icon" style="font-size:24px">—</div><p>Aucun encaissement</p></div>'
+    : recentCash.map(e => `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
+        <div>
+          <div style="font-size:13px; font-weight:600">${e.employee}</div>
+          <div style="font-size:12px; color:var(--muted)">${e.category} · ${fmtDate(e.date)}</div>
+        </div>
+        <div style="font-weight:700; color:var(--green);">+${fmt(e.amount)} MAD</div>
+      </div>`).join('');
+
+  // By employee this month
+  const employees = [...new Set(monthEntries.map(e=>e.employee))].sort();
+  const byEmpDiv = document.getElementById('mgr-by-employee');
+  if (employees.length === 0) {
+    byEmpDiv.innerHTML = '<div class="empty" style="padding:20px"><p>Aucune activité ce mois-ci.</p></div>';
+    return;
+  }
+  byEmpDiv.innerHTML = `<table><thead><tr>
+    <th>Employé</th><th>Dépenses</th><th>Encaissements</th><th>Entrées en attente</th>
+  </tr></thead><tbody>
+    ${employees.map(emp => {
+      const empEntries = monthEntries.filter(e=>e.employee===emp);
+      const cbTotal = empEntries.filter(e=>e.type==='cb').reduce((s,e)=>s+e.amount,0);
+      const cashTotal = empEntries.filter(e=>e.type==='cash').reduce((s,e)=>s+e.amount,0);
+      const pending = empEntries.filter(e=>e.status==='pending').length;
+      return `<tr>
+        <td class="employee-name">${emp}</td>
+        <td class="amount-cell amount-debit">${cbTotal > 0 ? '−'+fmt(cbTotal)+' MAD' : '—'}</td>
+        <td class="amount-cell amount-credit">${cashTotal > 0 ? '+'+fmt(cashTotal)+' MAD' : '—'}</td>
+        <td>${pending > 0 ? `<span class="badge badge-pending">${pending} en attente</span>` : '<span style="color:var(--green);font-size:13px">✓ Tout validé</span>'}</td>
+      </tr>`;
+    }).join('')}
+  </tbody></table>`;
+}
+
+// ════════════════════════════════════════════
+//  MANAGER TABLES
+// ════════════════════════════════════════════
+function populateManagerFilters() {
+  const data = getData();
+  const employees = [...new Set(data.entries.map(e=>e.employee))].sort();
+  const months = [...new Set(data.entries.filter(e=>e.date).map(e=>e.date.slice(0,7)))].sort().reverse();
+
+  ['mgr-cb-emp','mgr-cash-emp'].forEach(id => {
+    const sel = document.getElementById(id);
+    const val = sel.value;
+    sel.innerHTML = '<option value="">Tous</option>' + employees.map(e=>`<option>${e}</option>`).join('');
+    sel.value = val;
+  });
+
+  ['mgr-cb-month','mgr-cash-month'].forEach(id => {
+    const sel = document.getElementById(id);
+    const val = sel.value;
+    sel.innerHTML = '<option value="">Tous</option>' + months.map(m=>`<option value="${m}">${fmtMonth(m)}</option>`).join('');
+    sel.value = val;
+  });
+}
+
+function renderManagerCB() {
+  const data = getData();
+  let entries = data.entries.filter(e=>e.type==='cb');
+
+  const emp = document.getElementById('mgr-cb-emp').value;
+  const cat = document.getElementById('mgr-cb-cat').value;
+  const month = document.getElementById('mgr-cb-month').value;
+  const status = document.getElementById('mgr-cb-status').value;
+
+  if (emp) entries = entries.filter(e=>e.employee===emp);
+  if (cat) entries = entries.filter(e=>e.category===cat);
+  if (month) entries = entries.filter(e=>e.date && e.date.startsWith(month));
+  if (status) entries = entries.filter(e=>e.status===status);
+  entries.sort((a,b)=>b.date.localeCompare(a.date));
+
+  const wrap = document.getElementById('mgr-cb-table');
+  if (entries.length === 0) {
+    wrap.innerHTML = `<div class="empty"><div class="empty-icon">💳</div><h3>Aucune dépense</h3></div>`;
+    return;
+  }
+
+  const total = entries.reduce((s,e)=>s+e.amount,0);
+  wrap.innerHTML = `
+    <div style="padding:12px 16px; background:var(--terracotta-light); font-size:14px; font-weight:600; border-bottom:1px solid var(--border);">
+      ${entries.length} dépense(s) · Total : <span style="color:var(--red)">${fmt(total)} MAD</span>
+    </div>
+    <table>
+    <thead><tr>
+      <th>Date</th><th>Employé</th><th>Catégorie</th><th>Fournisseur</th><th>Description</th><th>Montant</th><th>Statut</th><th>Actions</th>
+    </tr></thead>
+    <tbody>
+      ${entries.map(e => `<tr id="row-${e.id}">
+        <td class="date-display">${fmtDate(e.date)}</td>
+        <td class="employee-name">${e.employee}</td>
+        <td><span class="category-tag">${e.category}</span></td>
+        <td style="color:var(--muted);font-size:13px">${e.supplier||'—'}</td>
+        <td style="max-width:180px;color:var(--muted);font-size:13px">${e.description||'—'}</td>
+        <td class="amount-cell amount-debit">−${fmt(e.amount)} MAD</td>
+        <td>${e.status==='validated'
+          ? '<span class="badge badge-validated">✓ Validé</span>'
+          : '<span class="badge badge-pending">⏳ En attente</span>'}</td>
+        <td style="white-space:nowrap">
+          ${e.status==='pending'
+            ? `<button class="btn btn-success btn-sm" onclick="validateEntry('${e.id}')">✓ Valider</button>`
+            : `<button class="btn btn-outline btn-sm" onclick="unvalidateEntry('${e.id}')">↩</button>`}
+          <button class="btn btn-danger btn-sm" style="margin-left:4px" onclick="deleteEntry('${e.id}')">✕</button>
+        </td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+function renderManagerCash() {
+  const data = getData();
+  let entries = data.entries.filter(e=>e.type==='cash');
+
+  const emp = document.getElementById('mgr-cash-emp').value;
+  const type = document.getElementById('mgr-cash-type').value;
+  const month = document.getElementById('mgr-cash-month').value;
+  const status = document.getElementById('mgr-cash-status').value;
+
+  if (emp) entries = entries.filter(e=>e.employee===emp);
+  if (type) entries = entries.filter(e=>e.category===type);
+  if (month) entries = entries.filter(e=>e.date && e.date.startsWith(month));
+  if (status) entries = entries.filter(e=>e.status===status);
+  entries.sort((a,b)=>b.date.localeCompare(a.date));
+
+  const wrap = document.getElementById('mgr-cash-table');
+  if (entries.length === 0) {
+    wrap.innerHTML = `<div class="empty"><div class="empty-icon">💵</div><h3>Aucun encaissement</h3></div>`;
+    return;
+  }
+
+  const total = entries.reduce((s,e)=>s+e.amount,0);
+  const totalNet = entries.reduce((s,e)=>s+(e.netAmount||e.amount),0);
+  const totalFees = entries.reduce((s,e)=>s+(e.commission ? e.commission+e.tva : 0),0);
+
+  wrap.innerHTML = `
+    <div style="padding:12px 16px; background:var(--green-light); font-size:14px; font-weight:600; border-bottom:1px solid var(--border); display:flex; gap:24px; flex-wrap:wrap;">
+      <span>${entries.length} encaissement(s) · Brut : <span style="color:var(--green)">${fmt(total)} MAD</span></span>
+      ${totalFees > 0 ? `<span>Frais CB : <span style="color:var(--red)">−${fmt(totalFees)} MAD</span></span><span>Net : <span style="color:var(--green)">${fmt(totalNet)} MAD</span></span>` : ''}
+    </div>
+    <table>
+    <thead><tr>
+      <th>Date</th><th>Employé</th><th>Type</th><th>Règlement</th><th>Description</th><th>Montant brut</th><th>Frais CB</th><th>Net reçu</th><th>Ticket</th><th>Statut</th><th>Actions</th>
+    </tr></thead>
+    <tbody>
+      ${entries.map(e => `<tr id="row-${e.id}">
+        <td class="date-display">${fmtDate(e.date)}</td>
+        <td class="employee-name">${e.employee}</td>
+        <td><span class="category-tag">${e.category}</span></td>
+        <td style="color:var(--muted);font-size:13px">
+          ${e.payment === 'Carte bancaire'
+            ? `<span class="badge ${e.cardType==='amex' ? 'badge-cb' : 'badge-cash'}">${e.cardType==='amex' ? '🔵 AmEx' : '💳 CB'}</span>`
+            : e.payment||'—'}
+        </td>
+        <td style="max-width:160px;color:var(--muted);font-size:13px">${e.description||'—'}</td>
+        <td class="amount-cell amount-credit">+${fmt(e.amount)} MAD</td>
+        <td style="font-size:12px;color:var(--red);white-space:nowrap">
+          ${e.commission ? `−${fmt(e.commission)} MAD<br><span style="color:var(--muted)">+TVA ${fmt(e.tva)} MAD</span>` : '—'}
+        </td>
+        <td class="amount-cell amount-credit" style="white-space:nowrap">
+          ${e.netAmount ? fmt(e.netAmount)+' MAD' : fmt(e.amount)+' MAD'}
+        </td>
+        <td style="text-align:center">
+          ${e.ticketPhoto
+            ? `<img src="${e.ticketPhoto}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;cursor:pointer" onclick="showTicket('${e.id}')" title="Voir le ticket">`
+            : '<span style="color:var(--muted);font-size:12px">—</span>'}
+        </td>
+        <td>${e.status==='validated'
+          ? '<span class="badge badge-validated">✓ Validé</span>'
+          : '<span class="badge badge-pending">⏳ En attente</span>'}</td>
+        <td style="white-space:nowrap">
+          ${e.status==='pending'
+            ? `<button class="btn btn-success btn-sm" onclick="validateEntry('${e.id}')">✓ Valider</button>`
+            : `<button class="btn btn-outline btn-sm" onclick="unvalidateEntry('${e.id}')">↩</button>`}
+          <button class="btn btn-danger btn-sm" style="margin-left:4px" onclick="deleteEntry('${e.id}')">✕</button>
+        </td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+function showTicket(id) {
+  const data = getData();
+  const entry = data.entries.find(e => e.id === id);
+  if (!entry || !entry.ticketPhoto) return;
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;display:flex;align-items:center;justify-content:center;cursor:pointer';
+  overlay.innerHTML = `<img src="${entry.ticketPhoto}" style="max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 24px 64px rgba(0,0,0,0.5)">`;
+  overlay.onclick = () => document.body.removeChild(overlay);
+  document.body.appendChild(overlay);
+}
+
+// ════════════════════════════════════════════
+//  ACTIONS MANAGER
+// ════════════════════════════════════════════
+function validateEntry(id) {
+  const data = getData();
+  const entry = data.entries.find(e=>e.id===id);
+  if (entry) { entry.status = 'validated'; entry.validatedAt = new Date().toISOString(); }
+  saveData(data);
+  renderManagerCB();
+  renderManagerCash();
+  renderDashboard();
+}
+
+function unvalidateEntry(id) {
+  const data = getData();
+  const entry = data.entries.find(e=>e.id===id);
+  if (entry) { entry.status = 'pending'; delete entry.validatedAt; }
+  saveData(data);
+  renderManagerCB();
+  renderManagerCash();
+}
+
+let pendingDeleteId = null;
+function deleteEntry(id) {
+  pendingDeleteId = id;
+  const data = getData();
+  const entry = data.entries.find(e=>e.id===id);
+  openModal(
+    'Supprimer cette entrée ?',
+    `Montant : ${fmt(entry.amount)} MAD · ${entry.employee} · ${fmtDate(entry.date)}`,
+    () => {
+      const d = getData();
+      d.entries = d.entries.filter(e=>e.id!==pendingDeleteId);
+      saveData(d);
+      closeModal();
+      renderManagerCB();
+      renderManagerCash();
+      renderDashboard();
+      populateManagerFilters();
+    }
+  );
+}
+
+function changePin() {
+  const np = document.getElementById('new-pin').value;
+  const cp = document.getElementById('confirm-pin').value;
+  const alert = document.getElementById('pin-alert');
+
+  if (np.length < 4) {
+    alert.className = 'alert alert-error';
+    alert.textContent = 'Le code doit avoir au moins 4 caractères.';
+    alert.style.display = 'block';
+    return;
+  }
+  if (np !== cp) {
+    alert.className = 'alert alert-error';
+    alert.textContent = 'Les codes ne correspondent pas.';
+    alert.style.display = 'block';
+    return;
+  }
+  const data = getData();
+  data.pin = np;
+  saveData(data);
+  alert.className = 'alert alert-success';
+  alert.textContent = '✓ Code mis à jour avec succès !';
+  alert.style.display = 'block';
+  document.getElementById('new-pin').value = '';
+  document.getElementById('confirm-pin').value = '';
+  setTimeout(()=>alert.style.display='none', 3000);
+}
+
+function confirmReset() {
+  openModal(
+    '⚠️ Réinitialiser toutes les données ?',
+    'Cette action supprimera toutes les dépenses et encaissements enregistrés. Irréversible.',
+    () => {
+      const data = getData();
+      data.entries = [];
+      saveData(data);
+      closeModal();
+      renderDashboard();
+    }
+  );
+}
+
+// ════════════════════════════════════════════
+//  GESTION EMPLOYÉS
+// ════════════════════════════════════════════
+function generateToken() {
+  return Math.random().toString(36).substr(2, 10) + Date.now().toString(36);
+}
+
+function getBaseURL() {
+  return window.location.origin + window.location.pathname.replace(/\/+$/, '');
+}
+
+function addEmployee() {
+  const name = document.getElementById('new-emp-name').value.trim();
+  const poste = document.getElementById('new-emp-poste').value.trim();
+  const alert = document.getElementById('emp-create-alert');
+
+  if (!name) {
+    alert.className = 'alert alert-error';
+    alert.textContent = 'Le prénom et nom sont obligatoires.';
+    alert.style.display = 'block';
+    return;
+  }
+
+  const data = getData();
+  const duplicate = data.employees.find(e => e.name.toLowerCase() === name.toLowerCase() && e.active !== false);
+  if (duplicate) {
+    alert.className = 'alert alert-error';
+    alert.textContent = 'Un employé actif avec ce nom existe déjà.';
+    alert.style.display = 'block';
+    return;
+  }
+
+  const emp = {
+    id: Date.now().toString(),
+    name,
+    poste: poste || 'Employé',
+    token: generateToken(),
+    active: true,
+    createdAt: new Date().toISOString()
+  };
+
+  data.employees.push(emp);
+  saveData(data);
+
+  alert.className = 'alert alert-success';
+  alert.textContent = '✓ Profil créé ! Le lien est disponible ci-contre.';
+  alert.style.display = 'block';
+  setTimeout(() => alert.style.display = 'none', 4000);
+
+  document.getElementById('new-emp-name').value = '';
+  document.getElementById('new-emp-poste').value = '';
+  renderEmployees();
+}
+
+function renderEmployees() {
+  const data = getData();
+  const employees = data.employees.filter(e => e.active !== false);
+  document.getElementById('emp-count').textContent = employees.length;
+
+  const list = document.getElementById('emp-list');
+  if (employees.length === 0) {
+    list.innerHTML = `<div class="empty" style="padding:32px 20px"><div class="empty-icon">👥</div><h3>Aucun employé</h3><p>Créez un profil pour générer son lien d'accès.</p></div>`;
+    return;
+  }
+
+  list.innerHTML = employees.map(emp => {
+    const link = getBaseURL() + '?emp=' + emp.token;
+    const initials = emp.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    return `
+    <div class="emp-card">
+      <div class="emp-card-top">
+        <div style="display:flex;align-items:center;flex:1">
+          <div class="emp-avatar">${initials}</div>
+          <div class="emp-info">
+            <div class="emp-name">${emp.name}</div>
+            <div class="emp-poste">${emp.poste}</div>
+          </div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="deactivateEmployee('${emp.id}')">Supprimer</button>
+      </div>
+      <div class="emp-link-row">
+        <span class="emp-link-text" title="${link}">${link}</span>
+        <button class="btn-copy" id="copy-${emp.id}" onclick="copyLink('${link}', '${emp.id}')">📋 Copier</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function copyLink(link, empId) {
+  navigator.clipboard.writeText(link).then(() => {
+    const btn = document.getElementById('copy-' + empId);
+    btn.textContent = '✓ Copié !';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '📋 Copier';
+      btn.classList.remove('copied');
+    }, 2500);
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = link;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    const btn = document.getElementById('copy-' + empId);
+    btn.textContent = '✓ Copié !';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '📋 Copier';
+      btn.classList.remove('copied');
+    }, 2500);
+  });
+}
+
+function deactivateEmployee(id) {
+  openModal(
+    'Supprimer cet employé ?',
+    'Son lien ne fonctionnera plus. Ses entrées existantes sont conservées.',
+    () => {
+      const data = getData();
+      const emp = data.employees.find(e => e.id === id);
+      if (emp) emp.active = false;
+      saveData(data);
+      closeModal();
+      renderEmployees();
+    }
+  );
+}
+
+// ════════════════════════════════════════════
+//  EXPORT CSV
+// ════════════════════════════════════════════
+function exportCSV(type) {
+  const data = getData();
+  const entries = data.entries.filter(e=>e.type===type).sort((a,b)=>b.date.localeCompare(a.date));
+
+  let csv = type === 'cb'
+    ? 'Date,Employé,Catégorie,Fournisseur,Description,Montant (MAD),Statut\n'
+    : 'Date,Employé,Type,Mode règlement,Description,Montant (MAD),Statut\n';
+
+  entries.forEach(e => {
+    const row = type === 'cb'
+      ? [e.date, e.employee, e.category, e.supplier||'', e.description||'', e.amount, e.status==='validated'?'Validé':'En attente']
+      : [e.date, e.employee, e.category, e.payment||'', e.description||'', e.amount, e.status==='validated'?'Validé':'En attente'];
+    csv += row.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',') + '\n';
+  });
+
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `riad-anyssates-${type==='cb'?'depenses-cb':'encaissements'}-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ════════════════════════════════════════════
+//  MODAL
+// ════════════════════════════════════════════
+let modalCallback = null;
+
+function openModal(title, body, cb) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').textContent = body;
+  modalCallback = cb;
+  document.getElementById('modal-confirm-btn').onclick = () => { if(modalCallback) modalCallback(); };
+  document.getElementById('confirm-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('confirm-modal').classList.remove('open');
+  modalCallback = null;
+}
+
+// ════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════
+function fmt(n) {
+  return (Math.round(n * 100) / 100).toLocaleString('fr-MA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  const [y,m,day] = d.split('-');
+  const months = ['jan','fév','mar','avr','mai','juin','juil','aoû','sep','oct','nov','déc'];
+  return `${parseInt(day)} ${months[parseInt(m)-1]} ${y}`;
+}
+
+function fmtMonth(m) {
+  const [y,mo] = m.split('-');
+  const months = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  return `${months[parseInt(mo)-1]} ${y}`;
+}
+
+function populateMonthFilter(id) {
+  const data = getData();
+  const months = [...new Set(data.entries.filter(e=>e.employee===currentUser && e.date).map(e=>e.date.slice(0,7)))].sort().reverse();
+  const sel = document.getElementById(id);
+  sel.innerHTML = '<option value="">Tous les mois</option>' + months.map(m=>`<option value="${m}">${fmtMonth(m)}</option>`).join('');
+}
+
+// Fermer modal en cliquant dehors
+document.getElementById('confirm-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// Auto-login via token URL (déclenché après chargement complet)
+if (_autoLoginEmployee) {
+  currentUser = _autoLoginEmployee.name;
+  currentRole = 'employee';
+  showApp();
+}
+</script>
+</body>
+</html>
