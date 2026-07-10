@@ -433,7 +433,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
             setFTransactionAmount(String(data.amount_ttc))
             const autoRate = fCardType === 'amex' ? 0.033 : 0.0268
             const autoComm = Math.round(data.amount_ttc * autoRate * 100) / 100
-            const autoTva  = Math.round(autoComm * 0.10 * 100) / 100
+            const autoTva  = fCardType === 'amex' ? 0 : Math.round(autoComm * 0.10 * 100) / 100
             setFAmount(String((data.amount_ttc - autoComm - autoTva).toFixed(2)))
           } else {
             setFAmount(String(data.amount_ttc))
@@ -544,7 +544,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     const cbCommission = type === 'cash' && fPayment === 'CB' && fTransactionAmount
       ? Math.round(parseFloat(fTransactionAmount) * cbRate * 100) / 100
       : 0
-    const cbTva        = Math.round(cbCommission * 0.10 * 100) / 100
+    const cbTva        = fCardType === 'amex' ? 0 : Math.round(cbCommission * 0.10 * 100) / 100
     const finalAmount  = type === 'cash' && fPayment === 'CB' && fTransactionAmount
       ? parseFloat(fTransactionAmount) - cbCommission - cbTva
       : parseFloat(fAmount)
@@ -717,15 +717,15 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
               <div style={{ background: '#F0FDF4', border: '1px solid #86efac', borderRadius: '0.5rem', padding: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                 <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#16a34a', marginBottom: '0.1rem' }}>Encaissement CB — frais bancaires</p>
                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                  <button type="button" onClick={() => { setFCardType('amex'); if (fTransactionAmount) { const a = parseFloat(fTransactionAmount); const c = Math.round(a * 0.033 * 100) / 100; const t = Math.round(c * 0.10 * 100) / 100; setFAmount(String((a - c - t).toFixed(2))); } }} style={{ flex: 1, padding: '0.4rem', border: `2px solid ${fCardType === 'amex' ? '#16a34a' : '#ddd'}`, borderRadius: '0.4rem', background: fCardType === 'amex' ? '#F0FDF4' : 'white', fontWeight: fCardType === 'amex' ? 700 : 400, cursor: 'pointer', fontSize: '0.78rem', color: fCardType === 'amex' ? '#16a34a' : '#555', textAlign: 'center' }}>🔵 American Express<br /><span style={{ fontWeight: 400, fontSize: '0.7rem' }}>Taux 3,3 %</span></button>
+                  <button type="button" onClick={() => { setFCardType('amex'); if (fTransactionAmount) { const a = parseFloat(fTransactionAmount); const c = Math.round(a * 0.033 * 100) / 100; setFAmount(String((a - c).toFixed(2))); } }} style={{ flex: 1, padding: '0.4rem', border: `2px solid ${fCardType === 'amex' ? '#16a34a' : '#ddd'}`, borderRadius: '0.4rem', background: fCardType === 'amex' ? '#F0FDF4' : 'white', fontWeight: fCardType === 'amex' ? 700 : 400, cursor: 'pointer', fontSize: '0.78rem', color: fCardType === 'amex' ? '#16a34a' : '#555', textAlign: 'center' }}>🔵 American Express<br /><span style={{ fontWeight: 400, fontSize: '0.7rem' }}>Taux 3,3 %</span></button>
                   <button type="button" onClick={() => { setFCardType('other'); if (fTransactionAmount) { const a = parseFloat(fTransactionAmount); const c = Math.round(a * 0.0268 * 100) / 100; const t = Math.round(c * 0.10 * 100) / 100; setFAmount(String((a - c - t).toFixed(2))); } }} style={{ flex: 1, padding: '0.4rem', border: `2px solid ${fCardType === 'other' ? '#16a34a' : '#ddd'}`, borderRadius: '0.4rem', background: fCardType === 'other' ? '#F0FDF4' : 'white', fontWeight: fCardType === 'other' ? 700 : 400, cursor: 'pointer', fontSize: '0.78rem', color: fCardType === 'other' ? '#16a34a' : '#555', textAlign: 'center' }}>💳 Autre carte<br /><span style={{ fontWeight: 400, fontSize: '0.7rem' }}>Taux 2,68 %</span></button>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '0.2rem' }}>Montant de la transaction *</label>
-                  <input className="form-input" type="number" step="0.01" min="0" value={fTransactionAmount} onChange={e => { const v = e.target.value; setFTransactionAmount(v); if (v) { const a = parseFloat(v); const r = fCardType === 'amex' ? 0.033 : 0.0268; const c = Math.round(a * r * 100) / 100; const t = Math.round(c * 0.10 * 100) / 100; setFAmount(String((a - c - t).toFixed(2))); } else { setFAmount(''); } }} placeholder="0.00" required />
+                  <input className="form-input" type="number" step="0.01" min="0" value={fTransactionAmount} onChange={e => { const v = e.target.value; setFTransactionAmount(v); if (v) { const a = parseFloat(v); const r = fCardType === 'amex' ? 0.033 : 0.0268; const c = Math.round(a * r * 100) / 100; const t = fCardType === 'amex' ? 0 : Math.round(c * 0.10 * 100) / 100; setFAmount(String((a - c - t).toFixed(2))); } else { setFAmount(''); } }} placeholder="0.00" required />
                 </div>
                 <div style={{ fontSize: '0.82rem', color: '#555' }}>Commission bancaire ({fCardType === 'amex' ? '3,3 %' : '2,68 %'}) : {fTransactionAmount ? `− ${fmt(Math.round(parseFloat(fTransactionAmount) * (fCardType === 'amex' ? 0.033 : 0.0268) * 100) / 100)}` : '—'}</div>
-                <div style={{ fontSize: '0.82rem', color: '#555' }}>TVA sur commission (10 %) : {fTransactionAmount ? `− ${fmt(Math.round(Math.round(parseFloat(fTransactionAmount) * (fCardType === 'amex' ? 0.033 : 0.0268) * 100) / 100 * 0.10 * 100) / 100)}` : '—'}</div>
+                {fCardType !== 'amex' && <div style={{ fontSize: '0.82rem', color: '#555' }}>TVA sur commission (10 %) : {fTransactionAmount ? `− ${fmt(Math.round(Math.round(parseFloat(fTransactionAmount) * 0.0268 * 100) / 100 * 0.10 * 100) / 100)}` : '—'}</div>}
                 <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#16a34a' }}>Net reçu : {fTransactionAmount ? fmt(parseFloat(fAmount) || 0) : '—'}</div>
               </div>
             ) : (
