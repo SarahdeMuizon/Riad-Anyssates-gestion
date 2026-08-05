@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import type { Entry, Employee, DashboardStats, FondsEntry } from '@/types'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 
-type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'coffre' | 'employees' | 'settings'
+type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'banque' | 'coffre' | 'employees' | 'settings'
 
 const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
@@ -48,6 +48,7 @@ export default function ManagerPage() {
     { id: 'depenses', label: '💳 Dépenses' },
     { id: 'encaissements', label: '💵 Encaissements' },
     { id: 'fonds', label: '💰 Fond de caisse' },
+    { id: 'banque', label: '🏦 Banque' },
     { id: 'coffre', label: '🔐 Coffre fort' },
     { id: 'employees', label: '👥 Employés' },
     { id: 'settings', label: '⚙️ Paramètres' },
@@ -77,6 +78,7 @@ export default function ManagerPage() {
         {tab === 'depenses' && <EntriesTab type="cb" label="Dépenses" color="var(--terracotta)" />}
         {tab === 'encaissements' && <EntriesTab type="cash" label="Encaissements" color="var(--green)" />}
         {tab === 'fonds' && <FondsTab />}
+        {tab === 'banque' && <BanqueTab />}
         {tab === 'coffre' && <CoffreTab />}
         {tab === 'employees' && <EmployeesTab />}
         {tab === 'settings' && <SettingsTab onLogout={logout} />}
@@ -998,6 +1000,152 @@ function FondsTab() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── Banque Tab ───────────────────────────────────────────────────────────────
+
+function BanqueTab() {
+  const [allEntries, setAllEntries] = useState<Entry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [soldeInitMAD, setSoldeInitMAD] = useState('')
+  const [soldeInitEUR, setSoldeInitEUR] = useState('')
+  const [targetMAD, setTargetMAD] = useState(0)
+  const [targetEUR, setTargetEUR] = useState(0)
+  const [savingSolde, setSavingSolde] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  const reload = useCallback(async () => {
+    setLoading(true)
+    const [ents, settings] = await Promise.all([
+      fetch('/api/entries').then(r => r.json()),
+      fetch('/api/settings/solde-bancaire').then(r => r.json()).catch(() => ({})),
+    ])
+    setAllEntries(Array.isArray(ents) ? ents : [])
+    if (settings?.solde_bancaire_mad !== undefined) setTargetMAD(settings.solde_bancaire_mad)
+    if (settings?.solde_bancaire_eur !== undefined) setTargetEUR(settings.solde_bancaire_eur)
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { reload() }, [reload])
+
+  // Mouvements bancaires = tout ce qui n'est PAS payé en espèces (CB, Virement, Chèque)
+  const bankEntries = useMemo(
+    () => allEntries.filter(e => e.payment && e.payment !== 'Espèces'),
+    [allEntries]
+  )
+
+  function computeBalance(currency: string, target: number) {
+    const inflow = bankEntries.filter(e => e.type === 'cash' && (e.currency === currency || (!e.currency && currency === 'MAD'))).reduce((s, e) => s + Number(e.amount), 0)
+    const outflow = bankEntries.filter(e => e.type === 'cb' && (e.currency === currency || (!e.currency && currency === 'MAD'))).reduce((s, e) => s + Number(e.amount), 0)
+    return { balance: target + inflow - outflow, inflow, outflow }
+  }
+
+  const madStats = useMemo(() => computeBalance('MAD', targetMAD), [bankEntries, targetMAD])
+  const eurStats = useMemo(() => computeBalance('EUR', targetEUR), [bankEntries, targetEUR])
+
+  async function saveSolde() {
+    setSavingSolde(true)
+    const body: Record<string, number> = {}
+    if (soldeInitMAD !== '') body.solde_bancaire_mad = parseFloat(soldeInitMAD)
+    if (soldeInitEUR !== '') body.solde_bancaire_eur = parseFloat(soldeInitEUR)
+    await fetch('/api/settings/solde-bancaire', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    await reload()
+    setSoldeInitMAD(''); setSoldeInitEUR('')
+    setMsg('✓ Solde initial mis à jour')
+    setTimeout(() => setMsg(''), 4000)
+    setSavingSolde(false)
+  }
+
+  const byMode = useMemo(() => {
+    const modes: Record<string, { in: number; out: number }> = {}
+    for (const e of bankEntries) {
+      const mode = e.payment || '—'
+      if (!modes[mode]) modes[mode] = { in: 0, out: 0 }
+      if (e.type === 'cash') modes[mode].in += Number(e.amount)
+      else modes[mode].out += Number(e.amount)
+    }
+    return modes
+  }, [bankEntries])
+
+  if (loading) return <p>Chargement…</p>
+
+  return (
+    <div>
+      <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#3730A3', marginBottom: '1rem' }}>🏦 Banque</h2>
+      <p style={{ fontSize: '0.8rem', color: '#888', marginBottom: '1rem' }}>
+        Regroupe tous les mouvements payés/encaissés par CB, Virement ou Chèque (hors espèces, suivies dans le Fond de caisse).
+      </p>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.25rem' }}>
+        {[{ cur: 'MAD', s: madStats }, { cur: 'EUR', s: eurStats }].map(({ cur, s }) => (
+          <div key={cur} className="stat-card" style={{ borderLeftColor: '#3730A3' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#3730A3', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Solde net {cur}</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#3730A3' }}>{fmt(s.balance)} {cur}</div>
+            <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.3rem' }}>+{fmt(s.inflow)} / -{fmt(s.outflow)}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="card" style={{ marginBottom: '1.25rem' }}>
+        <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', color: '#374151' }}>🏁 Solde bancaire initial</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.3rem' }}>Solde initial MAD (actuel : {fmt(targetMAD)})</label>
+            <input className="form-input" type="number" step="0.01" value={soldeInitMAD} onChange={e => setSoldeInitMAD(e.target.value)} placeholder={`${targetMAD}`} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.3rem' }}>Solde initial EUR (actuel : {fmt(targetEUR)})</label>
+            <input className="form-input" type="number" step="0.01" value={soldeInitEUR} onChange={e => setSoldeInitEUR(e.target.value)} placeholder={`${targetEUR}`} />
+          </div>
+        </div>
+        {msg && <p style={{ color: 'var(--green)', fontSize: '0.85rem', margin: '0.5rem 0 0' }}>{msg}</p>}
+        <button onClick={saveSolde} disabled={savingSolde || (soldeInitMAD === '' && soldeInitEUR === '')} className="btn-primary" style={{ marginTop: '0.75rem', opacity: (soldeInitMAD === '' && soldeInitEUR === '') ? 0.5 : 1 }}>
+          {savingSolde ? 'Enregistrement…' : 'Mettre à jour le solde initial'}
+        </button>
+      </div>
+
+      <div className="card" style={{ marginBottom: '1.25rem' }}>
+        <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', color: '#374151' }}>📊 Par mode de paiement</h3>
+        <div style={{ overflowX: 'auto' }}>
+          <table>
+            <thead><tr><th>Mode</th><th>Encaissé</th><th>Dépensé</th></tr></thead>
+            <tbody>
+              {Object.entries(byMode).map(([mode, v]) => (
+                <tr key={mode}>
+                  <td>{mode}</td>
+                  <td style={{ color: 'var(--green)', fontWeight: 600 }}>{fmt(v.in)}</td>
+                  <td style={{ color: 'var(--red)', fontWeight: 600 }}>{fmt(v.out)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="card">
+        <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', color: '#374151' }}>📋 Mouvements bancaires</h3>
+        <div style={{ overflowX: 'auto' }}>
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Sens</th><th>Catégorie</th><th>Mode</th><th>Devise</th><th>Montant</th></tr>
+            </thead>
+            <tbody>
+              {[...bankEntries].sort((a, b) => b.date.localeCompare(a.date)).map(e => (
+                <tr key={`${e.type}-${e.id}`}>
+                  <td style={{ whiteSpace: 'nowrap' }}>{new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR')}</td>
+                  <td style={{ color: e.type === 'cash' ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>{e.type === 'cash' ? '↑ Encaissement' : '↓ Dépense'}</td>
+                  <td>{e.category}</td>
+                  <td>{e.payment}</td>
+                  <td>{e.currency || 'MAD'}</td>
+                  <td style={{ fontWeight: 600, color: e.type === 'cash' ? 'var(--green)' : 'var(--red)' }}>{e.type === 'cash' ? '+' : '-'}{fmt(Number(e.amount))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   )
 }

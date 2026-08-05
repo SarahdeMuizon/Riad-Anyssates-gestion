@@ -153,6 +153,12 @@ export async function initDb() {
       sql: `INSERT OR IGNORE INTO settings (key, value) VALUES ('fond_caisse_eur', '200')`,
     },
     {
+      sql: `INSERT OR IGNORE INTO settings (key, value) VALUES ('solde_bancaire_mad', '0')`,
+    },
+    {
+      sql: `INSERT OR IGNORE INTO settings (key, value) VALUES ('solde_bancaire_eur', '0')`,
+    },
+    {
       sql: `CREATE TABLE IF NOT EXISTS coffre_entries (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         employee_name TEXT NOT NULL,

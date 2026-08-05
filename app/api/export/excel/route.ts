@@ -133,11 +133,11 @@ export async function GET() {
       sql`SELECT * FROM entries WHERE type='cash' ORDER BY date ASC`,
       sql`SELECT * FROM entries WHERE type='cb' ORDER BY date ASC`,
       sql`SELECT * FROM fonds_entries ORDER BY date ASC`,
-      sql`SELECT key, value FROM settings WHERE key IN ('fond_caisse_mad', 'fond_caisse_eur')`,
+      sql`SELECT key, value FROM settings WHERE key IN ('fond_caisse_mad', 'fond_caisse_eur', 'solde_bancaire_mad', 'solde_bancaire_eur')`,
       sql`SELECT value FROM settings WHERE key = 'excel_base_file'`,
     ])
 
-    const settings: Record<string, number> = { fond_caisse_mad: 2000, fond_caisse_eur: 200 }
+    const settings: Record<string, number> = { fond_caisse_mad: 2000, fond_caisse_eur: 200, solde_bancaire_mad: 0, solde_bancaire_eur: 0 }
     for (const r of settingsRows) settings[r.key as string] = parseFloat(r.value as string) || 0
 
     const wb = new ExcelJS.Workbook()
@@ -149,7 +149,7 @@ export async function GET() {
       const buf = Buffer.from(baseFileRows[0].value as string, 'base64')
       await wb.xlsx.load(buf as any) // type cast needed for Node 22+ Buffer generics
       // Remove our managed sheets so we can regenerate them fresh
-      const managed = ['Encaissements', 'Dashboard Encaissements', 'Dépenses', 'Dashboard Dépenses', 'Fond de caisse', 'Dashboard Fond de caisse']
+      const managed = ['Encaissements', 'Dashboard Encaissements', 'Dépenses', 'Dashboard Dépenses', 'Fond de caisse', 'Dashboard Fond de caisse', 'Banque', 'Dashboard Banque']
       for (const name of managed) {
         const ws = wb.getWorksheet(name)
         if (ws) wb.removeWorksheet(ws.id)
@@ -347,6 +347,82 @@ export async function GET() {
     const soldeRow = wsDashFonds.getRow(5)
     soldeRow.getCell(1).value = `Solde = Dotation (${settings.fond_caisse_mad} MAD + ${settings.fond_caisse_eur} EUR) + Entrées − Sorties`
     soldeRow.getCell(1).font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF6B7280' } }
+
+    // ── Sheet: Banque ─────────────────────────────────────────────────────────
+    const wsBanque = wb.addWorksheet('Banque', { views: [{ state: 'frozen', ySplit: 1 }] })
+    wsBanque.columns = [
+      { key: 'date', width: 12 }, { key: 'mois', width: 16 }, { key: 'sens', width: 14 },
+      { key: 'categorie', width: 22 }, { key: 'mode', width: 12 }, { key: 'devise', width: 8 },
+      { key: 'montant', width: 12 }, { key: 'solde', width: 14 }, { key: 'description', width: 28 }, { key: 'statut', width: 12 },
+    ]
+    const banqueHeaders = ['Date', 'Mois', 'Sens', 'Catégorie', 'Mode', 'Devise', 'Montant', 'Solde cumulé', 'Description', 'Statut']
+    banqueHeaders.forEach((h, i) => hdr(wsBanque.getCell(1, i + 1), h, C_BLUE_BG))
+    wsBanque.getRow(1).height = 22
+
+    const bankMoves = [...encaissements, ...depenses]
+      .filter(e => e.payment && e.payment !== 'Espèces')
+      .sort((a, b) => (a.date as string).localeCompare(b.date as string))
+
+    let runningMAD = settings.solde_bancaire_mad
+    let runningEUR = settings.solde_bancaire_eur
+    const banqueByMode: Record<string, number> = {}
+    const banqueByMonth: Record<string, number> = {}
+    let bankIn = 0, bankOut = 0
+
+    bankMoves.forEach((e, idx) => {
+      const row = wsBanque.addRow({})
+      const dateStr = (e.date as string).slice(0, 10)
+      const mois = formatMois(dateStr)
+      const amt = Number(e.amount)
+      const isIn = e.type === 'cash'
+      const currency = (e.currency as string) || 'MAD'
+      if (currency === 'EUR') runningEUR += isIn ? amt : -amt
+      else runningMAD += isIn ? amt : -amt
+
+      cell(row.getCell(1), dateStr)
+      cell(row.getCell(2), mois)
+      const sc = row.getCell(3)
+      sc.value = isIn ? '↑ Encaissement' : '↓ Dépense'
+      sc.font = { name: 'Arial', size: 9, bold: true, color: { argb: isIn ? 'FF2D6A4F' : 'FF991B1B' } }
+      sc.alignment = { horizontal: 'center' }
+      cell(row.getCell(4), e.category)
+      cell(row.getCell(5), e.payment || '—')
+      cell(row.getCell(6), currency, false, 'FF374151', 'center')
+      const mc = row.getCell(7)
+      mc.value = isIn ? amt : -amt; mc.numFmt = '#,##0.00'
+      mc.font = { name: 'Arial', size: 9, bold: true, color: { argb: isIn ? 'FF2D6A4F' : 'FF991B1B' } }
+      mc.alignment = { horizontal: 'right' }
+      const soldeC = row.getCell(8)
+      soldeC.value = currency === 'EUR' ? runningEUR : runningMAD
+      soldeC.numFmt = '#,##0.00'
+      soldeC.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF3730A3' } }
+      soldeC.alignment = { horizontal: 'right' }
+      cell(row.getCell(9), e.description || '')
+      const status = e.status as string
+      const stc = row.getCell(10)
+      stc.value = status === 'validated' ? 'Validé' : 'En attente'
+      stc.font = { name: 'Arial', size: 9, bold: true, color: { argb: status === 'validated' ? 'FF2D6A4F' : 'FFD97706' } }
+      stc.alignment = { horizontal: 'center' }
+      altRow(row, idx + 2)
+
+      const mode = (e.payment as string) || '—'
+      banqueByMode[mode] = (banqueByMode[mode] || 0) + (isIn ? amt : -amt)
+      banqueByMonth[mois] = (banqueByMonth[mois] || 0) + (isIn ? amt : -amt)
+      if (isIn) bankIn += amt; else bankOut += amt
+    })
+    wsBanque.autoFilter = { from: 'A1', to: 'J1' }
+
+    // ── Dashboard Banque ──────────────────────────────────────────────────────
+    const wsDashBanque = wb.addWorksheet('Dashboard Banque')
+    addDashboard(wsDashBanque, 'Banque', banqueByMode, banqueByMonth, [
+      { label: 'Solde net MAD', value: runningMAD, color: 'FF3730A3' },
+      { label: 'Solde net EUR', value: runningEUR, color: 'FF3730A3' },
+      { label: 'Total encaissé', value: bankIn, color: 'FF2D6A4F' },
+      { label: 'Total dépensé', value: bankOut, color: 'FF991B1B' },
+    ])
+    const soldeBanqueRow = wsDashBanque.getRow(5)
+    soldeBanqueRow.getCell(1).value = `Solde = Solde initial (${settings.solde_bancaire_mad} MAD + ${settings.solde_bancaire_eur} EUR) + Encaissements CB/Virement/Chèque − Dépenses CB/Virement/Chèque`
+    soldeBanqueRow.getCell(1).font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF6B7280' } }
 
     // Generate buffer and return
     const buffer = await wb.xlsx.writeBuffer()
