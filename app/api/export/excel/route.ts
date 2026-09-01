@@ -149,7 +149,7 @@ export async function GET() {
       const buf = Buffer.from(baseFileRows[0].value as string, 'base64')
       await wb.xlsx.load(buf as any) // type cast needed for Node 22+ Buffer generics
       // Remove our managed sheets so we can regenerate them fresh
-      const managed = ['Encaissements', 'Dashboard Encaissements', 'Dépenses', 'Dashboard Dépenses', 'Fond de caisse', 'Dashboard Fond de caisse', 'Banque', 'Dashboard Banque']
+      const managed = ['Encaissements', 'Dashboard Encaissements', 'Dépenses', 'Dashboard Dépenses', 'Fond de caisse', 'Dashboard Fond de caisse', 'Banque', 'Dashboard Banque', 'Soldes', 'Dashboard Soldes']
       for (const name of managed) {
         const ws = wb.getWorksheet(name)
         if (ws) wb.removeWorksheet(ws.id)
@@ -348,29 +348,46 @@ export async function GET() {
     soldeRow.getCell(1).value = `Solde = Dotation (${settings.fond_caisse_mad} MAD + ${settings.fond_caisse_eur} EUR) + Entrées − Sorties`
     soldeRow.getCell(1).font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF6B7280' } }
 
-    // ── Sheet: Banque ─────────────────────────────────────────────────────────
-    const wsBanque = wb.addWorksheet('Banque', { views: [{ state: 'frozen', ySplit: 1 }] })
-    wsBanque.columns = [
-      { key: 'date', width: 12 }, { key: 'mois', width: 16 }, { key: 'sens', width: 14 },
-      { key: 'categorie', width: 22 }, { key: 'mode', width: 12 }, { key: 'devise', width: 8 },
-      { key: 'montant', width: 12 }, { key: 'solde', width: 14 }, { key: 'description', width: 28 }, { key: 'statut', width: 12 },
+    // ── Sheet: Soldes (banque — chèque, CB, virement) ───────────────────────────
+    const wsSoldes = wb.addWorksheet('Soldes', { views: [{ state: 'frozen', ySplit: 1 }] })
+    wsSoldes.columns = [
+      { key: 'date', width: 12 }, { key: 'mois', width: 16 }, { key: 'categorie', width: 22 },
+      { key: 'mode', width: 14 }, { key: 'devise', width: 8 }, { key: 'entrees', width: 14 },
+      { key: 'sorties', width: 14 }, { key: 'solde', width: 14 }, { key: 'pointage', width: 12 },
+      { key: 'description', width: 28 }, { key: 'statut', width: 12 },
     ]
-    const banqueHeaders = ['Date', 'Mois', 'Sens', 'Catégorie', 'Mode', 'Devise', 'Montant', 'Solde cumulé', 'Description', 'Statut']
-    banqueHeaders.forEach((h, i) => hdr(wsBanque.getCell(1, i + 1), h, C_BLUE_BG))
-    wsBanque.getRow(1).height = 22
+    const soldesHeaders = ['Date', 'Mois', 'Catégorie', 'Mode paiement', 'Devise', 'Entrées', 'Sorties', 'Solde', 'Pointage', 'Description', 'Statut']
+    soldesHeaders.forEach((h, i) => hdr(wsSoldes.getCell(1, i + 1), h, C_BLUE_BG))
+    wsSoldes.getRow(1).height = 22
+
+    let runningMAD = settings.solde_bancaire_mad
+    let runningEUR = settings.solde_bancaire_eur
+
+    // Solde initial (une ligne par devise)
+    for (const [dev, val] of [['MAD', runningMAD], ['EUR', runningEUR]] as const) {
+      const row = wsSoldes.addRow({})
+      row.getCell(3).value = 'SOLDE INITIAL'
+      row.getCell(3).font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF3730A3' } }
+      row.getCell(5).value = dev
+      row.getCell(5).alignment = { horizontal: 'center' }
+      row.getCell(5).font = { name: 'Arial', size: 9, color: { argb: 'FF374151' } }
+      const sc = row.getCell(8)
+      sc.value = val; sc.numFmt = '#,##0.00'
+      sc.font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF3730A3' } }
+      sc.alignment = { horizontal: 'right' }
+      row.eachCell(c => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEF2FF' } } })
+    }
 
     const bankMoves = [...encaissements, ...depenses]
       .filter(e => e.payment && e.payment !== 'Espèces')
       .sort((a, b) => (a.date as string).localeCompare(b.date as string))
 
-    let runningMAD = settings.solde_bancaire_mad
-    let runningEUR = settings.solde_bancaire_eur
-    const banqueByMode: Record<string, number> = {}
-    const banqueByMonth: Record<string, number> = {}
-    let bankIn = 0, bankOut = 0
+    const soldesByMode: Record<string, number> = {}
+    const soldesByMonth: Record<string, number> = {}
+    let entreesTotal = 0, sortiesTotal = 0
 
     bankMoves.forEach((e, idx) => {
-      const row = wsBanque.addRow({})
+      const row = wsSoldes.addRow({})
       const dateStr = (e.date as string).slice(0, 10)
       const mois = formatMois(dateStr)
       const amt = Number(e.amount)
@@ -381,48 +398,71 @@ export async function GET() {
 
       cell(row.getCell(1), dateStr)
       cell(row.getCell(2), mois)
-      const sc = row.getCell(3)
-      sc.value = isIn ? '↑ Encaissement' : '↓ Dépense'
-      sc.font = { name: 'Arial', size: 9, bold: true, color: { argb: isIn ? 'FF2D6A4F' : 'FF991B1B' } }
-      sc.alignment = { horizontal: 'center' }
-      cell(row.getCell(4), e.category)
-      cell(row.getCell(5), e.payment || '—')
-      cell(row.getCell(6), currency, false, 'FF374151', 'center')
-      const mc = row.getCell(7)
-      mc.value = isIn ? amt : -amt; mc.numFmt = '#,##0.00'
-      mc.font = { name: 'Arial', size: 9, bold: true, color: { argb: isIn ? 'FF2D6A4F' : 'FF991B1B' } }
-      mc.alignment = { horizontal: 'right' }
+      cell(row.getCell(3), e.category)
+      cell(row.getCell(4), e.payment || '—')
+      cell(row.getCell(5), currency, false, 'FF374151', 'center')
+
+      if (isIn) {
+        const ec = row.getCell(6)
+        ec.value = amt; ec.numFmt = '#,##0.00'
+        ec.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF2D6A4F' } }
+        ec.alignment = { horizontal: 'right' }
+      } else {
+        const sc = row.getCell(7)
+        sc.value = amt; sc.numFmt = '#,##0.00'
+        sc.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF991B1B' } }
+        sc.alignment = { horizontal: 'right' }
+      }
+
       const soldeC = row.getCell(8)
       soldeC.value = currency === 'EUR' ? runningEUR : runningMAD
       soldeC.numFmt = '#,##0.00'
       soldeC.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF3730A3' } }
       soldeC.alignment = { horizontal: 'right' }
-      cell(row.getCell(9), e.description || '')
+
+      // Pointage — case à cocher manuelle pour rapprocher avec le relevé bancaire
+      const pointageC = row.getCell(9)
+      pointageC.alignment = { horizontal: 'center' }
+      pointageC.dataValidation = { type: 'list', allowBlank: true, formulae: ['"✓"'] }
+      pointageC.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF2D6A4F' } }
+
+      cell(row.getCell(10), e.description || '')
       const status = e.status as string
-      const stc = row.getCell(10)
+      const stc = row.getCell(11)
       stc.value = status === 'validated' ? 'Validé' : 'En attente'
       stc.font = { name: 'Arial', size: 9, bold: true, color: { argb: status === 'validated' ? 'FF2D6A4F' : 'FFD97706' } }
       stc.alignment = { horizontal: 'center' }
-      altRow(row, idx + 2)
+      altRow(row, idx + 4)
 
       const mode = (e.payment as string) || '—'
-      banqueByMode[mode] = (banqueByMode[mode] || 0) + (isIn ? amt : -amt)
-      banqueByMonth[mois] = (banqueByMonth[mois] || 0) + (isIn ? amt : -amt)
-      if (isIn) bankIn += amt; else bankOut += amt
+      soldesByMode[mode] = (soldesByMode[mode] || 0) + (isIn ? amt : -amt)
+      soldesByMonth[mois] = (soldesByMonth[mois] || 0) + (isIn ? amt : -amt)
+      if (isIn) entreesTotal += amt; else sortiesTotal += amt
     })
-    wsBanque.autoFilter = { from: 'A1', to: 'J1' }
+    wsSoldes.autoFilter = { from: 'A1', to: 'K1' }
 
-    // ── Dashboard Banque ──────────────────────────────────────────────────────
-    const wsDashBanque = wb.addWorksheet('Dashboard Banque')
-    addDashboard(wsDashBanque, 'Banque', banqueByMode, banqueByMonth, [
+    // Surligne en vert les lignes pointées
+    wsSoldes.addConditionalFormatting({
+      ref: `A2:K${wsSoldes.rowCount}`,
+      rules: [{
+        type: 'expression',
+        formulae: ['$I2="✓"'],
+        style: { fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } } },
+        priority: 1,
+      }],
+    })
+
+    // ── Dashboard Soldes ──────────────────────────────────────────────────────
+    const wsDashSoldes = wb.addWorksheet('Dashboard Soldes')
+    addDashboard(wsDashSoldes, 'Soldes', soldesByMode, soldesByMonth, [
       { label: 'Solde net MAD', value: runningMAD, color: 'FF3730A3' },
       { label: 'Solde net EUR', value: runningEUR, color: 'FF3730A3' },
-      { label: 'Total encaissé', value: bankIn, color: 'FF2D6A4F' },
-      { label: 'Total dépensé', value: bankOut, color: 'FF991B1B' },
+      { label: 'Total entrées', value: entreesTotal, color: 'FF2D6A4F' },
+      { label: 'Total sorties', value: sortiesTotal, color: 'FF991B1B' },
     ])
-    const soldeBanqueRow = wsDashBanque.getRow(5)
-    soldeBanqueRow.getCell(1).value = `Solde = Solde initial (${settings.solde_bancaire_mad} MAD + ${settings.solde_bancaire_eur} EUR) + Encaissements CB/Virement/Chèque − Dépenses CB/Virement/Chèque`
-    soldeBanqueRow.getCell(1).font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF6B7280' } }
+    const soldeNoteRow = wsDashSoldes.getRow(5)
+    soldeNoteRow.getCell(1).value = `Solde = Solde initial (${settings.solde_bancaire_mad} MAD + ${settings.solde_bancaire_eur} EUR) + Entrées CB/Virement/Chèque − Sorties CB/Virement/Chèque`
+    soldeNoteRow.getCell(1).font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF6B7280' } }
 
     // Generate buffer and return
     const buffer = await wb.xlsx.writeBuffer()
