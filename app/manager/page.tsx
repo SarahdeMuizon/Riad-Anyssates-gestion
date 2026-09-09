@@ -1051,6 +1051,23 @@ function BanqueTab() {
  
   useEffect(() => { reload(); fetchImports() }, [reload, fetchImports])
  
+  async function togglePointed(entry: Entry) {
+    const next = !entry.pointed
+    // Mise à jour optimiste : on affiche le changement tout de suite, avant la réponse du serveur
+    setAllEntries(prev => prev.map(e => (e.id === entry.id && e.type === entry.type ? { ...e, pointed: next } : e)))
+    try {
+      const r = await fetch(`/api/entries/${entry.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pointed: next }),
+      })
+      if (!r.ok) throw new Error()
+    } catch {
+      // en cas d'échec, on annule le changement affiché
+      setAllEntries(prev => prev.map(e => (e.id === entry.id && e.type === entry.type ? { ...e, pointed: entry.pointed } : e)))
+    }
+  }
+ 
   async function handlePointageUpload() {
     if (!pointageFile) return
     setPointageUploading(true)
@@ -1153,7 +1170,7 @@ function BanqueTab() {
       <div className="card" style={{ marginBottom: '1.25rem' }}>
         <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', color: '#374151' }}>🔄 Synchroniser le pointage</h3>
         <p style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.75rem' }}>
-          Après avoir coché la colonne &quot;Pointage&quot; dans l&apos;Excel exporté (onglet BANQUE), réimporte-le ici : les cases cochées sont reportées sur les mouvements correspondants, et le fichier est conservé ci-dessous.
+          Tu peux pointer chaque mouvement directement dans le tableau ci-dessous (colonne &quot;Pointé&quot;), c&apos;est enregistré immédiatement. Cette section reste utile si tu préfères pointer sur l&apos;Excel exporté (onglet BANQUE) puis le réimporter ici : les cases cochées seront reportées, et le fichier conservé en archive.
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <label style={{ padding: '0.5rem 0.875rem', background: '#F8F8F8', border: '1px solid #ddd', borderRadius: '0.5rem', color: '#555', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
@@ -1223,7 +1240,15 @@ function BanqueTab() {
                   <td>{e.payment}</td>
                   <td>{e.currency || 'MAD'}</td>
                   <td style={{ fontWeight: 600, color: e.type === 'cash' ? 'var(--green)' : 'var(--red)' }}>{e.type === 'cash' ? '+' : '-'}{fmt(Number(e.amount))}</td>
-                  <td style={{ textAlign: 'center' }}>{e.pointed ? <span style={{ color: 'var(--green)', fontWeight: 700 }}>✓</span> : <span style={{ color: '#ccc' }}>—</span>}</td>
+                  <td style={{ textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={!!e.pointed}
+                      onChange={() => togglePointed(e)}
+                      style={{ width: '1.1rem', height: '1.1rem', cursor: 'pointer', accentColor: 'var(--green)' }}
+                      title={e.pointed ? 'Cliquer pour dépointer' : 'Cliquer pour pointer'}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
