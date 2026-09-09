@@ -1,7 +1,7 @@
 export type EntryType = 'cb' | 'cash'
 export type FondsDirection = 'in' | 'out'
 export type EntryStatus = 'pending' | 'validated'
-
+ 
 export interface Entry {
   id: number
   employee_name: string
@@ -18,9 +18,10 @@ export interface Entry {
   tva_rate?: number
   status: EntryStatus
   validated_at?: string
+  pointed?: boolean | number
   created_at: string
 }
-
+ 
 export interface FondsEntry {
   id: number
   employee_name: string
@@ -34,7 +35,7 @@ export interface FondsEntry {
   validated_at?: string
   created_at: string
 }
-
+ 
 export interface Employee {
   id: number
   name: string
@@ -43,7 +44,7 @@ export interface Employee {
   active: boolean
   created_at: string
 }
-
+ 
 export interface DashboardStats {
   total_depenses: number
   total_encaissements: number
@@ -55,7 +56,7 @@ export interface DashboardStats {
   encaissements_by_category: { category: string; total: number }[]
   month: string
 }
-
+ 
 export const DEPENSES_CATEGORIES = [
   'Alimentation/Courses',
   'Fournitures & bureautique',
@@ -66,7 +67,7 @@ export const DEPENSES_CATEGORIES = [
   'Décoration & fleurs',
   'Autre',
 ]
-
+ 
 export const ENCAISSEMENTS_CATEGORIES = [
   'Boissons bar',
   'Repas/Restauration',
@@ -76,7 +77,7 @@ export const ENCAISSEMENTS_CATEGORIES = [
   'Pourboire collectif',
   'Autre encaissement',
 ]
-
+ 
 export const FONDS_CATEGORIES = [
   'Courses/Marché',
   'Entretien',
@@ -87,11 +88,12 @@ export const FONDS_CATEGORIES = [
   'Remboursement',
   'Autre',
 ]
-
+ 
 export const PAYMENT_MODES = ['CB', 'Virement', 'Chèque']
-
+ 
 export const CURRENCIES: string[] = ['MAD', 'EUR']
-
+ 
 // Backwards compat aliases
 export const CB_CATEGORIES = DEPENSES_CATEGORIES
 export const CASH_CATEGORIES = ENCAISSEMENTS_CATEGORIES
+ 
