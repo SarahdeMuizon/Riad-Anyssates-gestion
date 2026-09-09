@@ -520,9 +520,9 @@ export async function GET() {
       { key: 'date', width: 12 }, { key: 'mois', width: 16 }, { key: 'sens', width: 12 },
       { key: 'categorie', width: 22 }, { key: 'employe', width: 18 },
       { key: 'montant', width: 12 }, { key: 'devise', width: 8 },
-      { key: 'description', width: 28 }, { key: 'statut', width: 12 },
+      { key: 'description', width: 28 }, { key: 'facture', width: 10 }, { key: 'statut', width: 12 },
     ]
-    const coffreHeaders = ['Date', 'Mois', 'Sens', 'Catégorie', 'Par', 'Montant', 'Devise', 'Description', 'Statut']
+    const coffreHeaders = ['Date', 'Mois', 'Sens', 'Catégorie', 'Par', 'Montant', 'Devise', 'Description', 'Facture', 'Statut']
     coffreHeaders.forEach((h, i) => hdr(wsCoffre.getCell(1, i + 1), h, C_GOLD_BG))
     wsCoffre.getRow(1).height = 22
  
@@ -550,7 +550,17 @@ export async function GET() {
       mc.alignment = { horizontal: 'right' }
       cell(row.getCell(7), (e.currency as string) || 'MAD', false, 'FF374151', 'center')
       cell(row.getCell(8), e.description || '')
-      const stc = row.getCell(9)
+      const fc = row.getCell(9)
+      const hasInvoice = !!(e.invoice_url as string)
+      if (hasInvoice) {
+        fc.value = { text: 'AF', hyperlink: e.invoice_url as string }
+        fc.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF2D6A4F' }, underline: true }
+      } else {
+        fc.value = 'SF'
+        fc.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF9CA3AF' } }
+      }
+      fc.alignment = { horizontal: 'center' }
+      const stc = row.getCell(10)
       const status = e.status as string
       stc.value = status === 'validated' ? 'Validé' : 'En attente'
       stc.font = { name: 'Arial', size: 9, bold: true, color: { argb: status === 'validated' ? 'FF2D6A4F' : 'FFD97706' } }
@@ -560,7 +570,7 @@ export async function GET() {
       coffreByMonth[mois] = (coffreByMonth[mois] || 0) + (isIn ? amt : -amt)
       if (isIn) coffreIn += amt; else coffreOut += amt
     })
-    wsCoffre.autoFilter = { from: 'A1', to: 'I1' }
+    wsCoffre.autoFilter = { from: 'A1', to: 'J1' }
  
     // ── Dashboard Coffre ──────────────────────────────────────────────────────
     const wsDashCoffre = wb.addWorksheet('DASHBOARD COFFRE', { views: [{ showGridLines: false }] })
@@ -585,5 +595,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Erreur génération Excel' }, { status: 500 })
   }
 }
+ 
+ 
  
 
