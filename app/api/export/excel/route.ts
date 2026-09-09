@@ -16,6 +16,12 @@ const C_DASH_BG   = 'FFF8F9FA'
 const C_TITLE_BG  = 'FFEDE0D6'
 const C_ALT_ROW   = 'FFFAFAFA'
  
+// Couleurs d'onglet (tabColor)
+const TAB_RED   = 'FF7F1D1D'   // fond de caisse — rouge foncé
+const TAB_BLUE  = 'FF1F3864'   // banque — bleu foncé
+const TAB_GOLD  = 'FFB8860B'   // coffre — doré/moutarde
+const TAB_BLACK = 'FF000000'   // tableau de bord
+ 
 function hdr(cell: ExcelJS.Cell, text: string, bgColor = C_HEADER_BG, fgColor = C_HEADER_FG) {
   cell.value = text
   cell.font = { bold: true, color: { argb: fgColor }, name: 'Arial', size: 10 }
@@ -142,6 +148,33 @@ export async function GET() {
     const settings: Record<string, number> = { fond_caisse_mad: 2000, fond_caisse_eur: 200, solde_bancaire_mad: 0, solde_bancaire_eur: 0 }
     for (const r of settingsRows) settings[r.key as string] = parseFloat(r.value as string) || 0
  
+    // ── Pré-calcul global (pour le Tableau de bord, avant toute création d'onglet) ──
+    const tdbEncTotal = encaissements.reduce((s, e) => s + Number(e.amount), 0)
+    const tdbDepTotal = depenses.reduce((s, e) => s + Number(e.amount), 0)
+ 
+    let tdbFondsIn = 0, tdbFondsOut = 0
+    for (const e of fonds) {
+      const amt = Number(e.amount)
+      if ((e.direction as string) === 'in') tdbFondsIn += amt; else tdbFondsOut += amt
+    }
+ 
+    const tdbBankMoves = [...encaissements, ...depenses].filter(e => e.payment && e.payment !== 'Espèces')
+    let tdbRunningMAD = settings.solde_bancaire_mad
+    let tdbRunningEUR = settings.solde_bancaire_eur
+    for (const e of tdbBankMoves) {
+      const amt = Number(e.amount)
+      const isIn = e.type === 'cash'
+      const currency = (e.currency as string) || 'MAD'
+      if (currency === 'EUR') tdbRunningEUR += isIn ? amt : -amt
+      else tdbRunningMAD += isIn ? amt : -amt
+    }
+ 
+    let tdbCoffreIn = 0, tdbCoffreOut = 0
+    for (const e of coffre) {
+      const amt = Number(e.amount)
+      if ((e.direction as string) === 'in') tdbCoffreIn += amt; else tdbCoffreOut += amt
+    }
+ 
     const wb = new ExcelJS.Workbook()
     wb.creator = 'Riad Anyssates'
     wb.created = new Date()
@@ -151,12 +184,89 @@ export async function GET() {
       const buf = Buffer.from(baseFileRows[0].value as string, 'base64')
       await wb.xlsx.load(buf as any) // type cast needed for Node 22+ Buffer generics
       // Remove our managed sheets so we can regenerate them fresh
-      const managed = ['Encaissements', 'Dashboard Encaissements', 'Dépenses', 'Dashboard Dépenses', 'Fond de caisse', 'Dashboard Fond de caisse', 'Banque', 'Dashboard Banque', 'Soldes', 'Dashboard Soldes', 'Coffre', 'Dashboard Coffre']
+      const managed = [
+        'Encaissements', 'Dépenses', 'Soldes', 'Banque', 'Fond de caisse', 'Coffre', 'Tableau de bord',
+        'Dashboard Encaissements', 'Dashboard Dépenses', 'Dashboard Fond de caisse', 'Dashboard Banque', 'Dashboard Soldes', 'Dashboard Coffre',
+        'DASHBOARD ENCAISSEMENTS', 'DASHBOARD DÉPENSES', 'FOND DE CAISSE', 'DASHBOARD FOND DE CAISSE', 'BANQUE', 'DASHBOARD BANQUE', 'COFFRE', 'DASHBOARD COFFRE', 'TABLEAU DE BORD',
+      ]
       for (const name of managed) {
         const ws = wb.getWorksheet(name)
         if (ws) wb.removeWorksheet(ws.id)
       }
     }
+ 
+    // ── Sheet: TABLEAU DE BORD (synthèse générale — 1er onglet) ───────────────
+    const wsTdb = wb.addWorksheet('TABLEAU DE BORD', {
+      views: [{ showGridLines: false }],
+      properties: { tabColor: { argb: TAB_BLACK } },
+    })
+    ;(wsTdb as unknown as { orderNo: number }).orderNo = -1 // force en tout premier, même devant les onglets d'un fichier de base chargé (propriété interne non typée par exceljs)
+    wsTdb.getColumn(1).width = 26
+    wsTdb.getColumn(2).width = 30
+    wsTdb.getColumn(3).width = 18
+ 
+    wsTdb.mergeCells('A1:C1')
+    const tdbTitle = wsTdb.getCell('A1')
+    tdbTitle.value = '📊 TABLEAU DE BORD — Synthèse générale'
+    tdbTitle.font = { bold: true, size: 14, name: 'Arial', color: { argb: 'FFFFFFFF' } }
+    tdbTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: TAB_BLACK } }
+    tdbTitle.alignment = { horizontal: 'center', vertical: 'middle' }
+    wsTdb.getRow(1).height = 32
+ 
+    // KPI — vue d'ensemble Encaissements / Dépenses / Résultat net
+    const tdbResultat = tdbEncTotal - tdbDepTotal
+    const tdbKpis = [
+      { label: 'Total encaissements', value: tdbEncTotal, color: 'FF2D6A4F' },
+      { label: 'Total dépenses', value: tdbDepTotal, color: 'FF991B1B' },
+      { label: 'Résultat net', value: tdbResultat, color: tdbResultat >= 0 ? 'FF2D6A4F' : 'FF991B1B' },
+    ]
+    let tdbKpiCol = 1
+    for (const k of tdbKpis) {
+      const kCell = wsTdb.getCell(3, tdbKpiCol)
+      kCell.value = k.label
+      kCell.font = { bold: true, size: 9, name: 'Arial', color: { argb: 'FF6B7280' } }
+      kCell.alignment = { horizontal: 'left' }
+      const vCell = wsTdb.getCell(4, tdbKpiCol)
+      vCell.value = k.value
+      vCell.numFmt = '#,##0.00'
+      vCell.font = { bold: true, size: 16, name: 'Arial', color: { argb: k.color } }
+      vCell.alignment = { horizontal: 'left' }
+      vCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_DASH_BG } }
+      tdbKpiCol++
+    }
+    wsTdb.getRow(4).height = 28
+ 
+    // Détail par section
+    wsTdb.getCell('A6').value = 'DÉTAIL PAR SECTION'
+    wsTdb.getCell('A6').font = { bold: true, size: 9, name: 'Arial', color: { argb: 'FF6B7280' } }
+    hdr(wsTdb.getCell('A7'), 'Section', C_HEADER_BG)
+    hdr(wsTdb.getCell('B7'), 'Indicateur', C_HEADER_BG)
+    hdr(wsTdb.getCell('C7'), 'Montant', C_HEADER_BG)
+ 
+    const tdbSectionRows: { section: string; label: string; value: number; color: string }[] = [
+      { section: 'Fond de caisse', label: 'Entrées', value: tdbFondsIn, color: 'FF2D6A4F' },
+      { section: 'Fond de caisse', label: 'Sorties', value: tdbFondsOut, color: 'FF991B1B' },
+      { section: 'Banque', label: 'Solde net MAD', value: tdbRunningMAD, color: TAB_BLUE },
+      { section: 'Banque', label: 'Solde net EUR', value: tdbRunningEUR, color: TAB_BLUE },
+      { section: 'Coffre fort', label: 'Solde estimé', value: tdbCoffreIn - tdbCoffreOut, color: TAB_GOLD },
+    ]
+    let tdbRow = 8
+    for (const r of tdbSectionRows) {
+      const secColor = r.section === 'Fond de caisse' ? TAB_RED : r.section === 'Banque' ? TAB_BLUE : TAB_GOLD
+      cell(wsTdb.getCell(tdbRow, 1), r.section, true, secColor)
+      cell(wsTdb.getCell(tdbRow, 2), r.label)
+      const vc = wsTdb.getCell(tdbRow, 3)
+      vc.value = r.value
+      vc.numFmt = '#,##0.00'
+      vc.font = { name: 'Arial', size: 9, bold: true, color: { argb: r.color } }
+      vc.alignment = { horizontal: 'right' }
+      altRow(wsTdb.getRow(tdbRow), tdbRow)
+      tdbRow++
+    }
+ 
+    const tdbNoteRow = wsTdb.getRow(tdbRow + 1)
+    tdbNoteRow.getCell(1).value = `Fond de caisse — dotation initiale : ${settings.fond_caisse_mad} MAD + ${settings.fond_caisse_eur} EUR`
+    tdbNoteRow.getCell(1).font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF6B7280' } }
  
     // ── Agrégats Encaissements (détail masqué, dashboard conservé) ────────────
     const encByCategory: Record<string, number> = {}
@@ -175,7 +285,7 @@ export async function GET() {
     })
  
     // ── Dashboard Encaissements ───────────────────────────────────────────────
-    const wsDashEnc = wb.addWorksheet('Dashboard Encaissements')
+    const wsDashEnc = wb.addWorksheet('DASHBOARD ENCAISSEMENTS', { views: [{ showGridLines: false }] })
     addDashboard(wsDashEnc, 'Encaissements', encByCategory, encByMonth, [
       { label: 'Total', value: encTotal, color: 'FF2D6A4F' },
       { label: 'Validés', value: encValidated, color: 'FF3730A3' },
@@ -199,7 +309,7 @@ export async function GET() {
     })
  
     // ── Dashboard Dépenses ────────────────────────────────────────────────────
-    const wsDashDep = wb.addWorksheet('Dashboard Dépenses')
+    const wsDashDep = wb.addWorksheet('DASHBOARD DÉPENSES', { views: [{ showGridLines: false }] })
     addDashboard(wsDashDep, 'Dépenses', depByCategory, depByMonth, [
       { label: 'Total dépenses', value: depTotal, color: 'FF991B1B' },
       { label: 'Validées', value: depValidated, color: 'FF2D6A4F' },
@@ -207,7 +317,10 @@ export async function GET() {
     ])
  
     // ── Sheet: Fond de caisse ─────────────────────────────────────────────────
-    const wsFonds = wb.addWorksheet('Fond de caisse', { views: [{ state: 'frozen', ySplit: 1 }] })
+    const wsFonds = wb.addWorksheet('FOND DE CAISSE', {
+      views: [{ state: 'frozen', ySplit: 1, showGridLines: false }],
+      properties: { tabColor: { argb: TAB_RED } },
+    })
     wsFonds.columns = [
       { key: 'date', width: 12 }, { key: 'mois', width: 16 }, { key: 'sens', width: 10 },
       { key: 'categorie', width: 22 }, { key: 'employe', width: 18 },
@@ -268,7 +381,7 @@ export async function GET() {
     wsFonds.autoFilter = { from: 'A1', to: 'I1' }
  
     // ── Dashboard Fond de caisse ──────────────────────────────────────────────
-    const wsDashFonds = wb.addWorksheet('Dashboard Fond de caisse')
+    const wsDashFonds = wb.addWorksheet('DASHBOARD FOND DE CAISSE', { views: [{ showGridLines: false }] })
     addDashboard(wsDashFonds, 'Fond de caisse', fondsByCategory, fondsByMonth, [
       { label: `Dotation MAD`, value: settings.fond_caisse_mad, color: 'FF4338CA' },
       { label: 'Entrées', value: fondsIn, color: 'FF2D6A4F' },
@@ -280,14 +393,17 @@ export async function GET() {
     soldeRow.getCell(1).font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF6B7280' } }
  
     // ── Sheet: Banque (chèque, CB, virement — hors espèces) ──────────────────
-    const wsSoldes = wb.addWorksheet('Banque', { views: [{ state: 'frozen', ySplit: 1 }] })
+    const wsSoldes = wb.addWorksheet('BANQUE', {
+      views: [{ state: 'frozen', ySplit: 1, showGridLines: false }],
+      properties: { tabColor: { argb: TAB_BLUE } },
+    })
     wsSoldes.columns = [
       { key: 'date', width: 12 }, { key: 'mois', width: 16 }, { key: 'categorie', width: 22 },
-      { key: 'mode', width: 14 }, { key: 'devise', width: 8 }, { key: 'entrees', width: 14 },
-      { key: 'sorties', width: 14 }, { key: 'solde', width: 14 }, { key: 'pointage', width: 12 },
-      { key: 'description', width: 28 }, { key: 'statut', width: 12 },
+      { key: 'description', width: 28 }, { key: 'mode', width: 14 }, { key: 'devise', width: 8 },
+      { key: 'entrees', width: 14 }, { key: 'sorties', width: 14 }, { key: 'solde', width: 14 },
+      { key: 'pointage', width: 12 }, { key: 'statut', width: 12 },
     ]
-    const soldesHeaders = ['Date', 'Mois', 'Catégorie', 'Mode paiement', 'Devise', 'Entrées', 'Sorties', 'Solde', 'Pointage', 'Description', 'Statut']
+    const soldesHeaders = ['Date', 'Mois', 'Catégorie', 'Description', 'Mode paiement', 'Devise', 'Entrées', 'Sorties', 'Solde', 'Pointage', 'Statut']
     soldesHeaders.forEach((h, i) => hdr(wsSoldes.getCell(1, i + 1), h, C_BLUE_BG))
     wsSoldes.getRow(1).height = 22
  
@@ -299,10 +415,10 @@ export async function GET() {
       const row = wsSoldes.addRow({})
       row.getCell(3).value = 'SOLDE INITIAL'
       row.getCell(3).font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF3730A3' } }
-      row.getCell(5).value = dev
-      row.getCell(5).alignment = { horizontal: 'center' }
-      row.getCell(5).font = { name: 'Arial', size: 9, color: { argb: 'FF374151' } }
-      const sc = row.getCell(8)
+      row.getCell(6).value = dev
+      row.getCell(6).alignment = { horizontal: 'center' }
+      row.getCell(6).font = { name: 'Arial', size: 9, color: { argb: 'FF374151' } }
+      const sc = row.getCell(9)
       sc.value = val; sc.numFmt = '#,##0.00'
       sc.font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF3730A3' } }
       sc.alignment = { horizontal: 'right' }
@@ -330,34 +446,34 @@ export async function GET() {
       cell(row.getCell(1), dateStr)
       cell(row.getCell(2), mois)
       cell(row.getCell(3), e.category)
-      cell(row.getCell(4), e.payment || '—')
-      cell(row.getCell(5), currency, false, 'FF374151', 'center')
+      cell(row.getCell(4), e.description || '')
+      cell(row.getCell(5), e.payment || '—')
+      cell(row.getCell(6), currency, false, 'FF374151', 'center')
  
       if (isIn) {
-        const ec = row.getCell(6)
+        const ec = row.getCell(7)
         ec.value = amt; ec.numFmt = '#,##0.00'
         ec.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF2D6A4F' } }
         ec.alignment = { horizontal: 'right' }
       } else {
-        const sc = row.getCell(7)
+        const sc = row.getCell(8)
         sc.value = amt; sc.numFmt = '#,##0.00'
         sc.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF991B1B' } }
         sc.alignment = { horizontal: 'right' }
       }
  
-      const soldeC = row.getCell(8)
+      const soldeC = row.getCell(9)
       soldeC.value = currency === 'EUR' ? runningEUR : runningMAD
       soldeC.numFmt = '#,##0.00'
       soldeC.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF3730A3' } }
       soldeC.alignment = { horizontal: 'right' }
  
       // Pointage — case à cocher manuelle pour rapprocher avec le relevé bancaire
-      const pointageC = row.getCell(9)
+      const pointageC = row.getCell(10)
       pointageC.alignment = { horizontal: 'center' }
       pointageC.dataValidation = { type: 'list', allowBlank: true, formulae: ['"✓"'] }
       pointageC.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF2D6A4F' } }
  
-      cell(row.getCell(10), e.description || '')
       const status = e.status as string
       const stc = row.getCell(11)
       stc.value = status === 'validated' ? 'Validé' : 'En attente'
@@ -377,14 +493,14 @@ export async function GET() {
       ref: `A2:K${wsSoldes.rowCount}`,
       rules: [{
         type: 'expression',
-        formulae: ['$I2="✓"'],
+        formulae: ['$J2="✓"'],
         style: { fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } } },
         priority: 1,
       }],
     })
  
     // ── Dashboard Banque ──────────────────────────────────────────────────────
-    const wsDashSoldes = wb.addWorksheet('Dashboard Banque')
+    const wsDashSoldes = wb.addWorksheet('DASHBOARD BANQUE', { views: [{ showGridLines: false }] })
     addDashboard(wsDashSoldes, 'Banque', soldesByMode, soldesByMonth, [
       { label: 'Solde net MAD', value: runningMAD, color: 'FF3730A3' },
       { label: 'Solde net EUR', value: runningEUR, color: 'FF3730A3' },
@@ -396,7 +512,10 @@ export async function GET() {
     soldeNoteRow.getCell(1).font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF6B7280' } }
  
     // ── Sheet: Coffre (coffre-fort) ───────────────────────────────────────────
-    const wsCoffre = wb.addWorksheet('Coffre', { views: [{ state: 'frozen', ySplit: 1 }] })
+    const wsCoffre = wb.addWorksheet('COFFRE', {
+      views: [{ state: 'frozen', ySplit: 1, showGridLines: false }],
+      properties: { tabColor: { argb: TAB_GOLD } },
+    })
     wsCoffre.columns = [
       { key: 'date', width: 12 }, { key: 'mois', width: 16 }, { key: 'sens', width: 12 },
       { key: 'categorie', width: 22 }, { key: 'employe', width: 18 },
@@ -444,7 +563,7 @@ export async function GET() {
     wsCoffre.autoFilter = { from: 'A1', to: 'I1' }
  
     // ── Dashboard Coffre ──────────────────────────────────────────────────────
-    const wsDashCoffre = wb.addWorksheet('Dashboard Coffre')
+    const wsDashCoffre = wb.addWorksheet('DASHBOARD COFFRE', { views: [{ showGridLines: false }] })
     addDashboard(wsDashCoffre, 'Coffre fort', coffreByCategory, coffreByMonth, [
       { label: 'Dépôts', value: coffreIn, color: 'FF2D6A4F' },
       { label: 'Retraits', value: coffreOut, color: 'FF991B1B' },
@@ -467,3 +586,4 @@ export async function GET() {
   }
 }
  
+
