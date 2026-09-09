@@ -1,13 +1,13 @@
 // Direct Turso HTTP API via native fetch — no @libsql/client needed.
 // Avoids the "@libsql/client migration jobs 400" issue in Vercel serverless.
-
+ 
 type HranaValue =
   | { type: 'null' }
   | { type: 'integer'; value: string }
   | { type: 'float'; value: number }
   | { type: 'text'; value: string }
   | { type: 'blob'; base64: string }
-
+ 
 function toHranaValue(v: unknown): HranaValue {
   if (v === null || v === undefined) return { type: 'null' }
   if (typeof v === 'boolean') return { type: 'integer', value: v ? '1' : '0' }
@@ -18,7 +18,7 @@ function toHranaValue(v: unknown): HranaValue {
   if (typeof v === 'string') return { type: 'text', value: v }
   return { type: 'text', value: String(v) }
 }
-
+ 
 function fromHranaValue(v: HranaValue): unknown {
   if (v.type === 'null') return null
   if (v.type === 'integer') return parseInt(v.value, 10)
@@ -26,12 +26,12 @@ function fromHranaValue(v: HranaValue): unknown {
   if (v.type === 'text') return v.value
   return v.base64 // blob
 }
-
+ 
 async function tursoRequest(statements: Array<{ sql: string; args?: unknown[] }>) {
   const rawUrl = process.env.TURSO_DATABASE_URL!
   const url = rawUrl.replace(/^libsql:\/\//, 'https://')
   const token = process.env.TURSO_AUTH_TOKEN!
-
+ 
   const requests = statements.map(stmt => ({
     type: 'execute' as const,
     stmt: {
@@ -39,7 +39,7 @@ async function tursoRequest(statements: Array<{ sql: string; args?: unknown[] }>
       args: (stmt.args ?? []).map(toHranaValue),
     },
   }))
-
+ 
   const res = await fetch(`${url}/v2/pipeline`, {
     method: 'POST',
     headers: {
@@ -48,12 +48,12 @@ async function tursoRequest(statements: Array<{ sql: string; args?: unknown[] }>
     },
     body: JSON.stringify({ requests }),
   })
-
+ 
   if (!res.ok) {
     const body = await res.text()
     throw new Error(`Turso HTTP ${res.status}: ${body}`)
   }
-
+ 
   const data = await res.json() as {
     results: Array<{
       type: 'ok' | 'error'
@@ -63,7 +63,7 @@ async function tursoRequest(statements: Array<{ sql: string; args?: unknown[] }>
   }
   return data.results
 }
-
+ 
 // Tagged template literal helper — same API as before, all routes unchanged
 export async function sql(strings: TemplateStringsArray, ...values: unknown[]) {
   let query = ''
@@ -71,14 +71,14 @@ export async function sql(strings: TemplateStringsArray, ...values: unknown[]) {
     query += str
     if (i < values.length) query += '?'
   })
-
+ 
   const results = await tursoRequest([{ sql: query, args: values }])
   const result = results[0]
-
+ 
   if (result.type === 'error') {
     throw new Error(result.error?.message ?? 'Query error')
   }
-
+ 
   const { cols, rows } = result.response!.result
   return rows.map(row => {
     const obj: Record<string, unknown> = {}
@@ -88,9 +88,9 @@ export async function sql(strings: TemplateStringsArray, ...values: unknown[]) {
     return obj
   })
 }
-
+ 
 export default sql
-
+ 
 export async function initDb() {
   // Create core tables (idempotent)
   const results = await tursoRequest([
@@ -168,18 +168,19 @@ export async function initDb() {
         currency TEXT DEFAULT 'MAD',
         category TEXT NOT NULL,
         description TEXT,
+        invoice_url TEXT,
         status TEXT DEFAULT 'pending',
         created_at TEXT DEFAULT (datetime('now'))
       )`,
     },
   ])
-
+ 
   for (const r of results) {
     if (r.type === 'error') {
       throw new Error(r.error?.message ?? 'Init error')
     }
   }
-
+ 
   // Migrations: add new columns to existing entries table
   // Errors are ignored when the column already exists
   for (const migSql of [
@@ -187,6 +188,7 @@ export async function initDb() {
     `ALTER TABLE entries ADD COLUMN invoice_url TEXT`,
     `ALTER TABLE entries ADD COLUMN amount_ht REAL`,
     `ALTER TABLE entries ADD COLUMN tva_rate REAL`,
+    `ALTER TABLE coffre_entries ADD COLUMN invoice_url TEXT`,
   ]) {
     const mResults = await tursoRequest([{ sql: migSql }])
     const r = mResults[0]
@@ -199,3 +201,5 @@ export async function initDb() {
     }
   }
 }
+ 
+
