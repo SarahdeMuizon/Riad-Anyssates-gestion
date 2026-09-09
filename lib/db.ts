@@ -119,6 +119,16 @@ export async function initDb() {
         invoice_url TEXT,
         status TEXT DEFAULT 'pending',
         validated_at TEXT,
+        pointed INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`,
+    },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS excel_pointage_imports (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        filename TEXT,
+        file_base64 TEXT NOT NULL,
+        imported_count INTEGER DEFAULT 0,
         created_at TEXT DEFAULT (datetime('now'))
       )`,
     },
@@ -189,6 +199,7 @@ export async function initDb() {
     `ALTER TABLE entries ADD COLUMN amount_ht REAL`,
     `ALTER TABLE entries ADD COLUMN tva_rate REAL`,
     `ALTER TABLE coffre_entries ADD COLUMN invoice_url TEXT`,
+    `ALTER TABLE entries ADD COLUMN pointed INTEGER DEFAULT 0`,
   ]) {
     const mResults = await tursoRequest([{ sql: migSql }])
     const r = mResults[0]
@@ -202,4 +213,3 @@ export async function initDb() {
   }
 }
  
-
