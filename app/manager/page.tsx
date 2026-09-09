@@ -1006,6 +1006,13 @@ function FondsTab() {
  
 // ─── Banque Tab ───────────────────────────────────────────────────────────────
  
+interface PointageImport {
+  id: number
+  filename: string
+  imported_count: number
+  created_at: string
+}
+ 
 function BanqueTab() {
   const [allEntries, setAllEntries] = useState<Entry[]>([])
   const [loading, setLoading] = useState(true)
@@ -1015,6 +1022,20 @@ function BanqueTab() {
   const [targetEUR, setTargetEUR] = useState(0)
   const [savingSolde, setSavingSolde] = useState(false)
   const [msg, setMsg] = useState('')
+ 
+  const [pointageFile, setPointageFile] = useState<File | null>(null)
+  const [pointageUploading, setPointageUploading] = useState(false)
+  const [pointageMsg, setPointageMsg] = useState<{ text: string; ok: boolean } | null>(null)
+  const [imports, setImports] = useState<PointageImport[]>([])
+  const pointageFileRef = useRef<HTMLInputElement>(null)
+ 
+  const fetchImports = useCallback(async () => {
+    try {
+      const r = await fetch('/api/import/pointage')
+      const data = await r.json()
+      setImports(Array.isArray(data) ? data : [])
+    } catch { /* ignore */ }
+  }, [])
  
   const reload = useCallback(async () => {
     setLoading(true)
@@ -1028,7 +1049,30 @@ function BanqueTab() {
     setLoading(false)
   }, [])
  
-  useEffect(() => { reload() }, [reload])
+  useEffect(() => { reload(); fetchImports() }, [reload, fetchImports])
+ 
+  async function handlePointageUpload() {
+    if (!pointageFile) return
+    setPointageUploading(true)
+    setPointageMsg(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', pointageFile)
+      const r = await fetch('/api/import/pointage', { method: 'POST', body: fd })
+      const data = await r.json()
+      if (r.ok) {
+        setPointageMsg({ text: `✓ ${data.updated} ligne(s) relue(s), ${data.pointed} mouvement(s) pointé(s)`, ok: true })
+        setPointageFile(null)
+        if (pointageFileRef.current) pointageFileRef.current.value = ''
+        await Promise.all([reload(), fetchImports()])
+      } else {
+        setPointageMsg({ text: data.error || 'Erreur lors du traitement du fichier', ok: false })
+      }
+    } catch {
+      setPointageMsg({ text: 'Erreur lors de l\'envoi du fichier', ok: false })
+    }
+    setPointageUploading(false)
+  }
  
   // Mouvements bancaires = tout ce qui n'est PAS payé en espèces (CB, Virement, Chèque)
   const bankEntries = useMemo(
@@ -1107,6 +1151,45 @@ function BanqueTab() {
       </div>
  
       <div className="card" style={{ marginBottom: '1.25rem' }}>
+        <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', color: '#374151' }}>🔄 Synchroniser le pointage</h3>
+        <p style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.75rem' }}>
+          Après avoir coché la colonne &quot;Pointage&quot; dans l&apos;Excel exporté (onglet BANQUE), réimporte-le ici : les cases cochées sont reportées sur les mouvements correspondants, et le fichier est conservé ci-dessous.
+        </p>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <label style={{ padding: '0.5rem 0.875rem', background: '#F8F8F8', border: '1px solid #ddd', borderRadius: '0.5rem', color: '#555', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
+            📁 {pointageFile ? pointageFile.name : 'Choisir un fichier .xlsx'}
+            <input ref={pointageFileRef} type="file" accept=".xlsx" onChange={e => { setPointageFile(e.target.files?.[0] || null); setPointageMsg(null) }} style={{ display: 'none' }} />
+          </label>
+          <button className="btn-primary" onClick={handlePointageUpload} disabled={!pointageFile || pointageUploading} style={{ background: '#3730A3', opacity: (!pointageFile || pointageUploading) ? 0.5 : 1 }}>
+            {pointageUploading ? 'Import…' : 'Importer le pointage'}
+          </button>
+        </div>
+        {pointageMsg && (
+          <p style={{ color: pointageMsg.ok ? 'var(--green)' : 'var(--red)', fontSize: '0.85rem', marginTop: '0.6rem' }}>{pointageMsg.text}</p>
+        )}
+        {imports.length > 0 && (
+          <div style={{ marginTop: '1rem' }}>
+            <h4 style={{ fontSize: '0.8rem', fontWeight: 600, color: '#6B7280', marginBottom: '0.4rem' }}>Historique des imports</h4>
+            <div style={{ overflowX: 'auto' }}>
+              <table>
+                <thead><tr><th>Date</th><th>Fichier</th><th>Pointés</th><th></th></tr></thead>
+                <tbody>
+                  {imports.map(imp => (
+                    <tr key={imp.id}>
+                      <td style={{ whiteSpace: 'nowrap' }}>{new Date(imp.created_at).toLocaleString('fr-FR')}</td>
+                      <td style={{ fontSize: '0.85rem' }}>{imp.filename}</td>
+                      <td>{imp.imported_count}</td>
+                      <td><a href={`/api/import/pointage/${imp.id}`} style={{ color: 'var(--blue)', fontSize: '0.8rem' }}>⬇ Télécharger</a></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+ 
+      <div className="card" style={{ marginBottom: '1.25rem' }}>
         <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', color: '#374151' }}>📊 Par mode de paiement</h3>
         <div style={{ overflowX: 'auto' }}>
           <table>
@@ -1129,7 +1212,7 @@ function BanqueTab() {
         <div style={{ overflowX: 'auto' }}>
           <table>
             <thead>
-              <tr><th>Date</th><th>Sens</th><th>Catégorie</th><th>Mode</th><th>Devise</th><th>Montant</th></tr>
+              <tr><th>Date</th><th>Sens</th><th>Catégorie</th><th>Mode</th><th>Devise</th><th>Montant</th><th>Pointé</th></tr>
             </thead>
             <tbody>
               {[...bankEntries].sort((a, b) => b.date.localeCompare(a.date)).map(e => (
@@ -1140,6 +1223,7 @@ function BanqueTab() {
                   <td>{e.payment}</td>
                   <td>{e.currency || 'MAD'}</td>
                   <td style={{ fontWeight: 600, color: e.type === 'cash' ? 'var(--green)' : 'var(--red)' }}>{e.type === 'cash' ? '+' : '-'}{fmt(Number(e.amount))}</td>
+                  <td style={{ textAlign: 'center' }}>{e.pointed ? <span style={{ color: 'var(--green)', fontWeight: 700 }}>✓</span> : <span style={{ color: '#ccc' }}>—</span>}</td>
                 </tr>
               ))}
             </tbody>
@@ -1737,4 +1821,3 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
   )
 }
  
-
