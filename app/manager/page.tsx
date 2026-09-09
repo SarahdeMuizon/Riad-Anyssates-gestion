@@ -3,46 +3,46 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Entry, Employee, DashboardStats, FondsEntry } from '@/types'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
-
+ 
 type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'banque' | 'coffre' | 'employees' | 'settings'
-
+ 
 const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-
+ 
 function formatMonth(month: string) {
   const [y, m] = month.split('-')
   const names = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
   return `${names[parseInt(m) - 1]} ${y}`
 }
-
+ 
 function shiftMonth(month: string, delta: number) {
   const [y, m] = month.split('-').map(Number)
   const d = new Date(y, m - 1 + delta)
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
-
+ 
 export default function ManagerPage() {
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('dashboard')
   const [authChecked, setAuthChecked] = useState(false)
-
+ 
   useEffect(() => {
     fetch('/api/auth/check').then(r => {
       if (!r.ok) router.replace('/')
       else setAuthChecked(true)
     })
   }, [router])
-
+ 
   async function logout() {
     await fetch('/api/auth', { method: 'DELETE' })
     router.replace('/')
   }
-
+ 
   if (!authChecked) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
       <div style={{ color: 'var(--terracotta)' }}>Chargement…</div>
     </div>
   )
-
+ 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'dashboard', label: '📊 Dashboard' },
     { id: 'depenses', label: '💳 Dépenses' },
@@ -53,7 +53,7 @@ export default function ManagerPage() {
     { id: 'employees', label: '👥 Employés' },
     { id: 'settings', label: '⚙️ Paramètres' },
   ]
-
+ 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <header style={{ background: 'var(--terracotta)', color: 'white', padding: '0 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 56, boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
@@ -64,7 +64,7 @@ export default function ManagerPage() {
           <button onClick={logout} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '0.3rem 0.75rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.8rem' }}>Déconnexion</button>
         </div>
       </header>
-
+ 
       <div style={{ background: 'white', borderBottom: '1px solid #EDE0D6', padding: '0 1rem', display: 'flex', gap: '0.25rem', overflowX: 'auto' }}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{ whiteSpace: 'nowrap', padding: '0.75rem 0.875rem', border: 'none', borderBottom: tab === t.id ? '2px solid var(--terracotta)' : '2px solid transparent', background: 'transparent', color: tab === t.id ? 'var(--terracotta)' : 'var(--text)', fontWeight: tab === t.id ? 700 : 500, cursor: 'pointer' }}>
@@ -72,7 +72,7 @@ export default function ManagerPage() {
           </button>
         ))}
       </div>
-
+ 
       <main style={{ padding: '1.5rem', maxWidth: 1100, margin: '0 auto' }}>
         {tab === 'dashboard' && <DashboardTab />}
         {tab === 'depenses' && <EntriesTab type="cb" label="Dépenses" color="var(--terracotta)" />}
@@ -86,14 +86,14 @@ export default function ManagerPage() {
     </div>
   )
 }
-
+ 
 // ─── Dashboard ─────────────────────────────────────────────────────────────────
-
+ 
 const PIE_COLORS_DEP = ['#D97D4E','#E8956A','#F0A978','#F5BC90','#F8CFAA','#FADBB8','#FCE7CC','#FEF3E4']
 const PIE_COLORS_ENC = ['#2D9E6B','#45B882','#5DC898','#74D8AD','#8BE3BE','#A2EDCF','#B9F5E0','#D0FAF0']
-
+ 
 type TrendRow = { month: string; depenses: number; encaissements: number }
-
+ 
 function DashboardTab() {
   const now = new Date()
   const [month, setMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
@@ -101,9 +101,9 @@ function DashboardTab() {
   const [trend, setTrend] = useState<TrendRow[]>([])
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
-
+ 
   useEffect(() => { setMounted(true) }, [])
-
+ 
   const fetchStats = useCallback(async () => {
     setLoading(true)
     const [r1, r2] = await Promise.all([
@@ -115,18 +115,18 @@ function DashboardTab() {
     setTrend(Array.isArray(t) ? t : [])
     setLoading(false)
   }, [month])
-
+ 
   useEffect(() => { fetchStats() }, [fetchStats])
-
+ 
   const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const isCurrentMonth = month === currentMonthStr
-
+ 
   const fmtShort = (v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v))
   const shortMonth = (mo: string) => {
     const [, m] = mo.split('-')
     return ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'][parseInt(m) - 1]
   }
-
+ 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
@@ -137,7 +137,7 @@ function DashboardTab() {
           <button onClick={() => setMonth(currentMonthStr)} style={{ border: 'none', background: 'var(--terracotta)', color: 'white', borderRadius: '0.4rem', padding: '0.35rem 0.75rem', cursor: 'pointer', fontSize: '0.8rem' }}>Mois actuel</button>
         )}
       </div>
-
+ 
       {loading ? <p>Chargement…</p> : !stats ? <p>Erreur.</p> : (
         <>
           {/* KPI cards */}
@@ -167,7 +167,7 @@ function DashboardTab() {
               <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--blue)' }}>{stats.validated_count}</div>
             </div>
           </div>
-
+ 
           {/* Bar chart — 6-month trend */}
           <div className="card" style={{ marginBottom: '1.5rem' }}>
             <h3 style={{ fontWeight: 700, marginBottom: '1rem', fontSize: '1rem' }}>📈 Évolution sur 6 mois</h3>
@@ -184,7 +184,7 @@ function DashboardTab() {
               </ResponsiveContainer>
             ) : <p style={{ color: '#aaa', fontSize: '0.9rem' }}>Aucune donnée sur cette période.</p>}
           </div>
-
+ 
           {/* Pie charts + tables side by side */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             <div className="card">
@@ -257,17 +257,17 @@ function DashboardTab() {
     </div>
   )
 }
-
+ 
 // ─── Entries Tab ───────────────────────────────────────────────────────────────
-
+ 
 const DEPENSES_CATEGORIES = ['Alimentation/Courses','Fournitures & bureautique','Entretien & maintenance','Transport','Restauration','Pharmacie/Hygiène','Décoration & fleurs','Autre']
-
+ 
 interface InvoiceData {
   date: string; amount: number; amountTransaction?: number
   currency: string; category: string; description: string
   clientName: string; tvaRate: number; nuits: number; personnes: number; payment: string
 }
-
+ 
 function generateInvoice(entry: InvoiceData) {
   const invoiceAmount = entry.amountTransaction ?? entry.amount
   const tvaFrac = entry.tvaRate / (100 + entry.tvaRate)
@@ -323,7 +323,7 @@ function generateInvoice(entry: InvoiceData) {
 const ENCAISSEMENTS_CATEGORIES = ['Boissons bar','Repas/Restauration','Activité/Excursion','Service spa/Hammam','Transfert/Transport','Pourboire collectif','Autre encaissement']
 const PAYMENT_MODES = ['CB', 'Virement', 'Chèque', 'Espèces']
 const CURRENCIES = ['MAD', 'EUR']
-
+ 
 function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string; color: string }) {
   const now = new Date()
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -335,7 +335,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [deleteModal, setDeleteModal] = useState<number | null>(null)
   const [employees, setEmployees] = useState<string[]>([])
   const [showForm, setShowForm] = useState(false)
-
+ 
   // Form state
   const [fDate, setFDate] = useState(now.toISOString().split('T')[0])
   const [fEmployee, setFEmployee] = useState('')
@@ -366,9 +366,9 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const fDropZoneRef = useRef<HTMLDivElement>(null)
   const processFileRef = useRef<(f: File) => void>((_f: File) => {})
   const [pendingUploadEntry, setPendingUploadEntry] = useState<number | null>(null)
-
+ 
   const categories = type === 'cb' ? DEPENSES_CATEGORIES : ENCAISSEMENTS_CATEGORIES
-
+ 
   const fetchEntries = useCallback(async () => {
     setLoading(true)
     const params = new URLSearchParams({ type, month })
@@ -378,7 +378,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     setEntries(await r.json())
     setLoading(false)
   }, [type, month, filterStatus, filterEmployee])
-
+ 
   useEffect(() => { fetchEntries() }, [fetchEntries])
   useEffect(() => {
     fetch('/api/employees').then(r => r.json()).then((emps: Employee[]) => {
@@ -388,7 +388,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
+ 
   // Reset defaults every time form opens
   useEffect(() => {
     if (showForm) {
@@ -400,18 +400,18 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       setFCardType('amex')
     }
   }, [showForm, type])
-
+ 
   async function toggleStatus(entry: Entry) {
     await fetch(`/api/entries/${entry.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: entry.status === 'pending' ? 'validated' : 'pending' }) })
     fetchEntries()
   }
-
+ 
   async function deleteEntry(id: number) {
     await fetch(`/api/entries/${id}`, { method: 'DELETE' })
     setDeleteModal(null)
     fetchEntries()
   }
-
+ 
   async function processFile(file: File) {
     setFFile(file)
     setFExtracted(false)
@@ -450,9 +450,9 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     } catch { /* silent */ }
     setFExtracting(false)
   }
-
+ 
   processFileRef.current = processFile
-
+ 
   useEffect(() => {
     const el = fDropZoneRef.current
     if (!el) return
@@ -477,13 +477,13 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       el.removeEventListener('drop', onDrop)
     }
   }, [showForm])
-
+ 
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     processFile(file)
   }
-
+ 
   async function fileToBase64(file: File): Promise<string> {
     if (file.type.startsWith('image/')) {
       return new Promise((resolve, reject) => {
@@ -510,7 +510,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       reader.readAsDataURL(file)
     })
   }
-
+ 
   async function handleRowUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file || pendingUploadEntry === null) return
@@ -524,7 +524,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     setPendingUploadEntry(null)
     if (rowFileRef.current) rowFileRef.current.value = ''
   }
-
+ 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
@@ -550,7 +550,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     const finalAmount  = type === 'cash' && fPayment === 'CB' && fTransactionAmount
       ? parseFloat(fTransactionAmount) - cbCommission - cbTva
       : parseFloat(fAmount)
-
+ 
     const body: Record<string, unknown> = { type, date: fDate, employee_name: fEmployee, category: fCategory, amount: finalAmount, currency: fCurrency, description: fDescription || null, invoice_url }
     if (type === 'cb') {
       body.supplier = fSupplier || null
@@ -565,7 +565,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
         body.tva_rate = fCardType === 'amex' ? 3.3 : 2.68
       }
     }
-
+ 
     const invoiceEntry: InvoiceData = {
       date: fDate, amount: finalAmount,
       amountTransaction: type === 'cash' && fPayment === 'CB' && fTransactionAmount ? parseFloat(fTransactionAmount) : undefined,
@@ -573,7 +573,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       clientName: fClientName || '', tvaRate: 0,
       nuits: 0, personnes: 0, payment: fPayment,
     }
-
+ 
     try {
       const r = await fetch('/api/entries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       if (r.ok) {
@@ -594,11 +594,11 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     }
     setSubmitting(false)
   }
-
+ 
   function exportCSV() { window.location.href = `/api/export/${type}?month=${month}` }
-
+ 
   const total = entries.reduce((s, e) => s + Number(e.amount), 0)
-
+ 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -609,13 +609,13 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
         </div>
         <button className="btn-primary" onClick={() => setShowForm(!showForm)}>{showForm ? 'Annuler' : '+ Ajouter'}</button>
       </div>
-
+ 
       {formSuccess && <p style={{ color: 'var(--green)', fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: '#F0FDF4', borderRadius: '0.4rem', border: '1px solid #86efac' }}>{formSuccess}</p>}
-
+ 
       {showForm && (
         <div className="card" style={{ marginBottom: '1.25rem' }}>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-
+ 
             {/* Upload zone — identique page employé */}
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>
@@ -664,7 +664,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
               </div>
               <input ref={fFileRef} type="file" accept="image/*,application/pdf" onChange={handleFileSelect} style={{ display: 'none' }} />
             </div>
-
+ 
             {/* Champs auto-remplis et modifiables */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem' }}>
               <div>
@@ -685,7 +685,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                 </div>
               )}
             </div>
-
+ 
             {/* Montants */}
             {type === 'cb' ? (
               <div style={{ background: '#F8F8F8', border: '1px solid #EEE', borderRadius: '0.5rem', padding: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
@@ -719,15 +719,15 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
               <div style={{ background: '#F0FDF4', border: '1px solid #86efac', borderRadius: '0.5rem', padding: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                 <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#16a34a', marginBottom: '0.1rem' }}>Encaissement CB — frais bancaires</p>
                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                  <button type="button" onClick={() => { setFCardType('amex'); if (fTransactionAmount) { const a = parseFloat(fTransactionAmount); const c = Math.round(a * 0.033 * 100) / 100; setFAmount(String((a - c).toFixed(2))); } }} style={{ flex: 1, padding: '0.4rem', border: `2px solid ${fCardType === 'amex' ? '#16a34a' : '#ddd'}`, borderRadius: '0.4rem', background: fCardType === 'amex' ? '#F0FDF4' : 'white', fontWeight: fCardType === 'amex' ? 700 : 400, cursor: 'pointer', fontSize: '0.78rem', color: fCardType === 'amex' ? '#16a34a' : '#555', textAlign: 'center' }}>🔵 American Express<br /><span style={{ fontWeight: 400, fontSize: '0.7rem' }}>Taux 3,3 %</span></button>
-                  <button type="button" onClick={() => { setFCardType('other'); if (fTransactionAmount) { const a = parseFloat(fTransactionAmount); const c = Math.round(a * 0.0268 * 100) / 100; const t = Math.round(c * 0.10 * 100) / 100; setFAmount(String((a - c - t).toFixed(2))); } }} style={{ flex: 1, padding: '0.4rem', border: `2px solid ${fCardType === 'other' ? '#16a34a' : '#ddd'}`, borderRadius: '0.4rem', background: fCardType === 'other' ? '#F0FDF4' : 'white', fontWeight: fCardType === 'other' ? 700 : 400, cursor: 'pointer', fontSize: '0.78rem', color: fCardType === 'other' ? '#16a34a' : '#555', textAlign: 'center' }}>💳 Autre carte<br /><span style={{ fontWeight: 400, fontSize: '0.7rem' }}>Taux 2,68 %</span></button>
+                  <button type="button" onClick={() => { setFCardType('amex'); if (fTransactionAmount) { const a = parseFloat(fTransactionAmount); const c = Math.round(a * 0.033 * 100) / 100; setFAmount(String((a - c).toFixed(2))); } }} style={{ flex: 1, padding: '0.4rem', border: `2px solid ${fCardType === 'amex' ? '#16a34a' : '#ddd'}`, borderRadius: '0.4rem', background: fCardType === 'amex' ? '#F0FDF4' : 'white', fontWeight: fCardType === 'amex' ? 700 : 400, cursor: 'pointer', fontSize: '0.78rem', color: fCardType === 'amex' ? '#16a34a' : '#555', textAlign: 'center' }}>🔵 American Express<br /><span style={{ fontWeight: 400, fontSize: '0.7rem' }}>Taux 3,3 %</span></button>
+                  <button type="button" onClick={() => { setFCardType('other'); if (fTransactionAmount) { const a = parseFloat(fTransactionAmount); const c = Math.round(a * 0.0268 * 100) / 100; const t = Math.round(c * 0.10 * 100) / 100; setFAmount(String((a - c - t).toFixed(2))); } }} style={{ flex: 1, padding: '0.4rem', border: `2px solid ${fCardType === 'other' ? '#16a34a' : '#ddd'}`, borderRadius: '0.4rem', background: fCardType === 'other' ? '#F0FDF4' : 'white', fontWeight: fCardType === 'other' ? 700 : 400, cursor: 'pointer', fontSize: '0.78rem', color: fCardType === 'other' ? '#16a34a' : '#555', textAlign: 'center' }}>💳 Autre carte<br /><span style={{ fontWeight: 400, fontSize: '0.7rem' }}>Taux 2,68 %</span></button>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '0.2rem' }}>Montant de la transaction *</label>
                   <input className="form-input" type="number" step="0.01" min="0" value={fTransactionAmount} onChange={e => { const v = e.target.value; setFTransactionAmount(v); if (v) { const a = parseFloat(v); const r = fCardType === 'amex' ? 0.033 : 0.0268; const c = Math.round(a * r * 100) / 100; const t = fCardType === 'amex' ? 0 : Math.round(c * 0.10 * 100) / 100; setFAmount(String((a - c - t).toFixed(2))); } else { setFAmount(''); } }} placeholder="0.00" required />
                 </div>
-                <div style={{ fontSize: '0.82rem', color: '#555' }}>Commission bancaire ({fCardType === 'amex' ? '3,3 %' : '2,68 %'}) : {fTransactionAmount ? `− ${fmt(Math.round(parseFloat(fTransactionAmount) * (fCardType === 'amex' ? 0.033 : 0.0268) * 100) / 100)}` : '—'}</div>
-                {fCardType !== 'amex' && <div style={{ fontSize: '0.82rem', color: '#555' }}>TVA sur commission (10 %) : {fTransactionAmount ? `− ${fmt(Math.round(Math.round(parseFloat(fTransactionAmount) * 0.0268 * 100) / 100 * 0.10 * 100) / 100)}` : '—'}</div>}
+                <div style={{ fontSize: '0.82rem', color: '#555' }}>Commission bancaire ({fCardType === 'amex' ? '3,3 %' : '2,68 %'}) : {fTransactionAmount ? `− ${fmt(Math.round(parseFloat(fTransactionAmount) * (fCardType === 'amex' ? 0.033 : 0.0268) * 100) / 100)}` : '—'}</div>
+                {fCardType !== 'amex' && <div style={{ fontSize: '0.82rem', color: '#555' }}>TVA sur commission (10 %) : {fTransactionAmount ? `− ${fmt(Math.round(Math.round(parseFloat(fTransactionAmount) * 0.0268 * 100) / 100 * 0.10 * 100) / 100)}` : '—'}</div>}
                 <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#16a34a' }}>Net reçu : {fTransactionAmount ? fmt(parseFloat(fAmount) || 0) : '—'}</div>
               </div>
             ) : (
@@ -736,7 +736,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                 <input className="form-input" type="number" step="0.01" min="0" value={fAmount} onChange={e => setFAmount(e.target.value)} placeholder="0.00" required />
               </div>
             )}
-
+ 
             {/* Devise — MAD par défaut */}
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>Devise</label>
@@ -745,7 +745,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                 <button type="button" onClick={() => setFCurrency('EUR')} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fCurrency === 'EUR' ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: fCurrency === 'EUR' ? '#FFF5F0' : 'white', fontWeight: fCurrency === 'EUR' ? 700 : 400, cursor: 'pointer', color: fCurrency === 'EUR' ? 'var(--terracotta)' : 'var(--text)' }}>EUR</button>
               </div>
             </div>
-
+ 
             {/* Mode paiement */}
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>Mode de paiement</label>
@@ -755,7 +755,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                 ))}
               </div>
             </div>
-
+ 
             {/* Catégorie + Description */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
               <div>
@@ -769,7 +769,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                 <input className="form-input" value={fDescription} onChange={e => setFDescription(e.target.value)} placeholder="Note optionnelle" />
               </div>
             </div>
-
+ 
             {/* Nom du client (pour encaissements) */}
             {type === 'cash' && (
               <div>
@@ -777,7 +777,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                 <input className="form-input" type="text" value={fClientName} onChange={e => setFClientName(e.target.value)} placeholder="(optionnel)" />
               </div>
             )}
-
+ 
             {formError && <p style={{ color: 'var(--red)', fontSize: '0.875rem' }}>{formError}</p>}
             {formSuccess && fLastEntry && (
               <button type="button" onClick={() => generateInvoice(fLastEntry!)} style={{ width: '100%', padding: '0.6rem', background: '#8B4513', color: 'white', border: 'none', borderRadius: '0.5rem', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}>
@@ -788,7 +788,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
           </form>
         </div>
       )}
-
+ 
       <div className="card" style={{ marginBottom: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <select className="form-input" style={{ width: 'auto' }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
           <option value="">Tous les statuts</option>
@@ -801,7 +801,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
         </select>
         <span style={{ marginLeft: 'auto', fontWeight: 600, color }}>Total : {fmt(total)}</span>
       </div>
-
+ 
       {loading ? <p>Chargement…</p> : entries.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>Aucune entrée pour ce mois</div>
       ) : (
@@ -842,9 +842,9 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
           </table>
         </div>
       )}
-
+ 
       <input ref={rowFileRef} type="file" accept="image/*,application/pdf" onChange={handleRowUpload} style={{ display: 'none' }} />
-
+ 
       {deleteModal !== null && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
           <div className="card" style={{ maxWidth: 340, width: '90%', textAlign: 'center' }}>
@@ -859,9 +859,9 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     </div>
   )
 }
-
+ 
 // ─── Fond de caisse Tab ───────────────────────────────────────────────────────
-
+ 
 function FondsTab() {
   const [cashEntries, setCashEntries] = useState<Entry[]>([])
   const [fondsEntries, setFondsEntries] = useState<FondsEntry[]>([])
@@ -872,7 +872,7 @@ function FondsTab() {
   const [msg, setMsg] = useState('')
   const [targetMAD, setTargetMAD] = useState(3000)
   const [targetEUR, setTargetEUR] = useState(100)
-
+ 
   const reload = useCallback(async () => {
     setLoading(true)
     const [ents, fonds, settings] = await Promise.all([
@@ -886,26 +886,26 @@ function FondsTab() {
     if (settings?.fond_caisse_eur) setTargetEUR(settings.fond_caisse_eur)
     setLoading(false)
   }, [])
-
+ 
   useEffect(() => { reload() }, [reload])
-
+ 
   const balanceMAD = useMemo(() => {
     const cashIn = cashEntries.filter(e => e.type === 'cash' && e.payment === 'Espèces' && (e.currency === 'MAD' || !e.currency)).reduce((s, e) => s + Number(e.amount), 0)
     const cashOut = cashEntries.filter(e => e.type === 'cb' && e.payment === 'Espèces' && (e.currency === 'MAD' || !e.currency)).reduce((s, e) => s + Number(e.amount), 0)
     const adj = fondsEntries.filter(e => (e.currency === 'MAD' || !e.currency)).reduce((s, e) => s + (e.direction === 'in' ? Number(e.amount) : -Number(e.amount)), 0)
     return targetMAD + cashIn - cashOut + adj
   }, [cashEntries, fondsEntries, targetMAD])
-
+ 
   const balanceEUR = useMemo(() => {
     const cashIn = cashEntries.filter(e => e.type === 'cash' && e.payment === 'Espèces' && e.currency === 'EUR').reduce((s, e) => s + Number(e.amount), 0)
     const cashOut = cashEntries.filter(e => e.type === 'cb' && e.payment === 'Espèces' && e.currency === 'EUR').reduce((s, e) => s + Number(e.amount), 0)
     const adj = fondsEntries.filter(e => e.currency === 'EUR').reduce((s, e) => s + (e.direction === 'in' ? Number(e.amount) : -Number(e.amount)), 0)
     return targetEUR + cashIn - cashOut + adj
   }, [cashEntries, fondsEntries, targetEUR])
-
+ 
   const excessMAD = Math.max(0, balanceMAD - targetMAD)
   const excessEUR = Math.max(0, balanceEUR - targetEUR)
-
+ 
   async function handleRemise() {
     if (excessMAD <= 0 && excessEUR <= 0) return
     setRemiseLoading(true)
@@ -919,13 +919,13 @@ function FondsTab() {
     setTimeout(() => setMsg(''), 4000)
     setRemiseLoading(false)
   }
-
+ 
   if (loading) return <p>Chargement…</p>
-
+ 
   return (
     <div>
       <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#6366F1', marginBottom: '1rem' }}>💰 Fond de caisse</h2>
-
+ 
       {/* Soldes auto-calculés */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.25rem' }}>
         {[{ cur: 'MAD', bal: balanceMAD }, { cur: 'EUR', bal: balanceEUR }].map(({ cur, bal }) => (
@@ -935,7 +935,7 @@ function FondsTab() {
           </div>
         ))}
       </div>
-
+ 
       {/* Rapprochement */}
       <div className="card" style={{ marginBottom: '1.25rem' }}>
         <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', color: '#374151' }}>🔍 Rapprochement caisse</h3>
@@ -956,7 +956,7 @@ function FondsTab() {
           })}
         </div>
       </div>
-
+ 
       {/* Remise en coffre */}
       <div className="card" style={{ marginBottom: '1.25rem' }}>
         <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.5rem', color: '#6366F1' }}>🔒 Remise en coffre</h3>
@@ -974,7 +974,7 @@ function FondsTab() {
           {remiseLoading ? 'Enregistrement…' : '🔒 Remettre en coffre'}
         </button>
       </div>
-
+ 
       {/* Historique des ajustements (remises) */}
       {fondsEntries.length > 0 && (
         <div className="card">
@@ -1003,9 +1003,9 @@ function FondsTab() {
     </div>
   )
 }
-
+ 
 // ─── Banque Tab ───────────────────────────────────────────────────────────────
-
+ 
 function BanqueTab() {
   const [allEntries, setAllEntries] = useState<Entry[]>([])
   const [loading, setLoading] = useState(true)
@@ -1015,7 +1015,7 @@ function BanqueTab() {
   const [targetEUR, setTargetEUR] = useState(0)
   const [savingSolde, setSavingSolde] = useState(false)
   const [msg, setMsg] = useState('')
-
+ 
   const reload = useCallback(async () => {
     setLoading(true)
     const [ents, settings] = await Promise.all([
@@ -1027,24 +1027,24 @@ function BanqueTab() {
     if (settings?.solde_bancaire_eur !== undefined) setTargetEUR(settings.solde_bancaire_eur)
     setLoading(false)
   }, [])
-
+ 
   useEffect(() => { reload() }, [reload])
-
+ 
   // Mouvements bancaires = tout ce qui n'est PAS payé en espèces (CB, Virement, Chèque)
   const bankEntries = useMemo(
     () => allEntries.filter(e => e.payment && e.payment !== 'Espèces'),
     [allEntries]
   )
-
+ 
   function computeBalance(currency: string, target: number) {
     const inflow = bankEntries.filter(e => e.type === 'cash' && (e.currency === currency || (!e.currency && currency === 'MAD'))).reduce((s, e) => s + Number(e.amount), 0)
     const outflow = bankEntries.filter(e => e.type === 'cb' && (e.currency === currency || (!e.currency && currency === 'MAD'))).reduce((s, e) => s + Number(e.amount), 0)
     return { balance: target + inflow - outflow, inflow, outflow }
   }
-
+ 
   const madStats = useMemo(() => computeBalance('MAD', targetMAD), [bankEntries, targetMAD])
   const eurStats = useMemo(() => computeBalance('EUR', targetEUR), [bankEntries, targetEUR])
-
+ 
   async function saveSolde() {
     setSavingSolde(true)
     const body: Record<string, number> = {}
@@ -1057,7 +1057,7 @@ function BanqueTab() {
     setTimeout(() => setMsg(''), 4000)
     setSavingSolde(false)
   }
-
+ 
   const byMode = useMemo(() => {
     const modes: Record<string, { in: number; out: number }> = {}
     for (const e of bankEntries) {
@@ -1068,16 +1068,16 @@ function BanqueTab() {
     }
     return modes
   }, [bankEntries])
-
+ 
   if (loading) return <p>Chargement…</p>
-
+ 
   return (
     <div>
       <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#3730A3', marginBottom: '1rem' }}>🏦 Banque</h2>
       <p style={{ fontSize: '0.8rem', color: '#888', marginBottom: '1rem' }}>
         Regroupe tous les mouvements payés/encaissés par CB, Virement ou Chèque (hors espèces, suivies dans le Fond de caisse).
       </p>
-
+ 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.25rem' }}>
         {[{ cur: 'MAD', s: madStats }, { cur: 'EUR', s: eurStats }].map(({ cur, s }) => (
           <div key={cur} className="stat-card" style={{ borderLeftColor: '#3730A3' }}>
@@ -1087,7 +1087,7 @@ function BanqueTab() {
           </div>
         ))}
       </div>
-
+ 
       <div className="card" style={{ marginBottom: '1.25rem' }}>
         <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', color: '#374151' }}>🏁 Solde bancaire initial</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
@@ -1105,7 +1105,7 @@ function BanqueTab() {
           {savingSolde ? 'Enregistrement…' : 'Mettre à jour le solde initial'}
         </button>
       </div>
-
+ 
       <div className="card" style={{ marginBottom: '1.25rem' }}>
         <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', color: '#374151' }}>📊 Par mode de paiement</h3>
         <div style={{ overflowX: 'auto' }}>
@@ -1123,7 +1123,7 @@ function BanqueTab() {
           </table>
         </div>
       </div>
-
+ 
       <div className="card">
         <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', color: '#374151' }}>📋 Mouvements bancaires</h3>
         <div style={{ overflowX: 'auto' }}>
@@ -1149,11 +1149,11 @@ function BanqueTab() {
     </div>
   )
 }
-
+ 
 // ─── Coffre Fort Tab ──────────────────────────────────────────────────────────
-
+ 
 const COFFRE_CATEGORIES = ['Dépôt espèces', 'Retrait espèces', 'Chèque', 'Document', 'Bijou / objet de valeur', 'Autre']
-
+ 
 interface CoffreEntry {
   id: number
   employee_name: string
@@ -1163,10 +1163,11 @@ interface CoffreEntry {
   currency: string
   category: string
   description: string | null
+  invoice_url: string | null
   status: string
   created_at: string
 }
-
+ 
 function CoffreTab() {
   const now = new Date()
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -1176,7 +1177,7 @@ function CoffreTab() {
   const [deleteModal, setDeleteModal] = useState<number | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [coffreEmployees, setCoffreEmployees] = useState<string[]>([])
-
+ 
   const [direction, setDirection] = useState<'in' | 'out'>('in')
   const [date, setDate] = useState(now.toISOString().split('T')[0])
   const [amount, setAmount] = useState('')
@@ -1186,46 +1187,160 @@ function CoffreTab() {
   const [employeeName, setEmployeeName] = useState('Administrateur')
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
-
+ 
+  // Facture (optionnelle) — glisser/déposer, photo ou fichier, avec auto-remplissage
+  const [fFile, setFFile] = useState<File | null>(null)
+  const [fFilePreview, setFFilePreview] = useState<string | null>(null)
+  const [fExtracting, setFExtracting] = useState(false)
+  const [fExtracted, setFExtracted] = useState(false)
+  const [fDragCounter, setFDragCounter] = useState(0)
+  const fFileRef = useRef<HTMLInputElement>(null)
+  const fDropZoneRef = useRef<HTMLDivElement>(null)
+  const processFileRef = useRef<(f: File) => void>((_f: File) => {})
+  const [pendingUploadEntry, setPendingUploadEntry] = useState<number | null>(null)
+  const [uploadingEntryId, setUploadingEntryId] = useState<number | null>(null)
+  const rowFileRef = useRef<HTMLInputElement>(null)
+ 
   const fetchEntries = useCallback(async () => {
     setLoading(true)
     const r = await fetch(`/api/coffre?month=${month}`)
     setEntries(await r.json())
     setLoading(false)
   }, [month])
-
+ 
   useEffect(() => { fetchEntries() }, [fetchEntries])
   useEffect(() => {
     fetch('/api/employees').then(r => r.json()).then((emps: Employee[]) => {
       setCoffreEmployees(emps.filter(e => e.active).map(e => e.name))
     })
   }, [])
-
+ 
   const totalIn  = entries.filter(e => e.direction === 'in').reduce((s, e) => s + Number(e.amount), 0)
   const totalOut = entries.filter(e => e.direction === 'out').reduce((s, e) => s + Number(e.amount), 0)
   const solde    = totalIn - totalOut
-
+ 
   async function toggleStatus(entry: CoffreEntry) {
     await fetch(`/api/coffre/${entry.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: entry.status === 'pending' ? 'validated' : 'pending' }) })
     fetchEntries()
   }
-
+ 
   async function deleteEntry(id: number) {
     await fetch(`/api/coffre/${id}`, { method: 'DELETE' })
     setDeleteModal(null)
     fetchEntries()
   }
-
+ 
+  async function processFile(file: File) {
+    setFFile(file)
+    setFExtracted(false)
+    setFFilePreview(file.type.startsWith('image/') ? URL.createObjectURL(file) : null)
+    setFExtracting(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('type', 'coffre')
+      const r = await fetch('/api/extract-invoice', { method: 'POST', body: fd })
+      if (r.ok) {
+        const data = await r.json()
+        if (data.date) setDate(data.date)
+        if (data.amount_ttc) setAmount(String(data.amount_ttc))
+        setFExtracted(true)
+      }
+    } catch { /* silent */ }
+    setFExtracting(false)
+  }
+ 
+  processFileRef.current = processFile
+ 
+  useEffect(() => {
+    const el = fDropZoneRef.current
+    if (!el) return
+    const onDragEnter = (e: DragEvent) => { e.preventDefault(); setFDragCounter(c => c + 1) }
+    const onDragOver = (e: DragEvent) => { e.preventDefault() }
+    const onDragLeave = (e: DragEvent) => { e.preventDefault(); setFDragCounter(c => Math.max(0, c - 1)) }
+    const onDrop = (e: DragEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setFDragCounter(0)
+      const f = e.dataTransfer?.files[0]
+      if (f) processFileRef.current(f)
+    }
+    el.addEventListener('dragenter', onDragEnter)
+    el.addEventListener('dragover', onDragOver)
+    el.addEventListener('dragleave', onDragLeave)
+    el.addEventListener('drop', onDrop)
+    return () => {
+      el.removeEventListener('dragenter', onDragEnter)
+      el.removeEventListener('dragover', onDragOver)
+      el.removeEventListener('dragleave', onDragLeave)
+      el.removeEventListener('drop', onDrop)
+    }
+  }, [showForm])
+ 
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    processFile(file)
+  }
+ 
+  async function fileToBase64(file: File): Promise<string> {
+    if (file.type.startsWith('image/')) {
+      return new Promise((resolve, reject) => {
+        const img = new Image()
+        const url = URL.createObjectURL(file)
+        img.onload = () => {
+          const maxW = 1200
+          const scale = Math.min(1, maxW / img.width)
+          const canvas = document.createElement('canvas')
+          canvas.width = Math.round(img.width * scale)
+          canvas.height = Math.round(img.height * scale)
+          canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+          URL.revokeObjectURL(url)
+          resolve(canvas.toDataURL('image/jpeg', 0.75))
+        }
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Erreur image')) }
+        img.src = url
+      })
+    }
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = () => reject(new Error('Erreur lecture fichier'))
+      reader.readAsDataURL(file)
+    })
+  }
+ 
+  async function handleRowUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || pendingUploadEntry === null) return
+    setUploadingEntryId(pendingUploadEntry)
+    try {
+      const url = await fileToBase64(file)
+      await fetch(`/api/coffre/${pendingUploadEntry}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ invoice_url: url }) })
+      fetchEntries()
+    } catch { /* ignore */ }
+    setUploadingEntryId(null)
+    setPendingUploadEntry(null)
+    if (rowFileRef.current) rowFileRef.current.value = ''
+  }
+ 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true); setFormError('')
+    let invoice_url: string | undefined
+    if (fFile) {
+      try {
+        invoice_url = await fileToBase64(fFile)
+      } catch (err) { setFormError((err as Error).message); setSubmitting(false); return }
+    }
     const r = await fetch('/api/coffre', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ direction, date, amount: parseFloat(amount), currency, category, description, employee_name: employeeName }),
+      body: JSON.stringify({ direction, date, amount: parseFloat(amount), currency, category, description, employee_name: employeeName, invoice_url }),
     })
     if (r.ok) {
       setAmount(''); setDescription(''); setShowForm(false)
+      setFFile(null); setFFilePreview(null); setFExtracted(false)
       fetchEntries()
     } else {
       const d = await r.json()
@@ -1233,7 +1348,7 @@ function CoffreTab() {
     }
     setSubmitting(false)
   }
-
+ 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -1244,7 +1359,7 @@ function CoffreTab() {
         </div>
         <button className="btn-primary" onClick={() => setShowForm(!showForm)} style={{ background: '#374151' }}>{showForm ? 'Annuler' : '+ Ajouter'}</button>
       </div>
-
+ 
       {/* Solde */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1.25rem' }}>
         <div className="stat-card" style={{ borderLeftColor: 'var(--green)' }}>
@@ -1260,10 +1375,56 @@ function CoffreTab() {
           <div style={{ fontWeight: 700, fontSize: '1.5rem', color: solde >= 0 ? '#374151' : 'var(--red)' }}>{solde >= 0 ? '+' : ''}{solde.toFixed(2)}</div>
         </div>
       </div>
-
+ 
       {showForm && (
         <div className="card" style={{ marginBottom: '1.25rem' }}>
           <form onSubmit={handleSubmit}>
+            {/* Upload zone justificatif — optionnel */}
+            <div style={{ marginBottom: '0.75rem' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>
+                Facture <span style={{ color: '#888', fontWeight: 400 }}>(optionnel)</span>
+              </label>
+              <div
+                ref={fDropZoneRef}
+                style={{ position: 'relative', border: `2px dashed ${fDragCounter > 0 ? '#374151' : fFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1.25rem', textAlign: 'center', background: fDragCounter > 0 ? '#F3F4F6' : fExtracting ? '#FFFBF0' : fFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
+              >
+                {fFile && !fExtracting && (
+                  <button type="button" onClick={e => { e.stopPropagation(); setFFile(null); setFFilePreview(null); if (fFileRef.current) fFileRef.current.value = '' }}
+                    style={{ position: 'absolute', top: '0.35rem', left: '0.35rem', background: 'rgba(239,68,68,0.9)', border: 'none', borderRadius: '50%', width: '1.3rem', height: '1.3rem', color: 'white', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, lineHeight: 1, padding: 0 }}>×</button>
+                )}
+                {fExtracting ? (
+                  <div>
+                    <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>⏳</div>
+                    <div style={{ fontSize: '0.85rem', color: '#888' }}>Analyse du document en cours…</div>
+                  </div>
+                ) : fFile ? (
+                  <div onClick={() => fFileRef.current?.click()} style={{ cursor: 'pointer' }}>
+                    {fFilePreview && <img src={fFilePreview} alt="Aperçu" style={{ maxHeight: 120, maxWidth: '100%', marginBottom: '0.5rem', borderRadius: '0.3rem', objectFit: 'contain' }} />}
+                    <div style={{ fontSize: '0.85rem', color: 'var(--green)', fontWeight: 600 }}>✓ {fFile.name}</div>
+                    {fExtracted && <div style={{ fontSize: '0.75rem', color: 'var(--green)', marginTop: '0.2rem' }}>Données extraites automatiquement — vérifiez ci-dessous</div>}
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.2rem' }}>Cliquer ou glisser pour changer</div>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }}>{fDragCounter > 0 ? '⬇️' : '📄'}</div>
+                    <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '0.75rem' }}>Glisser la facture ici</div>
+                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                      <label style={{ padding: '0.5rem 0.875rem', background: '#F3F4F6', border: '1px solid #374151', borderRadius: '0.5rem', color: '#374151', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem' }}>
+                        📷 Photo
+                        <input type="file" accept="image/*" capture="environment" onChange={handleFileSelect} style={{ display: 'none' }} />
+                      </label>
+                      <label style={{ padding: '0.5rem 0.875rem', background: '#F8F8F8', border: '1px solid #ddd', borderRadius: '0.5rem', color: '#555', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem' }}>
+                        📁 Fichier
+                        <input type="file" accept="image/*,application/pdf" onChange={handleFileSelect} style={{ display: 'none' }} />
+                      </label>
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: '#aaa', marginTop: '0.5rem' }}>Image ou PDF — les champs date/montant seront remplis automatiquement</div>
+                  </div>
+                )}
+              </div>
+              <input ref={fFileRef} type="file" accept="image/*,application/pdf" onChange={handleFileSelect} style={{ display: 'none' }} />
+            </div>
+ 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Sens *</label>
@@ -1310,14 +1471,14 @@ function CoffreTab() {
           </form>
         </div>
       )}
-
+ 
       {loading ? <p>Chargement…</p> : entries.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>Aucun mouvement pour ce mois</div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table>
             <thead>
-              <tr><th>Date</th><th>Sens</th><th>Catégorie</th><th>Par</th><th>Devise</th><th>Montant</th><th>Description</th><th>Statut</th><th>Actions</th></tr>
+              <tr><th>Date</th><th>Sens</th><th>Catégorie</th><th>Par</th><th>Devise</th><th>Montant</th><th>Description</th><th>Facture</th><th>Statut</th><th>Actions</th></tr>
             </thead>
             <tbody>
               {entries.map(e => (
@@ -1329,6 +1490,12 @@ function CoffreTab() {
                   <td><span style={{ fontWeight: 600, fontSize: '0.8rem', background: '#F3F4F6', padding: '0.15rem 0.4rem', borderRadius: '0.3rem' }}>{e.currency}</span></td>
                   <td style={{ fontWeight: 600, color: e.direction === 'in' ? 'var(--green)' : 'var(--red)' }}>{e.direction === 'in' ? '+' : '-'}{Number(e.amount).toFixed(2)}</td>
                   <td style={{ fontSize: '0.85rem', color: '#666' }}>{e.description || '—'}</td>
+                  <td>
+                    {e.invoice_url
+                      ? <a href={e.invoice_url} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontSize: '0.8rem' }}>📄 Facture</a>
+                      : <button onClick={() => { setPendingUploadEntry(e.id); rowFileRef.current?.click() }} disabled={uploadingEntryId === e.id} style={{ background: 'none', border: '1px dashed #aaa', borderRadius: '0.3rem', color: '#888', cursor: 'pointer', fontSize: '0.75rem', padding: '0.2rem 0.4rem' }}>{uploadingEntryId === e.id ? '⬆️…' : '📎 Ajouter'}</button>
+                    }
+                  </td>
                   <td><span className={e.status === 'validated' ? 'badge-validated' : 'badge-pending'}>{e.status === 'validated' ? 'Validé' : 'En attente'}</span></td>
                   <td style={{ display: 'flex', gap: '0.4rem' }}>
                     <button onClick={() => toggleStatus(e)} style={{ background: e.status === 'pending' ? 'var(--green)' : '#888', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.8rem' }}>{e.status === 'pending' ? '✓' : '↩'}</button>
@@ -1340,7 +1507,9 @@ function CoffreTab() {
           </table>
         </div>
       )}
-
+ 
+      <input ref={rowFileRef} type="file" accept="image/*,application/pdf" onChange={handleRowUpload} style={{ display: 'none' }} />
+ 
       {deleteModal !== null && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
           <div className="card" style={{ maxWidth: 340, width: '90%', textAlign: 'center' }}>
@@ -1355,9 +1524,9 @@ function CoffreTab() {
     </div>
   )
 }
-
+ 
 // ─── Employees Tab ─────────────────────────────────────────────────────────────
-
+ 
 function EmployeesTab() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
@@ -1366,15 +1535,15 @@ function EmployeesTab() {
   const [adding, setAdding] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [copiedId, setCopiedId] = useState<number | null>(null)
-
+ 
   const fetchEmployees = useCallback(async () => {
     const r = await fetch('/api/employees')
     setEmployees(await r.json())
     setLoading(false)
   }, [])
-
+ 
   useEffect(() => { fetchEmployees() }, [fetchEmployees])
-
+ 
   async function addEmployee(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim()) return
@@ -1383,25 +1552,25 @@ function EmployeesTab() {
     setName(''); setPoste(''); setShowForm(false); setAdding(false)
     fetchEmployees()
   }
-
+ 
   async function toggleActive(emp: Employee) {
     await fetch(`/api/employees/${emp.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: !emp.active }) })
     fetchEmployees()
   }
-
+ 
   function copyLink(emp: Employee) {
     navigator.clipboard.writeText(`${window.location.origin}/employee?emp=${emp.token}`)
     setCopiedId(emp.id)
     setTimeout(() => setCopiedId(null), 2000)
   }
-
+ 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
         <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--terracotta)' }}>👥 Employés</h2>
         <button className="btn-primary" onClick={() => setShowForm(!showForm)}>{showForm ? 'Annuler' : '+ Ajouter'}</button>
       </div>
-
+ 
       {showForm && (
         <div className="card" style={{ marginBottom: '1.25rem' }}>
           <form onSubmit={addEmployee} style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
@@ -1417,7 +1586,7 @@ function EmployeesTab() {
           </form>
         </div>
       )}
-
+ 
       {loading ? <p>Chargement…</p> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {employees.map(emp => (
@@ -1438,9 +1607,9 @@ function EmployeesTab() {
     </div>
   )
 }
-
+ 
 // ─── Settings Tab ──────────────────────────────────────────────────────────────
-
+ 
 function SettingsTab({ onLogout }: { onLogout: () => void }) {
   const [currentPin, setCurrentPin] = useState('')
   const [newPin, setNewPin] = useState('')
@@ -1455,11 +1624,11 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
   const [hasBaseFile, setHasBaseFile] = useState<boolean | null>(null)
   const [dbUpdating, setDbUpdating] = useState(false)
   const [dbMsg, setDbMsg] = useState('')
-
+ 
   useEffect(() => {
     fetch('/api/excel/status').then(r => r.ok ? r.json() : null).then(d => { if (d) setHasBaseFile(d.hasFile) })
   }, [])
-
+ 
   async function uploadExcel(e: React.FormEvent) {
     e.preventDefault()
     if (!excelFile) return
@@ -1471,12 +1640,12 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
     else { const d = await r.json(); setExcelError(d.error || 'Erreur upload.') }
     setExcelUploading(false)
   }
-
+ 
   async function removeExcel() {
     await fetch('/api/excel/upload', { method: 'DELETE' })
     setHasBaseFile(false); setExcelMsg('Fichier supprimé.')
   }
-
+ 
   async function changePin(e: React.FormEvent) {
     e.preventDefault()
     setPinMsg(''); setPinError('')
@@ -1486,17 +1655,17 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
     if (r.ok) { setPinMsg('PIN modifié.'); setCurrentPin(''); setNewPin(''); setConfirmPin('') }
     else { const d = await r.json(); setPinError(d.error || 'Erreur.') }
   }
-
+ 
   async function resetAll() {
     await fetch('/api/settings/reset', { method: 'DELETE' })
     setResetModal(false)
     onLogout()
   }
-
+ 
   return (
     <div>
       <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.5rem', color: 'var(--terracotta)' }}>⚙️ Paramètres</h2>
-
+ 
       {/* DB migration */}
       <div className="card" style={{ maxWidth: 500, marginBottom: '1.5rem', borderLeft: '4px solid var(--terracotta)' }}>
         <h3 style={{ fontWeight: 700, marginBottom: '0.5rem' }}>🗄️ Mise à jour base de données</h3>
@@ -1513,7 +1682,7 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
         </button>
         {dbMsg && <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: dbMsg.startsWith('✓') ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>{dbMsg}</p>}
       </div>
-
+ 
       {/* Excel base file */}
       <div className="card" style={{ maxWidth: 500, marginBottom: '1.5rem', borderLeft: '4px solid #2D6A4F' }}>
         <h3 style={{ fontWeight: 700, marginBottom: '0.5rem' }}>📎 Fichier Excel de référence</h3>
@@ -1535,7 +1704,7 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
         {excelMsg && <p style={{ color: 'var(--green)', fontSize: '0.825rem', marginTop: '0.5rem' }}>{excelMsg}</p>}
         {excelError && <p style={{ color: 'var(--red)', fontSize: '0.825rem', marginTop: '0.5rem' }}>{excelError}</p>}
       </div>
-
+ 
       <div className="card" style={{ maxWidth: 420, marginBottom: '1.5rem' }}>
         <h3 style={{ fontWeight: 700, marginBottom: '1rem' }}>Changer le PIN</h3>
         <form onSubmit={changePin} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -1567,3 +1736,5 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
     </div>
   )
 }
+ 
+
