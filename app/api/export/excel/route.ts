@@ -423,6 +423,7 @@ export async function GET() {
       { key: 'description', width: 28 }, { key: 'mode', width: 14 }, { key: 'devise', width: 8 },
       { key: 'entrees', width: 14 }, { key: 'sorties', width: 14 }, { key: 'solde', width: 14 },
       { key: 'pointage', width: 12 }, { key: 'statut', width: 12 },
+      { key: 'id', width: 8, hidden: true }, // colonne technique (masquée) : sert à ré-associer la ligne au bon mouvement lors d'un ré-import du pointage
     ]
     const soldesHeaders = ['Date', 'Mois', 'Catégorie', 'Description', 'Mode paiement', 'Devise', 'Entrées', 'Sorties', 'Solde', 'Pointage', 'Statut']
     soldesHeaders.forEach((h, i) => hdr(wsSoldes.getCell(1, i + 1), h, C_BLUE_BG))
@@ -491,8 +492,10 @@ export async function GET() {
       soldeC.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF3730A3' } }
       soldeC.alignment = { horizontal: 'right' }
  
-      // Pointage — case à cocher manuelle pour rapprocher avec le relevé bancaire
+      // Pointage — case à cocher manuelle pour rapprocher avec le relevé bancaire.
+      // Pré-cochée si ce mouvement est déjà marqué pointé en base (import précédent).
       const pointageC = row.getCell(10)
+      pointageC.value = e.pointed ? '✓' : undefined
       pointageC.alignment = { horizontal: 'center' }
       pointageC.dataValidation = { type: 'list', allowBlank: true, formulae: ['"✓"'] }
       pointageC.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF2D6A4F' } }
@@ -502,6 +505,11 @@ export async function GET() {
       stc.value = status === 'validated' ? 'Validé' : 'En attente'
       stc.font = { name: 'Arial', size: 9, bold: true, color: { argb: status === 'validated' ? 'FF2D6A4F' : 'FFD97706' } }
       stc.alignment = { horizontal: 'center' }
+ 
+      // ID technique (colonne masquée) — utilisé pour ré-associer la ligne au
+      // bon mouvement en base lors d'un ré-import du fichier pointé
+      cell(row.getCell(12), e.id)
+ 
       altRow(row, idx + 4)
  
       const mode = (e.payment as string) || '—'
@@ -618,4 +626,3 @@ export async function GET() {
   }
 }
  
-
