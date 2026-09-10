@@ -175,9 +175,12 @@ export async function GET() {
     tdbSubtitle.alignment = { horizontal: 'center', vertical: 'middle' }
  
     // ── 4 indicateurs de solde (formules auditables, pointent vers les onglets bruts) ──
-    kpiCard(wsTdb, 1, 4, 'COFFRE — SOLDE DHS', `'COFFRE'!H${1 + coffre.length}`, C_GOLD_BG)
-    kpiCard(wsTdb, 3, 4, 'COFFRE — SOLDE €', `'COFFRE'!L${1 + coffre.length}`, C_GOLD_BG)
-    kpiCard(wsTdb, 5, 4, 'BANQUE — SOLDE MAD', `'BANQUE'!J${2 + bankMoves.length}`, TAB_BLUE)
+    // BANQUE et COFFRE affichent désormais le plus récent en haut (ligne 2) :
+    // c'est donc là que se trouve le solde courant. FOND DE CAISSE reste trié
+    // du plus ancien au plus récent, donc son solde courant reste en bas.
+    kpiCard(wsTdb, 1, 4, 'COFFRE — SOLDE DHS', `'COFFRE'!H2`, C_GOLD_BG)
+    kpiCard(wsTdb, 3, 4, 'COFFRE — SOLDE €', `'COFFRE'!L2`, C_GOLD_BG)
+    kpiCard(wsTdb, 5, 4, 'BANQUE — SOLDE MAD', `'BANQUE'!J2`, TAB_BLUE)
     kpiCard(wsTdb, 7, 4, 'FOND DE CAISSE — SOLDE DHS', `'FOND DE CAISSE'!J${lastFondsRow}`, TAB_RED)
  
     // ── Synthèse par mois (Entrées / Charges / Résultat) ──────────────────────
@@ -390,39 +393,15 @@ export async function GET() {
     soldesHeaders.forEach((h, i) => hdr(wsSoldes.getCell(1, i + 1), h, C_BLUE_BG))
     wsSoldes.getRow(1).height = 22
  
-    // Solde initial — ligne 2 (l'onglet BANQUE ne suit désormais que le MAD).
-    // J2 sert ensuite de point de départ aux formules de Théorique ci-dessous.
-    {
-      const row = wsSoldes.addRow({})
-      row.getCell(7).value = 'SOLDE INITIAL'
-      row.getCell(7).font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF3730A3' } }
-      const ec = row.getCell(9)
-      ec.value = settings.solde_bancaire_mad; ec.numFmt = '#,##0.00'
-      ec.font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF3730A3' } }
-      ec.alignment = { horizontal: 'right' }
-      const thC = row.getCell(10)
-      thC.value = { formula: 'I2-H2' }
-      thC.numFmt = '#,##0.00'
-      thC.font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF3730A3' } }
-      thC.alignment = { horizontal: 'right' }
-      const ptC = row.getCell(11)
-      ptC.value = '✓'
-      ptC.alignment = { horizontal: 'center' }
-      ptC.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF2D6A4F' } }
-      const reC = row.getCell(12)
-      reC.value = { formula: 'IF(K2="✓",I2-H2,0)' }
-      reC.numFmt = '#,##0.00'
-      reC.font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF3730A3' } }
-      reC.alignment = { horizontal: 'right' }
-      const ecC = row.getCell(13)
-      ecC.value = { formula: 'IF(L2="","",L2-J2)' }
-      ecC.numFmt = '#,##0.00'
-      ecC.font = { name: 'Arial', size: 9, color: { argb: 'FF6B7280' } }
-      ecC.alignment = { horizontal: 'right' }
-      row.eachCell(c => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEF2FF' } } })
-    }
+    // Les mouvements sont affichés du plus récent au plus ancien (ligne 2 = le
+    // plus récent). La ligne SOLDE INITIAL, chronologiquement la plus ancienne,
+    // est donc placée tout en bas ; les formules cumulées (Théorique/Réel)
+    // pointent vers la ligne du DESSOUS (chronologiquement antérieure) plutôt
+    // que celle du dessus comme lorsque le tri était croissant.
+    const bankLastRow = 2 + bankMoves.length // dernière ligne = SOLDE INITIAL
+    const bankMovesDesc = [...bankMoves].reverse()
  
-    bankMoves.forEach((e, idx) => {
+    bankMovesDesc.forEach((e, idx) => {
       const row = wsSoldes.addRow({})
       const rowNum = row.number
       const dateStr = (e.date as string).slice(0, 10)
@@ -450,10 +429,10 @@ export async function GET() {
         sc.alignment = { horizontal: 'right' }
       }
  
-      // Théorique — formule Excel (auditable) : théorique de la ligne précédente
-      // + Entrée de cette ligne − Sortie de cette ligne
+      // Théorique — formule Excel (auditable) : théorique de la ligne du dessous
+      // (chronologiquement antérieure) + Entrée de cette ligne − Sortie de cette ligne
       const thC = row.getCell(10)
-      thC.value = { formula: `J${rowNum - 1}+I${rowNum}-H${rowNum}` }
+      thC.value = { formula: `J${rowNum + 1}+I${rowNum}-H${rowNum}` }
       thC.numFmt = '#,##0.00'
       thC.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF3730A3' } }
       thC.alignment = { horizontal: 'right' }
@@ -466,9 +445,9 @@ export async function GET() {
       ptC.dataValidation = { type: 'list', allowBlank: true, formulae: ['"✓"'] }
       ptC.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF2D6A4F' } }
  
-      // Réel — solde cumulé ne comptant que les lignes pointées
+      // Réel — solde cumulé (vers le bas) ne comptant que les lignes pointées
       const reC = row.getCell(12)
-      reC.value = { formula: `L${rowNum - 1}+IF(K${rowNum}="✓",I${rowNum}-H${rowNum},0)` }
+      reC.value = { formula: `L${rowNum + 1}+IF(K${rowNum}="✓",I${rowNum}-H${rowNum},0)` }
       reC.numFmt = '#,##0.00'
       reC.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF3730A3' } }
       reC.alignment = { horizontal: 'right' }
@@ -484,8 +463,42 @@ export async function GET() {
       // bon mouvement en base lors d'un ré-import du fichier pointé
       cell(row.getCell(14), e.id)
  
-      altRow(row, idx + 3)
+      altRow(row, idx + 2)
     })
+ 
+    // Solde initial — tout en bas (la ligne la plus ancienne chronologiquement).
+    // Sert de base aux formules cumulées ci-dessus (I-H, sans référence à une
+    // autre ligne puisque c'est le point de départ de l'historique).
+    {
+      const row = wsSoldes.addRow({})
+      const rowNum = row.number // = bankLastRow
+      row.getCell(7).value = 'SOLDE INITIAL'
+      row.getCell(7).font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF3730A3' } }
+      const ec = row.getCell(9)
+      ec.value = settings.solde_bancaire_mad; ec.numFmt = '#,##0.00'
+      ec.font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF3730A3' } }
+      ec.alignment = { horizontal: 'right' }
+      const thC = row.getCell(10)
+      thC.value = { formula: `I${rowNum}-H${rowNum}` }
+      thC.numFmt = '#,##0.00'
+      thC.font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF3730A3' } }
+      thC.alignment = { horizontal: 'right' }
+      const ptC = row.getCell(11)
+      ptC.value = '✓'
+      ptC.alignment = { horizontal: 'center' }
+      ptC.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF2D6A4F' } }
+      const reC = row.getCell(12)
+      reC.value = { formula: `IF(K${rowNum}="✓",I${rowNum}-H${rowNum},0)` }
+      reC.numFmt = '#,##0.00'
+      reC.font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF3730A3' } }
+      reC.alignment = { horizontal: 'right' }
+      const ecC = row.getCell(13)
+      ecC.value = { formula: `IF(L${rowNum}="","",L${rowNum}-J${rowNum})` }
+      ecC.numFmt = '#,##0.00'
+      ecC.font = { name: 'Arial', size: 9, color: { argb: 'FF6B7280' } }
+      ecC.alignment = { horizontal: 'right' }
+      row.eachCell(c => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEF2FF' } } })
+    }
     wsSoldes.autoFilter = { from: 'A1', to: 'M1' }
  
     // Surligne en vert les lignes pointées
@@ -515,9 +528,17 @@ export async function GET() {
     coffreHeaders.forEach((h, i) => hdr(wsCoffre.getCell(1, i + 1), h, C_GOLD_BG))
     wsCoffre.getRow(1).height = 22
  
-    coffre.forEach((e, idx) => {
+    // Affiché du plus récent au plus ancien (ligne 2 = le plus récent) : la
+    // ligne la plus ancienne (dernière du tableau) sert de cas de base pour le
+    // solde cumulé, et chaque autre ligne pointe vers celle du DESSOUS
+    // (chronologiquement antérieure) plutôt que celle du dessus.
+    const coffreLastRow = 1 + coffre.length
+    const coffreDesc = [...coffre].reverse()
+ 
+    coffreDesc.forEach((e, idx) => {
       const row = wsCoffre.addRow({})
       const rowNum = row.number
+      const isOldest = rowNum === coffreLastRow
       const dateStr = (e.date as string).slice(0, 10)
       const mois = formatMois(dateStr)
       const amt = Number(e.amount)
@@ -538,7 +559,7 @@ export async function GET() {
  
       // Solde DHS cumulé — formule Excel (auditable)
       const soldeDhsC = row.getCell(8)
-      soldeDhsC.value = { formula: rowNum === 2 ? 'G2-F2' : `H${rowNum - 1}+G${rowNum}-F${rowNum}` }
+      soldeDhsC.value = { formula: isOldest ? `G${rowNum}-F${rowNum}` : `H${rowNum + 1}+G${rowNum}-F${rowNum}` }
       soldeDhsC.numFmt = '#,##0.00'
       soldeDhsC.font = { name: 'Arial', size: 9, bold: true, color: { argb: C_GOLD_BG } }
       soldeDhsC.alignment = { horizontal: 'right' }
@@ -557,7 +578,7 @@ export async function GET() {
  
       // Solde € cumulé — formule Excel (auditable)
       const soldeEurC = row.getCell(12)
-      soldeEurC.value = { formula: rowNum === 2 ? 'K2-J2' : `L${rowNum - 1}+K${rowNum}-J${rowNum}` }
+      soldeEurC.value = { formula: isOldest ? `K${rowNum}-J${rowNum}` : `L${rowNum + 1}+K${rowNum}-J${rowNum}` }
       soldeEurC.numFmt = '#,##0.00'
       soldeEurC.font = { name: 'Arial', size: 9, bold: true, color: { argb: C_GOLD_BG } }
       soldeEurC.alignment = { horizontal: 'right' }
