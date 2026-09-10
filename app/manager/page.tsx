@@ -1250,7 +1250,7 @@ function BanqueTab() {
               </tr>
             </thead>
             <tbody>
-              {bankRows.map(e => {
+              {[...bankRows].reverse().map(e => {
                 const isIn = e.type === 'cash'
                 const amt = Number(e.amount)
                 return (
@@ -1664,7 +1664,7 @@ function CoffreTab() {
               </tr>
             </thead>
             <tbody>
-              {entries.map(e => {
+              {[...entries].reverse().map(e => {
                 const isEur = e.currency === 'EUR'
                 const amt = Number(e.amount)
                 const hasInvoice = !!e.invoice_url
