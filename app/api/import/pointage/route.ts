@@ -44,9 +44,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Onglet BANQUE introuvable dans ce fichier — vérifie que c'est bien un export généré par l'application" }, { status: 400 })
     }
  
-    // Ligne 1 = en-têtes, ligne 2 = SOLDE INITIAL, mouvements à partir de la ligne 3
+    // Ligne 1 = en-têtes, puis les mouvements du plus récent au plus ancien ;
+    // la ligne SOLDE INITIAL (sans ID) se trouve tout en bas et est ignorée
+    // ci-dessous faute d'ID exploitable en colonne 14.
     const updates: { id: number; pointed: boolean }[] = []
-    for (let rowNum = 3; rowNum <= wsBanque.rowCount; rowNum++) {
+    for (let rowNum = 2; rowNum <= wsBanque.rowCount; rowNum++) {
       const row = wsBanque.getRow(rowNum)
       const idRaw = row.getCell(14).value
       const id = typeof idRaw === 'number' ? idRaw : parseInt(String(idRaw ?? ''), 10)
