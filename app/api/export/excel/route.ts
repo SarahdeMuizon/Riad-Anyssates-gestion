@@ -199,13 +199,15 @@ export async function GET() {
  
     // ── 4 indicateurs de solde (formules auditables, pointent vers les onglets bruts) ──
     // COFFRE affiche le plus récent en haut (ligne 2) : c'est donc là que se
-    // trouve le solde courant. BANQUE a son Solde initial fixe en ligne 2, donc
-    // le mouvement le plus récent (le solde courant) se trouve juste en dessous,
-    // en ligne 3. FOND DE CAISSE reste trié du plus ancien au plus récent, donc
-    // son solde courant reste en bas.
+    // trouve le solde courant. BANQUE : chaque ligne Théorique/Réel reprend la
+    // ligne du dessus (formule simple, comme la colonne homologue de
+    // FOND DE CAISSE), donc le solde total cumulé exact ne se trouve qu'en
+    // toute dernière ligne (la plus ancienne chronologiquement). FOND DE CAISSE
+    // reste trié du plus ancien au plus récent, donc son solde courant reste en bas.
+    const bankKpiRow = 2 + bankMoves.length
     kpiCard(wsTdb, 1, 4, 'COFFRE — SOLDE DHS', `'COFFRE'!H2`, C_GOLD_BG)
     kpiCard(wsTdb, 3, 4, 'COFFRE — SOLDE €', `'COFFRE'!L2`, C_GOLD_BG)
-    kpiCard(wsTdb, 5, 4, 'BANQUE — SOLDE MAD', `'BANQUE'!J3`, TAB_BLUE)
+    kpiCard(wsTdb, 5, 4, 'BANQUE — SOLDE MAD', `'BANQUE'!J${bankKpiRow}`, TAB_BLUE)
     kpiCard(wsTdb, 7, 4, 'FOND DE CAISSE — SOLDE DHS', `'FOND DE CAISSE'!J${lastFondsRow}`, TAB_RED)
  
     // ── Synthèse par mois (Entrées / Charges / Résultat) ──────────────────────
@@ -469,13 +471,12 @@ export async function GET() {
       row.eachCell(c => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEF2FF' } } })
     }
  
-    const bankOldestRow = 2 + bankMoves.length // dernière ligne = mouvement le plus ancien
+    const bankOldestRow = 2 + bankMoves.length // dernière ligne = mouvement le plus ancien ; c'est là que se trouve le vrai solde total cumulé
     const bankMovesDesc = [...bankMoves].reverse()
  
     bankMovesDesc.forEach((e, idx) => {
       const row = wsSoldes.addRow({})
       const rowNum = row.number
-      const isOldest = rowNum === bankOldestRow
       row.height = ROW_H
       const dateStr = (e.date as string).slice(0, 10)
       const mois = formatMois(dateStr)
@@ -502,12 +503,12 @@ export async function GET() {
         sc.alignment = { horizontal: 'right' }
       }
  
-      // Théorique — formule Excel (auditable) : théorique de la ligne du dessous
-      // (chronologiquement antérieure) + Entrée de cette ligne − Sortie de cette
-      // ligne, sauf pour la ligne la plus ancienne qui repart directement du
-      // Solde initial fixe (ligne 2)
+      // Théorique — formule Excel (auditable) : théorique de la ligne du dessus
+      // + Entrée de cette ligne − Sortie de cette ligne (même logique tout du
+      // long, y compris pour la toute dernière ligne). Le solde total cumulé
+      // exact ne se retrouve donc qu'en tout dernière ligne (ligne bankOldestRow).
       const thC = row.getCell(10)
-      thC.value = { formula: isOldest ? `J2+I${rowNum}-H${rowNum}` : `J${rowNum + 1}+I${rowNum}-H${rowNum}` }
+      thC.value = { formula: `J${rowNum - 1}+I${rowNum}-H${rowNum}` }
       thC.numFmt = '#,##0.00'
       thC.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF3730A3' } }
       thC.alignment = { horizontal: 'right' }
@@ -522,7 +523,7 @@ export async function GET() {
  
       // Réel — solde cumulé (vers le bas) ne comptant que les lignes pointées
       const reC = row.getCell(12)
-      reC.value = { formula: isOldest ? `L2+IF(K${rowNum}="✓",I${rowNum}-H${rowNum},0)` : `L${rowNum + 1}+IF(K${rowNum}="✓",I${rowNum}-H${rowNum},0)` }
+      reC.value = { formula: `L${rowNum - 1}+IF(K${rowNum}="✓",I${rowNum}-H${rowNum},0)` }
       reC.numFmt = '#,##0.00'
       reC.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF3730A3' } }
       reC.alignment = { horizontal: 'right' }
