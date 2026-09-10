@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     const updates: { id: number; pointed: boolean }[] = []
     for (let rowNum = 4; rowNum <= wsBanque.rowCount; rowNum++) {
       const row = wsBanque.getRow(rowNum)
-      const idRaw = row.getCell(12).value
+      const idRaw = row.getCell(13).value
       const id = typeof idRaw === 'number' ? idRaw : parseInt(String(idRaw ?? ''), 10)
       if (!Number.isFinite(id) || id <= 0) continue // ligne vide ou colonne ID manquante (fichier non conforme)
  
