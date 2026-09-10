@@ -260,7 +260,7 @@ function DashboardTab() {
  
 // ─── Entries Tab ───────────────────────────────────────────────────────────────
  
-const DEPENSES_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Radeema','Divers']
+const DEPENSES_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Radeema','Impôts','Divers']
  
 interface InvoiceData {
   date: string; amount: number; amountTransaction?: number
@@ -320,7 +320,7 @@ function generateInvoice(entry: InvoiceData) {
   const w = window.open('','_blank')
   if (w) { w.document.write(html); w.document.close() }
 }
-const ENCAISSEMENTS_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Radeema','Divers']
+const ENCAISSEMENTS_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Radeema','Impôts','Divers']
 const PAYMENT_MODES = ['CB', 'Virement', 'Chèque', 'Espèces']
 const CURRENCIES = ['MAD', 'EUR']
  
@@ -1288,7 +1288,7 @@ function BanqueTab() {
  
 // ─── Coffre Fort Tab ──────────────────────────────────────────────────────────
  
-const COFFRE_CATEGORIES = ['Client', 'Commission', 'Administratif', 'Nourriture', 'Spa', 'Prestataire', 'Salaire', 'Maroc Telecom', 'Travaux', 'Divers']
+const COFFRE_CATEGORIES = ['Client', 'Commission', 'Administratif', 'Nourriture', 'Spa', 'Prestataire', 'Salaire', 'Maroc Telecom', 'Travaux', 'Impôts', 'Divers']
  
 interface CoffreEntry {
   id: number
@@ -1810,6 +1810,10 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
   const [resetModal, setResetModal] = useState(false)
   const [resetEntriesModal, setResetEntriesModal] = useState(false)
   const [resetEntriesLoading, setResetEntriesLoading] = useState(false)
+  const [importBanqueModal, setImportBanqueModal] = useState(false)
+  const [importBanqueLoading, setImportBanqueLoading] = useState(false)
+  const [importBanqueMsg, setImportBanqueMsg] = useState('')
+  const [importBanqueError, setImportBanqueError] = useState('')
   const [excelFile, setExcelFile] = useState<File | null>(null)
   const [excelUploading, setExcelUploading] = useState(false)
   const [excelMsg, setExcelMsg] = useState('')
@@ -1861,6 +1865,20 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
     setResetEntriesLoading(false)
     setResetEntriesModal(false)
     window.location.reload()
+  }
+ 
+  async function importBanque2026() {
+    setImportBanqueLoading(true); setImportBanqueMsg(''); setImportBanqueError('')
+    const r = await fetch('/api/settings/import-banque-2026', { method: 'POST' })
+    if (r.ok) {
+      const d = await r.json()
+      setImportBanqueMsg(`✓ ${d.inserted} lignes importées, solde initial fixé à ${d.soldeInitial.toLocaleString('fr-FR')} MAD.`)
+      setImportBanqueModal(false)
+    } else {
+      const d = await r.json().catch(() => ({}))
+      setImportBanqueError(d.error || 'Erreur lors de l\'import.')
+    }
+    setImportBanqueLoading(false)
   }
  
   return (
@@ -1917,6 +1935,26 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
           <button className="btn-primary" type="submit">Enregistrer</button>
         </form>
       </div>
+      <div className="card" style={{ maxWidth: 420, marginBottom: '1.5rem', borderLeft: '4px solid #6366F1' }}>
+        <h3 style={{ fontWeight: 700, marginBottom: '0.5rem', color: '#6366F1' }}>Importer l&apos;historique BANQUE 2026</h3>
+        <p style={{ fontSize: '0.875rem', color: '#888', marginBottom: '1rem' }}>Import ponctuel des 705 mouvements du relevé banque (nov. 2025 → sept. 2026) fournis par Valérie, avec le solde initial correspondant. À ne déclencher qu&apos;une seule fois — relancer dupliquerait toutes les lignes.</p>
+        <button style={{ background: '#6366F1', color: 'white', border: 'none', borderRadius: '0.5rem', padding: '0.5rem 1.25rem', cursor: 'pointer', fontWeight: 600 }} onClick={() => setImportBanqueModal(true)}>Importer les 705 lignes</button>
+        {importBanqueMsg && <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--green)', fontWeight: 600 }}>{importBanqueMsg}</p>}
+        {importBanqueError && <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--red)', fontWeight: 600 }}>{importBanqueError}</p>}
+      </div>
+      {importBanqueModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+          <div className="card" style={{ maxWidth: 380, width: '90%', textAlign: 'center' }}>
+            <p style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem', color: '#6366F1' }}>Importer l&apos;historique BANQUE 2026</p>
+            <p style={{ fontSize: '0.875rem', color: '#888', marginBottom: '1.5rem' }}>705 mouvements seront ajoutés aux Dépenses/Encaissements et le solde bancaire initial sera fixé à 138 704,39 MAD. Ne clique qu&apos;une seule fois : relancer l&apos;import dupliquerait toutes les lignes.</p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button className="btn-secondary" onClick={() => setImportBanqueModal(false)} disabled={importBanqueLoading}>Annuler</button>
+              <button className="btn-primary" style={{ background: '#6366F1' }} onClick={importBanque2026} disabled={importBanqueLoading}>{importBanqueLoading ? 'Import…' : 'Importer'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+ 
       <div className="card" style={{ maxWidth: 420, marginBottom: '1.5rem', borderLeft: '4px solid var(--red)' }}>
         <h3 style={{ fontWeight: 700, marginBottom: '0.5rem', color: 'var(--red)' }}>Vider les entrées</h3>
         <p style={{ fontSize: '0.875rem', color: '#888', marginBottom: '1rem' }}>Supprime toutes les Encaissements, Dépenses, entrées de Fond de caisse et de Coffre. Les employés, le PIN et les soldes de départ ne sont pas touchés.</p>
