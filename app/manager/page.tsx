@@ -347,6 +347,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [fSupplier, setFSupplier] = useState('')
   const [fPayment, setFPayment] = useState('CB')
   const [fDescription, setFDescription] = useState('')
+  const [fReference, setFReference] = useState('')
   const [fFile, setFFile] = useState<File | null>(null)
   const [fFilePreview, setFFilePreview] = useState<string | null>(null)
   const [fUploading, setFUploading] = useState(false)
@@ -398,6 +399,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       setFDate(new Date().toISOString().split('T')[0])
       setFTransactionAmount('')
       setFCardType('amex')
+      setFReference('')
     }
   }, [showForm, type])
  
@@ -551,7 +553,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       ? parseFloat(fTransactionAmount) - cbCommission - cbTva
       : parseFloat(fAmount)
  
-    const body: Record<string, unknown> = { type, date: fDate, employee_name: fEmployee, category: fCategory, amount: finalAmount, currency: fCurrency, description: fDescription || null, invoice_url }
+    const body: Record<string, unknown> = { type, date: fDate, employee_name: fEmployee, category: fCategory, amount: finalAmount, currency: fCurrency, description: fDescription || null, invoice_url, reference: fReference || null }
     if (type === 'cb') {
       body.supplier = fSupplier || null
       body.payment = fPayment
@@ -580,7 +582,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
         if (type === 'cash') setFLastEntry(invoiceEntry)
         setFAmount(''); setFAmountHT(''); setFTvaRate(''); setFSupplier(''); setFDescription('')
         setFFile(null); setFFilePreview(null); setFExtracted(false); setShowForm(false)
-        setFTransactionAmount(''); setFClientName('')
+        setFTransactionAmount(''); setFClientName(''); setFReference('')
         setFilterStatus(''); setFilterEmployee('')
         setFormSuccess('✓ Entrée ajoutée avec succès !')
         setTimeout(() => setFormSuccess(''), 4000)
@@ -772,6 +774,14 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
               </div>
             </div>
  
+            {/* N° de chèque / facture */}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                {fPayment === 'Chèque' ? 'N° de chèque' : 'N° de facture'}
+              </label>
+              <input className="form-input" value={fReference} onChange={e => setFReference(e.target.value)} placeholder={fPayment === 'Chèque' ? 'Ex : 1234567' : 'Ex : FA-2026-045'} />
+            </div>
+ 
             {/* Nom du client (pour encaissements) */}
             {type === 'cash' && (
               <div>
@@ -813,6 +823,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
               <tr>
                 <th>Date</th><th>Employé</th><th>Catégorie</th>
                 {type === 'cb' && <><th>Fournisseur</th><th>Paiement</th></>}
+                <th>Réf.</th>
                 <th>Devise</th><th>Montant</th>
                 <th>Justificatif</th>
                 <th>Statut</th><th>Actions</th>
@@ -825,6 +836,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                   <td>{e.employee_name}</td>
                   <td>{e.category}</td>
                   {type === 'cb' && <><td>{e.supplier || '—'}</td><td>{e.payment || '—'}</td></>}
+                  <td style={{ fontSize: '0.8rem', color: '#666' }}>{e.reference || '—'}</td>
                   <td><span style={{ fontWeight: 600, fontSize: '0.8rem', background: '#F3F4F6', padding: '0.15rem 0.4rem', borderRadius: '0.3rem' }}>{(e.currency as string) || 'MAD'}</span></td>
                   <td style={{ fontWeight: 600, color }}>{fmt(Number(e.amount))}</td>
                   <td>
@@ -1217,7 +1229,7 @@ function BanqueTab() {
         <div style={{ overflowX: 'auto' }}>
           <table>
             <thead>
-              <tr><th>Date</th><th>Sens</th><th>Catégorie</th><th>Mode</th><th>Montant</th><th>Pointé</th></tr>
+              <tr><th>Date</th><th>Sens</th><th>Catégorie</th><th>Mode</th><th>Réf.</th><th>Montant</th><th>Pointé</th></tr>
             </thead>
             <tbody>
               {[...bankEntries].sort((a, b) => b.date.localeCompare(a.date)).map(e => (
@@ -1226,6 +1238,7 @@ function BanqueTab() {
                   <td style={{ color: e.type === 'cash' ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>{e.type === 'cash' ? '↑ Encaissement' : '↓ Dépense'}</td>
                   <td>{e.category}</td>
                   <td>{e.payment}</td>
+                  <td style={{ fontSize: '0.8rem', color: '#666' }}>{e.reference || '—'}</td>
                   <td style={{ fontWeight: 600, color: e.type === 'cash' ? 'var(--green)' : 'var(--red)' }}>{e.type === 'cash' ? '+' : '-'}{fmt(Number(e.amount))}</td>
                   <td style={{ textAlign: 'center' }}>
                     <input
