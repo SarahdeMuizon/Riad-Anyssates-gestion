@@ -1288,7 +1288,7 @@ function BanqueTab() {
  
 // ─── Coffre Fort Tab ──────────────────────────────────────────────────────────
  
-const COFFRE_CATEGORIES = ['Client', 'Commission', 'Administratif', 'Nourriture', 'Spa', 'Prestataire', 'Salaire', 'Maroc Telecom', 'Travaux', 'Impôts', 'Divers']
+const COFFRE_CATEGORIES = ['Client', 'Commission', 'Administratif', 'Nourriture', 'Spa', 'Prestataire', 'Salaire', 'Maroc Telecom', 'Travaux', 'Impôts', 'Change', 'Caisse rouge', 'Entretien', 'Livraison mob', 'Alcool', 'Divers']
  
 interface CoffreEntry {
   id: number
@@ -1814,6 +1814,10 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
   const [importBanqueLoading, setImportBanqueLoading] = useState(false)
   const [importBanqueMsg, setImportBanqueMsg] = useState('')
   const [importBanqueError, setImportBanqueError] = useState('')
+  const [importCoffreModal, setImportCoffreModal] = useState(false)
+  const [importCoffreLoading, setImportCoffreLoading] = useState(false)
+  const [importCoffreMsg, setImportCoffreMsg] = useState('')
+  const [importCoffreError, setImportCoffreError] = useState('')
   const [excelFile, setExcelFile] = useState<File | null>(null)
   const [excelUploading, setExcelUploading] = useState(false)
   const [excelMsg, setExcelMsg] = useState('')
@@ -1879,6 +1883,20 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
       setImportBanqueError(d.error || 'Erreur lors de l\'import.')
     }
     setImportBanqueLoading(false)
+  }
+ 
+  async function importCoffre2026() {
+    setImportCoffreLoading(true); setImportCoffreMsg(''); setImportCoffreError('')
+    const r = await fetch('/api/settings/import-coffre-2026', { method: 'POST' })
+    if (r.ok) {
+      const d = await r.json()
+      setImportCoffreMsg(`✓ ${d.inserted} lignes importées dans le Coffre-fort.`)
+      setImportCoffreModal(false)
+    } else {
+      const d = await r.json().catch(() => ({}))
+      setImportCoffreError(d.error || 'Erreur lors de l\'import.')
+    }
+    setImportCoffreLoading(false)
   }
  
   return (
@@ -1950,6 +1968,26 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
               <button className="btn-secondary" onClick={() => setImportBanqueModal(false)} disabled={importBanqueLoading}>Annuler</button>
               <button className="btn-primary" style={{ background: '#6366F1' }} onClick={importBanque2026} disabled={importBanqueLoading}>{importBanqueLoading ? 'Import…' : 'Importer'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+ 
+      <div className="card" style={{ maxWidth: 420, marginBottom: '1.5rem', borderLeft: '4px solid #0D9488' }}>
+        <h3 style={{ fontWeight: 700, marginBottom: '0.5rem', color: '#0D9488' }}>Importer l&apos;historique Coffre-fort 2025-2026</h3>
+        <p style={{ fontSize: '0.875rem', color: '#888', marginBottom: '1rem' }}>Import ponctuel des 623 mouvements du cahier &quot;caisse rouge&quot; (janv. 2025 → août 2026) fournis par Valérie. Nouvelles catégories ajoutées pour l&apos;occasion : Change, Caisse rouge, Entretien, Livraison mob, Alcool — les retraits banque et les sorties perso Valérie sont classés en Divers. À ne déclencher qu&apos;une seule fois — relancer dupliquerait toutes les lignes.</p>
+        <button style={{ background: '#0D9488', color: 'white', border: 'none', borderRadius: '0.5rem', padding: '0.5rem 1.25rem', cursor: 'pointer', fontWeight: 600 }} onClick={() => setImportCoffreModal(true)}>Importer les 623 lignes</button>
+        {importCoffreMsg && <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--green)', fontWeight: 600 }}>{importCoffreMsg}</p>}
+        {importCoffreError && <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--red)', fontWeight: 600 }}>{importCoffreError}</p>}
+      </div>
+      {importCoffreModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+          <div className="card" style={{ maxWidth: 380, width: '90%', textAlign: 'center' }}>
+            <p style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem', color: '#0D9488' }}>Importer l&apos;historique Coffre-fort 2025-2026</p>
+            <p style={{ fontSize: '0.875rem', color: '#888', marginBottom: '1.5rem' }}>623 mouvements seront ajoutés au Coffre-fort (solde de départ de 4 769,00 MAD du 01/01/2025 inclus). Ne clique qu&apos;une seule fois : relancer l&apos;import dupliquerait toutes les lignes.</p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button className="btn-secondary" onClick={() => setImportCoffreModal(false)} disabled={importCoffreLoading}>Annuler</button>
+              <button className="btn-primary" style={{ background: '#0D9488' }} onClick={importCoffre2026} disabled={importCoffreLoading}>{importCoffreLoading ? 'Import…' : 'Importer'}</button>
             </div>
           </div>
         </div>
