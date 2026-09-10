@@ -3,21 +3,21 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import type { Entry, FondsEntry } from '@/types'
 import { Suspense } from 'react'
-
+ 
 const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-
-const DEPENSES_CATEGORIES = ['Alimentation/Courses','Fournitures & bureautique','Entretien & maintenance','Transport','Restauration','Pharmacie/Hygiène','Décoration & fleurs','Autre']
-const ENCAISSEMENTS_CATEGORIES = ['Boissons bar','Repas/Restauration','Activité/Excursion','Service spa/Hammam','Transfert/Transport','Pourboire collectif','Autre encaissement']
-const FONDS_CATEGORIES = ['Courses/Marché','Entretien','Personnel','Transport','Pourboire','Recette cash','Remboursement','Autre']
+ 
+const DEPENSES_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Radeema','Divers']
+const ENCAISSEMENTS_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Radeema','Divers']
+const FONDS_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Salaire','Maroc Telecom','Travaux','Divers']
 const PAYMENT_MODES = ['CB', 'Virement', 'Chèque', 'Espèces']
 const CURRENCIES = ['MAD', 'EUR']
-
+ 
 interface InvoiceData {
   date: string; amount: number; amountTransaction?: number
   currency: string; category: string; description: string
   clientName: string; tvaRate: number; nuits: number; personnes: number; payment: string
 }
-
+ 
 function generateInvoice(entry: InvoiceData) {
   const invoiceAmount = entry.amountTransaction ?? entry.amount
   const tvaFrac = entry.tvaRate / (100 + entry.tvaRate)
@@ -74,18 +74,18 @@ function generateInvoice(entry: InvoiceData) {
   const w = window.open('','_blank')
   if (w) { w.document.write(html); w.document.close() }
 }
-
+ 
 type Tab = 'cb' | 'cash' | 'fonds' | 'history'
-
+ 
 interface EmployeeInfo { id: number; name: string; poste: string }
-
+ 
 function EmployeeApp() {
   const searchParams = useSearchParams()
   const token = searchParams.get('emp')
   const [employee, setEmployee] = useState<EmployeeInfo | null>(null)
   const [authError, setAuthError] = useState('')
   const [tab, setTab] = useState<Tab>('cb')
-
+ 
   useEffect(() => {
     if (!token) { setAuthError('Lien invalide.'); return }
     fetch(`/api/employees/verify?token=${token}`)
@@ -93,7 +93,7 @@ function EmployeeApp() {
       .then(data => { if (data.error) setAuthError(data.error); else setEmployee(data) })
       .catch(() => setAuthError('Erreur de connexion.'))
   }, [token])
-
+ 
   if (authError) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
       <div className="card" style={{ textAlign: 'center', maxWidth: 320 }}>
@@ -103,20 +103,20 @@ function EmployeeApp() {
       </div>
     </div>
   )
-
+ 
   if (!employee) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ color: 'var(--terracotta)' }}>Chargement…</div>
     </div>
   )
-
+ 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'cb', label: '💳 Dépense' },
     { id: 'cash', label: '💵 Encaissement' },
     { id: 'fonds', label: '💰 Fond de caisse' },
     { id: 'history', label: '📋 Mon historique' },
   ]
-
+ 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <header style={{ background: 'var(--terracotta)', color: 'white', padding: '0 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 56 }}>
@@ -139,11 +139,11 @@ function EmployeeApp() {
     </div>
   )
 }
-
+ 
 // ─── Dépense Form (with mandatory invoice upload + split) ─────────────────────
-
+ 
 interface SplitLine { id: number; category: string; amount: string }
-
+ 
 function DepenseForm({ token }: { token: string }) {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [amount, setAmount] = useState('')
@@ -165,7 +165,7 @@ function DepenseForm({ token }: { token: string }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const dropZoneRef = useRef<HTMLDivElement>(null)
   const processInvoiceFileRef = useRef<(f: File) => void>((_f: File) => {})
-
+ 
   // Split feature
   const [splitMode, setSplitMode] = useState(false)
   const [splitLines, setSplitLines] = useState<SplitLine[]>([
@@ -176,7 +176,7 @@ function DepenseForm({ token }: { token: string }) {
   const ticketTotal = parseFloat(amount) || 0
   const splitDiff = Math.abs(ticketTotal - splitTotal)
   const splitValid = ticketTotal > 0 && splitDiff < 0.01 && splitLines.every(l => parseFloat(l.amount) > 0)
-
+ 
   function addSplitLine() {
     setSplitLines(prev => [...prev, { id: Date.now(), category: DEPENSES_CATEGORIES[0], amount: '' }])
   }
@@ -186,7 +186,7 @@ function DepenseForm({ token }: { token: string }) {
   function updateSplitLine(id: number, field: 'category' | 'amount', value: string) {
     setSplitLines(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l))
   }
-
+ 
   async function processInvoiceFile(f: File) {
     setInvoiceFile(f)
     if (f.type.startsWith('image/')) setInvoicePreview(URL.createObjectURL(f))
@@ -219,9 +219,9 @@ function DepenseForm({ token }: { token: string }) {
     } catch { /* silent */ }
     setExtracting(false)
   }
-
+ 
   processInvoiceFileRef.current = processInvoiceFile
-
+ 
   useEffect(() => {
     const el = dropZoneRef.current
     if (!el) return
@@ -246,12 +246,12 @@ function DepenseForm({ token }: { token: string }) {
       el.removeEventListener('drop', onDrop)
     }
   }, [])
-
+ 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
     if (f) processInvoiceFile(f)
   }
-
+ 
   async function fileToBase64(file: File): Promise<string> {
     if (file.type.startsWith('image/')) {
       return new Promise((resolve, reject) => {
@@ -278,14 +278,14 @@ function DepenseForm({ token }: { token: string }) {
       reader.readAsDataURL(file)
     })
   }
-
+ 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(''); setSuccess('')
-
+ 
     if (!invoiceFile && payment !== 'Espèces') { setError('La facture est obligatoire.'); return }
     if (splitMode && !splitValid) { setError(`La somme des lignes (${fmt(splitTotal)}) doit égaler le total du ticket (${amount}).`); return }
-
+ 
     let invoice_url: string | undefined
     if (invoiceFile) {
       setUploading(true)
@@ -298,7 +298,7 @@ function DepenseForm({ token }: { token: string }) {
       setUploading(false)
     }
     setSubmitting(true)
-
+ 
     try {
       if (splitMode) {
         // Create one entry per split line
@@ -334,7 +334,7 @@ function DepenseForm({ token }: { token: string }) {
     } catch { setError('Erreur de connexion.') }
     setSubmitting(false)
   }
-
+ 
   return (
     <div className="card">
       <h2 style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '1.25rem', color: 'var(--terracotta)' }}>💳 Nouvelle dépense</h2>
@@ -343,7 +343,7 @@ function DepenseForm({ token }: { token: string }) {
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Date *</label>
           <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
         </div>
-
+ 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Montant HT</label>
@@ -368,7 +368,7 @@ function DepenseForm({ token }: { token: string }) {
             <input className="form-input" type="number" step="0.01" min="0" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" required />
           </div>
         </div>
-
+ 
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Devise</label>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -377,12 +377,12 @@ function DepenseForm({ token }: { token: string }) {
             ))}
           </div>
         </div>
-
+ 
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Fournisseur / Lieu</label>
           <input className="form-input" value={supplier} onChange={e => setSupplier(e.target.value)} placeholder="Nom du fournisseur" />
         </div>
-
+ 
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Mode de paiement</label>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -391,12 +391,12 @@ function DepenseForm({ token }: { token: string }) {
             ))}
           </div>
         </div>
-
+ 
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Description</label>
           <textarea className="form-input" rows={2} value={description} onChange={e => setDescription(e.target.value)} placeholder="Notes optionnelles…" />
         </div>
-
+ 
         {/* Split ticket toggle */}
         <div style={{ background: '#FFF5F0', border: '1px solid #FDDCCA', borderRadius: '0.5rem', padding: '0.75rem' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', userSelect: 'none' }}>
@@ -426,7 +426,7 @@ function DepenseForm({ token }: { token: string }) {
             </div>
           )}
         </div>
-
+ 
         {!splitMode && (
           <div>
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Catégorie *</label>
@@ -435,7 +435,7 @@ function DepenseForm({ token }: { token: string }) {
             </select>
           </div>
         )}
-
+ 
         {/* Mandatory invoice upload */}
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
@@ -476,11 +476,11 @@ function DepenseForm({ token }: { token: string }) {
           </div>
           <input ref={fileRef} type="file" accept="image/*,application/pdf" onChange={handleFile} style={{ display: 'none' }} />
         </div>
-
+ 
         {extracting && <p style={{ color: '#888', fontSize: '0.8rem', textAlign: 'center' }}>🤖 Extraction IA en cours…</p>}
         {error && <p style={{ color: 'var(--red)', fontSize: '0.875rem' }}>{error}</p>}
         {success && <p style={{ color: 'var(--green)', fontSize: '0.875rem', fontWeight: 600 }}>{success}</p>}
-
+ 
         <button className="btn-primary" type="submit" disabled={uploading || submitting || extracting}>
           {extracting ? '🤖 Analyse facture…' : uploading ? '⬆️ Upload facture…' : submitting ? 'Envoi…' : 'Soumettre'}
         </button>
@@ -488,9 +488,9 @@ function DepenseForm({ token }: { token: string }) {
     </div>
   )
 }
-
+ 
 // ─── Encaissement Form ─────────────────────────────────────────────────────────
-
+ 
 function EncaissementForm({ token }: { token: string }) {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [amount, setAmount] = useState('')
@@ -512,7 +512,7 @@ function EncaissementForm({ token }: { token: string }) {
   const ticketRef = useRef<HTMLInputElement>(null)
   const ticketDropZoneRef = useRef<HTMLDivElement>(null)
   const processTicketFileRef = useRef<(f: File) => void>((_f: File) => {})
-
+ 
   async function processTicketFile(f: File) {
     setTicketFile(f)
     if (f.type.startsWith('image/')) setTicketPreview(URL.createObjectURL(f))
@@ -541,9 +541,9 @@ function EncaissementForm({ token }: { token: string }) {
     } catch { /* silent */ }
     setExtracting(false)
   }
-
+ 
   processTicketFileRef.current = processTicketFile
-
+ 
   useEffect(() => {
     const el = ticketDropZoneRef.current
     if (!el) return
@@ -568,12 +568,12 @@ function EncaissementForm({ token }: { token: string }) {
       el.removeEventListener('drop', onDrop)
     }
   }, [])
-
+ 
   function handleTicket(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
     if (f) processTicketFile(f)
   }
-
+ 
   async function fileToBase64(file: File): Promise<string> {
     if (file.type.startsWith('image/')) {
       return new Promise((resolve, reject) => {
@@ -600,18 +600,18 @@ function EncaissementForm({ token }: { token: string }) {
       reader.readAsDataURL(file)
     })
   }
-
+ 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(''); setSuccess('')
-
+ 
     // For CB: use net amount (after 3% fees); for Espèces: use direct amount
     const finalAmount = payment === 'CB' && transactionAmount
       ? parseFloat(transactionAmount) * 0.97
       : parseFloat(amount)
     if (!finalAmount || isNaN(finalAmount)) { setError('Veuillez saisir un montant.'); return }
     if (!ticketFile && payment !== 'Espèces') { setError('Le ticket est obligatoire.'); return }
-
+ 
     let invoice_url: string | undefined
     if (ticketFile) {
       setUploading(true)
@@ -619,11 +619,11 @@ function EncaissementForm({ token }: { token: string }) {
       catch (err) { setError((err as Error).message || 'Erreur traitement ticket.'); setUploading(false); return }
       setUploading(false)
     }
-
+ 
     const extraFields = payment === 'CB' && transactionAmount
       ? { amount_ht: parseFloat(transactionAmount), tva_rate: 3 }
       : {}
-
+ 
     const invoiceEntry: InvoiceData = {
       date, amount: finalAmount,
       amountTransaction: payment === 'CB' && transactionAmount ? parseFloat(transactionAmount) : undefined,
@@ -631,7 +631,7 @@ function EncaissementForm({ token }: { token: string }) {
       clientName: clientName || '', tvaRate: 0,
       nuits: 0, personnes: 0, payment,
     }
-
+ 
     setSubmitting(true)
     try {
       const r = await fetch('/api/entries', {
@@ -651,12 +651,12 @@ function EncaissementForm({ token }: { token: string }) {
     } catch { setError('Erreur de connexion.') }
     setSubmitting(false)
   }
-
+ 
   return (
     <div className="card">
       <h2 style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '1.25rem', color: 'var(--green)' }}>💵 Nouvel encaissement</h2>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-
+ 
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Mode de paiement *</label>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -667,12 +667,12 @@ function EncaissementForm({ token }: { token: string }) {
             ))}
           </div>
         </div>
-
+ 
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Date *</label>
           <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
         </div>
-
+ 
         {payment === 'CB' ? (
           <div style={{ background: '#F0FDF4', border: '1px solid #86efac', borderRadius: '0.5rem', padding: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
             <div>
@@ -700,7 +700,7 @@ function EncaissementForm({ token }: { token: string }) {
             <input className="form-input" type="number" step="0.01" min="0" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" required />
           </div>
         )}
-
+ 
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Devise</label>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -709,24 +709,24 @@ function EncaissementForm({ token }: { token: string }) {
             ))}
           </div>
         </div>
-
+ 
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Catégorie *</label>
           <select className="form-input" value={category} onChange={e => setCategory(e.target.value)}>
             {ENCAISSEMENTS_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
-
+ 
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Nom du client</label>
           <input className="form-input" type="text" value={clientName} onChange={e => setClientName(e.target.value)} placeholder="(optionnel)" />
         </div>
-
+ 
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Description</label>
           <textarea className="form-input" rows={2} value={description} onChange={e => setDescription(e.target.value)} placeholder="Notes optionnelles…" />
         </div>
-
+ 
         {/* Ticket upload */}
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
@@ -767,7 +767,7 @@ function EncaissementForm({ token }: { token: string }) {
           </div>
           <input ref={ticketRef} type="file" accept="image/*,application/pdf" onChange={handleTicket} style={{ display: 'none' }} />
         </div>
-
+ 
         {error && <p style={{ color: 'var(--red)', fontSize: '0.875rem' }}>{error}</p>}
         {success && (
           <div>
@@ -779,7 +779,7 @@ function EncaissementForm({ token }: { token: string }) {
             )}
           </div>
         )}
-
+ 
         <button className="btn-primary" type="submit" disabled={uploading || submitting || extracting} style={{ background: 'var(--green)' }}>
           {extracting ? '🤖 Analyse ticket…' : uploading ? '⬆️ Upload ticket…' : submitting ? 'Envoi…' : 'Soumettre'}
         </button>
@@ -787,9 +787,9 @@ function EncaissementForm({ token }: { token: string }) {
     </div>
   )
 }
-
+ 
 // ─── Fond de caisse (automatique) ─────────────────────────────────────────────
-
+ 
 function FondsCaisse({ token }: { token: string }) {
   const [entries, setEntries] = useState<Entry[]>([])
   const [fondsEntries, setFondsEntries] = useState<FondsEntry[]>([])
@@ -798,7 +798,7 @@ function FondsCaisse({ token }: { token: string }) {
   const [compteEUR, setCompteEUR] = useState('')
   const [remiseLoading, setRemiseLoading] = useState(false)
   const [msg, setMsg] = useState('')
-
+ 
   const fetchData = useCallback(async () => {
     setLoading(true)
     const [r1, r2] = await Promise.all([
@@ -810,11 +810,11 @@ function FondsCaisse({ token }: { token: string }) {
     setFondsEntries(Array.isArray(f) ? f : [])
     setLoading(false)
   }, [token])
-
+ 
   useEffect(() => { fetchData() }, [fetchData])
-
+ 
   const TARGET_MAD = 3000, TARGET_EUR = 100
-
+ 
   // Balance = dotation journalière (3000 MAD / 100 EUR) + encaissements Espèces - dépenses Espèces + ajustements fonds
   const balanceMAD = useMemo(() => {
     let b = TARGET_MAD
@@ -831,7 +831,7 @@ function FondsCaisse({ token }: { token: string }) {
     })
     return b
   }, [entries, fondsEntries])
-
+ 
   const balanceEUR = useMemo(() => {
     let b = TARGET_EUR
     entries.forEach(e => {
@@ -846,15 +846,15 @@ function FondsCaisse({ token }: { token: string }) {
     })
     return b
   }, [entries, fondsEntries])
-
+ 
   // Rapprochement
   const diffMAD = compteMAD !== '' ? parseFloat(compteMAD) - balanceMAD : null
   const diffEUR = compteEUR !== '' ? parseFloat(compteEUR) - balanceEUR : null
-
+ 
   // Remise au fond
   const excessMAD = Math.max(0, balanceMAD - TARGET_MAD)
   const excessEUR = Math.max(0, balanceEUR - TARGET_EUR)
-
+ 
   async function handleRemise() {
     setRemiseLoading(true); setMsg('')
     const today = new Date().toISOString().split('T')[0]
@@ -868,9 +868,9 @@ function FondsCaisse({ token }: { token: string }) {
     } catch { setMsg('Erreur lors de la remise.') }
     setRemiseLoading(false)
   }
-
+ 
   if (loading) return <div className="card" style={{ textAlign: 'center', color: '#888' }}>Chargement…</div>
-
+ 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       {/* Solde actuel */}
@@ -886,7 +886,7 @@ function FondsCaisse({ token }: { token: string }) {
           ))}
         </div>
       </div>
-
+ 
       {/* Rapprochement */}
       <div className="card">
         <h2 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.5rem', color: '#6366F1' }}>🔍 Rapprochement caisse</h2>
@@ -918,7 +918,7 @@ function FondsCaisse({ token }: { token: string }) {
           </div>
         )}
       </div>
-
+ 
       {/* Remise en coffre (Nicolas) */}
       <div className="card">
         <h2 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.5rem', color: '#6366F1' }}>🔒 Remise en coffre</h2>
@@ -939,15 +939,15 @@ function FondsCaisse({ token }: { token: string }) {
     </div>
   )
 }
-
+ 
 // ─── History ───────────────────────────────────────────────────────────────────
-
+ 
 function EmployeeHistory({ token }: { token: string }) {
   const [entries, setEntries] = useState<Entry[]>([])
   const [fondsEntries, setFondsEntries] = useState<FondsEntry[]>([])
   const [activeSection, setActiveSection] = useState<'entries' | 'fonds'>('entries')
   const [loading, setLoading] = useState(true)
-
+ 
   const fetchHistory = useCallback(async () => {
     const [entriesR, fondsR] = await Promise.all([
       fetch(`/api/entries?token=${token}`),
@@ -957,20 +957,20 @@ function EmployeeHistory({ token }: { token: string }) {
     setFondsEntries(await fondsR.json())
     setLoading(false)
   }, [token])
-
+ 
   useEffect(() => { fetchHistory() }, [fetchHistory])
-
+ 
   if (loading) return <p>Chargement…</p>
-
+ 
   return (
     <div>
       <h2 style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.75rem', color: 'var(--terracotta)' }}>📋 Mon historique</h2>
-
+ 
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
         <button onClick={() => setActiveSection('entries')} style={{ padding: '0.4rem 0.9rem', border: 'none', borderRadius: '0.5rem', background: activeSection === 'entries' ? 'var(--terracotta)' : '#EDE0D6', color: activeSection === 'entries' ? 'white' : 'var(--text)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>Dépenses & Encaissements</button>
         <button onClick={() => setActiveSection('fonds')} style={{ padding: '0.4rem 0.9rem', border: 'none', borderRadius: '0.5rem', background: activeSection === 'fonds' ? '#6366F1' : '#EEF2FF', color: activeSection === 'fonds' ? 'white' : '#6366F1', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>Fond de caisse</button>
       </div>
-
+ 
       {activeSection === 'entries' && (
         entries.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>Aucune entrée pour le moment.</div>
@@ -998,7 +998,7 @@ function EmployeeHistory({ token }: { token: string }) {
           </div>
         )
       )}
-
+ 
       {activeSection === 'fonds' && (
         fondsEntries.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>Aucun mouvement de fonds.</div>
@@ -1026,7 +1026,7 @@ function EmployeeHistory({ token }: { token: string }) {
     </div>
   )
 }
-
+ 
 export default function EmployeePage() {
   return (
     <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>Chargement…</div>}>
@@ -1034,3 +1034,4 @@ export default function EmployeePage() {
     </Suspense>
   )
 }
+ 
