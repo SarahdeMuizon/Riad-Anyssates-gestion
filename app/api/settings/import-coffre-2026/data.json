@@ -1,0 +1,5611 @@
+{
+  "entries": [
+    {
+      "date": "2025-01-01",
+      "direction": "in",
+      "amount": 4769,
+      "category": "Divers",
+      "description": "REPORT 2025",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-01",
+      "direction": "out",
+      "amount": 1000,
+      "category": "Salaire",
+      "description": "Salaire 12/2025 Tarik ND",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-01",
+      "direction": "out",
+      "amount": 500,
+      "category": "Salaire",
+      "description": "Salaire 12/2025 Mohamed",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-01",
+      "direction": "out",
+      "amount": 500,
+      "category": "Salaire",
+      "description": "Salaire 12/2025 Zakaria",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-01",
+      "direction": "out",
+      "amount": 1050,
+      "category": "Change",
+      "description": "Change Tournay",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-01",
+      "direction": "out",
+      "amount": 343,
+      "category": "Divers",
+      "description": "CORRECTION",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-02",
+      "direction": "out",
+      "amount": 200,
+      "category": "Salaire",
+      "description": "Salaire 01/2026 essai 2 filles 1j",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-02",
+      "direction": "out",
+      "amount": 100,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-02",
+      "direction": "out",
+      "amount": 45,
+      "category": "Divers",
+      "description": "Ficelle, corde, fil de fer, sauce tomate",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-02",
+      "direction": "in",
+      "amount": 5000,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-02",
+      "direction": "out",
+      "amount": 100,
+      "category": "Salaire",
+      "description": "Salaire 01/2026 essai Naima 1j",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-02",
+      "direction": "in",
+      "amount": 14300,
+      "category": "Client",
+      "description": "Paiement MOROCCO DUNES TOURS",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-03",
+      "direction": "out",
+      "amount": 600,
+      "category": "Divers",
+      "description": "4 Boîtes en noyer pour thé anglais - reste (avance 200)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-03",
+      "direction": "in",
+      "amount": 420,
+      "category": "Client",
+      "description": "Paiement GAILLARD",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-03",
+      "direction": "out",
+      "amount": 1050,
+      "category": "Change",
+      "description": "Change Brusseaux",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-03",
+      "direction": "out",
+      "amount": 100,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-03",
+      "direction": "out",
+      "amount": 150,
+      "category": "Prestataire",
+      "description": "Azzeddine fiches police 12/2025",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-03",
+      "direction": "out",
+      "amount": 240,
+      "category": "Divers",
+      "description": "Parking 2 mob 01/2026",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-04",
+      "direction": "out",
+      "amount": 630,
+      "category": "Change",
+      "description": "Change Tournay",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-04",
+      "direction": "out",
+      "amount": 200,
+      "category": "Salaire",
+      "description": "Salaire 01/2026 Imane (avance)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-04",
+      "direction": "out",
+      "amount": 2000,
+      "category": "Salaire",
+      "description": "Salaire 12/2025 Tarik (prime)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-05",
+      "direction": "out",
+      "amount": 30,
+      "category": "Livraison mob",
+      "description": "Essence Mob",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-07",
+      "direction": "out",
+      "amount": 53,
+      "category": "Client",
+      "description": "Paiement GONZALEZ",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-07",
+      "direction": "out",
+      "amount": 200,
+      "category": "Entretien",
+      "description": "Abdelatif plombier - passage vérif pb chauffe-eau vers 25/11 et réparation prise élec cuisine pipi de chat",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-07",
+      "direction": "out",
+      "amount": 20,
+      "category": "Client",
+      "description": "Paiement STAVELOT",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-08",
+      "direction": "out",
+      "amount": 100,
+      "category": "Spa",
+      "description": "Gants hammam",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-08",
+      "direction": "out",
+      "amount": 100,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-08",
+      "direction": "in",
+      "amount": 1450,
+      "category": "Client",
+      "description": "Paiement BLAKE",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-09",
+      "direction": "out",
+      "amount": 3000,
+      "category": "Administratif",
+      "description": "Bakchich attestation d'hygiène",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-09",
+      "direction": "out",
+      "amount": 30,
+      "category": "Administratif",
+      "description": "Frais administratifs fiche anthropométrique",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-09",
+      "direction": "out",
+      "amount": 20,
+      "category": "Administratif",
+      "description": "Extrait de casier judiciaire Tarik",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-09",
+      "direction": "out",
+      "amount": 10,
+      "category": "Livraison mob",
+      "description": "Gardiens administrations",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-09",
+      "direction": "in",
+      "amount": 3500,
+      "category": "Client",
+      "description": "Paiement GIFTCI",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-09",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-09",
+      "direction": "out",
+      "amount": 200,
+      "category": "Salaire",
+      "description": "Salaire 12/2025 Fahida",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-12",
+      "direction": "out",
+      "amount": 7900,
+      "category": "Divers",
+      "description": "Table en travertin ( reste 4500+2100 2plateaaux + 1300 consol)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-13",
+      "direction": "out",
+      "amount": 758,
+      "category": "Entretien",
+      "description": "Abderrahim entrepreneur - entretien 4 chauffe-eau (700) & matos (58)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-13",
+      "direction": "out",
+      "amount": 1620,
+      "category": "Change",
+      "description": "Change Abderrahim",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-14",
+      "direction": "out",
+      "amount": 420,
+      "category": "Entretien",
+      "description": "Abderrahim entrepreneur - matériel : remplacement coudes \"T\" tuyauterie chauffe-eau",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-14",
+      "direction": "in",
+      "amount": 50,
+      "category": "Divers",
+      "description": "Pot commun correction caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-15",
+      "direction": "out",
+      "amount": 1000,
+      "category": "Divers",
+      "description": "Bakchich hygiène",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-15",
+      "direction": "out",
+      "amount": 130,
+      "category": "Divers",
+      "description": "photocopies plans & frais administratifs",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-15",
+      "direction": "out",
+      "amount": 200,
+      "category": "Entretien",
+      "description": "Lahcen informaticien - réparationpanne WiFi caméras",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-16",
+      "direction": "out",
+      "amount": 900,
+      "category": "Prestataire",
+      "description": "Par NDT quad double et dîner Agafay 2pax 6/1 Gonzalez",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-17",
+      "direction": "out",
+      "amount": 100,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-20",
+      "direction": "out",
+      "amount": 432,
+      "category": "Administratif",
+      "description": "Tarik trajet AR et frais extrait acte naissance",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-21",
+      "direction": "out",
+      "amount": 100,
+      "category": "Livraison mob",
+      "description": "Dégagement coupe bougainvillier & palmier",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-21",
+      "direction": "out",
+      "amount": 1000,
+      "category": "Entretien",
+      "description": "Mohamed jardinier pro - coupe bougainvillie & palmier",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-21",
+      "direction": "out",
+      "amount": 100,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-21",
+      "direction": "in",
+      "amount": 5000,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-22",
+      "direction": "in",
+      "amount": 600,
+      "category": "Client",
+      "description": "Paiement vente FB Cécile 2 tables de chevet indonésienne",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-22",
+      "direction": "out",
+      "amount": 600,
+      "category": "Divers",
+      "description": "Appliques Bab Khemis",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-22",
+      "direction": "in",
+      "amount": 550,
+      "category": "Client",
+      "description": "Paiement vente FB Béatrice 2 photophores sur pied et 5 tabourets cuir",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-22",
+      "direction": "in",
+      "amount": 1550,
+      "category": "Client",
+      "description": "Paiement vente FB Alice les 2 fauteuils d'Ariane, miroir Ariane, 1 table motif moucharabieh",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-22",
+      "direction": "out",
+      "amount": 60,
+      "category": "Livraison mob",
+      "description": "Tarik essence",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-22",
+      "direction": "in",
+      "amount": 50,
+      "category": "Client",
+      "description": "Paiement GOMES",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-23",
+      "direction": "in",
+      "amount": 600,
+      "category": "Client",
+      "description": "Paiement vente FB Malika 2 lampes de chevet pied lumineux (Anyssates)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-23",
+      "direction": "in",
+      "amount": 3140,
+      "category": "Client",
+      "description": "Paiement vente FB Michel (plein de trucs)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-23",
+      "direction": "out",
+      "amount": 200,
+      "category": "Entretien",
+      "description": "Abderrahim entrepreneur - enlèvement et installation appliques Anyssates",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-23",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-24",
+      "direction": "out",
+      "amount": 4250,
+      "category": "Travaux",
+      "description": "Zellij (4100) et transport (150)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-24",
+      "direction": "in",
+      "amount": 5000,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-24",
+      "direction": "in",
+      "amount": 600,
+      "category": "Client",
+      "description": "Paiement vente FB Karine lampes champignon",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-24",
+      "direction": "out",
+      "amount": 20,
+      "category": "Livraison mob",
+      "description": "Tarik essence",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-24",
+      "direction": "out",
+      "amount": 50,
+      "category": "Divers",
+      "description": "Zellij",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-24",
+      "direction": "out",
+      "amount": 10,
+      "category": "Divers",
+      "description": "Tarikt tel recharge ?",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-25",
+      "direction": "out",
+      "amount": 300,
+      "category": "Entretien",
+      "description": "Kamal plombier - fuite Joséphine",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-25",
+      "direction": "out",
+      "amount": 100,
+      "category": "Client",
+      "description": "MONTERO VERDU",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-26",
+      "direction": "in",
+      "amount": 1460,
+      "category": "Client",
+      "description": "Paiement GHERARDI",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-26",
+      "direction": "out",
+      "amount": 2000,
+      "category": "Travaux",
+      "description": "Plâtrier - avance travaux Ariane/Cannelle",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-26",
+      "direction": "out",
+      "amount": 3000,
+      "category": "Travaux",
+      "description": "Abderrahim-Maçon Avance travaux",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-26",
+      "direction": "out",
+      "amount": 2450,
+      "category": "Divers",
+      "description": "Sortie Valérie",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-26",
+      "direction": "in",
+      "amount": 3600,
+      "category": "Client",
+      "description": "Paiement vente FB Michel Cleret encore plein de trucs",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-26",
+      "direction": "in",
+      "amount": 180,
+      "category": "Commission",
+      "description": "Com visite guidée 1/2j Pritulin (Naima)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-26",
+      "direction": "out",
+      "amount": 1400,
+      "category": "Divers",
+      "description": "Portes de Bab Khemis (1200 portes, 200 ponçage)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-26",
+      "direction": "out",
+      "amount": 80,
+      "category": "Divers",
+      "description": "Livraison portes",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-26",
+      "direction": "out",
+      "amount": 575,
+      "category": "Entretien",
+      "description": "Lahcen informaticien - remplacement caméra cuisine",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-26",
+      "direction": "out",
+      "amount": 200,
+      "category": "Nourriture",
+      "description": "Kefta",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-26",
+      "direction": "out",
+      "amount": 100,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-26",
+      "direction": "out",
+      "amount": 3900,
+      "category": "Travaux",
+      "description": "Ceramica Italiana - Cuvette toilettes",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-26",
+      "direction": "out",
+      "amount": 1600,
+      "category": "Travaux",
+      "description": "Mécanisme toilettes",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-26",
+      "direction": "out",
+      "amount": 200,
+      "category": "Livraison mob",
+      "description": "Voiture Essence",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-27",
+      "direction": "out",
+      "amount": 40,
+      "category": "Administratif",
+      "description": "Muqataa - copies certifiées conformes pour alcool",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-27",
+      "direction": "out",
+      "amount": 2,
+      "category": "Livraison mob",
+      "description": "Gardien muqataa",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-27",
+      "direction": "in",
+      "amount": 10000,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-27",
+      "direction": "out",
+      "amount": 5000,
+      "category": "Travaux",
+      "description": "Hamid noyer - avance",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-27",
+      "direction": "out",
+      "amount": 100,
+      "category": "Livraison mob",
+      "description": "Livraison robinetterie Alliance Sanitaire",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-27",
+      "direction": "out",
+      "amount": 1000,
+      "category": "Travaux",
+      "description": "Abderrahim entrepreneur - avance matériel électrique",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-27",
+      "direction": "out",
+      "amount": 176.5,
+      "category": "Divers",
+      "description": "Cahiers du Riad : Caise rouge x1, liaison x1, bar x1",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-28",
+      "direction": "out",
+      "amount": 30,
+      "category": "Livraison mob",
+      "description": "Carossa Aswak",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-28",
+      "direction": "out",
+      "amount": 120,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-28",
+      "direction": "out",
+      "amount": 30,
+      "category": "Livraison mob",
+      "description": "Essence Mob",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-28",
+      "direction": "out",
+      "amount": 26,
+      "category": "Nourriture",
+      "description": "Pâtes, thon",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-28",
+      "direction": "out",
+      "amount": 6,
+      "category": "Livraison mob",
+      "description": "Gardien mob",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-28",
+      "direction": "out",
+      "amount": 10,
+      "category": "Livraison mob",
+      "description": "Gardien",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-28",
+      "direction": "in",
+      "amount": 10000,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-28",
+      "direction": "out",
+      "amount": 300,
+      "category": "Divers",
+      "description": "Bois de cheminée",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-28",
+      "direction": "out",
+      "amount": 70,
+      "category": "Livraison mob",
+      "description": "Livraison bois cheminée",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-28",
+      "direction": "out",
+      "amount": 100,
+      "category": "Divers",
+      "description": "Mohamed Azali vitrier - Miroir pour cadre bois",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-28",
+      "direction": "out",
+      "amount": 5180,
+      "category": "Travaux",
+      "description": "Abderrahim entrepreneur - complément travaux Cannelle / Ariane",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-29",
+      "direction": "in",
+      "amount": 410,
+      "category": "Client",
+      "description": "Paiement GOBES",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-29",
+      "direction": "in",
+      "amount": 5000,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-29",
+      "direction": "out",
+      "amount": 1507,
+      "category": "Alcool",
+      "description": "Victoria : 6 Eclipse RG (env 155), 6 Petit Clos RS (env 55), 6 Kasbah RS (env 40)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-29",
+      "direction": "out",
+      "amount": 650,
+      "category": "Divers",
+      "description": "9 petits bols en noyer pour sdb",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-30",
+      "direction": "out",
+      "amount": 400,
+      "category": "Travaux",
+      "description": "Saïd peintre - pour Ariane enduit",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-30",
+      "direction": "out",
+      "amount": 30,
+      "category": "Livraison mob",
+      "description": "Lhima carossa Aswak",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-30",
+      "direction": "out",
+      "amount": 3900,
+      "category": "Travaux",
+      "description": "Solutions Carrelages Marrakech - toilettes Genova suspendues blanc mat",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-30",
+      "direction": "out",
+      "amount": 40,
+      "category": "Livraison mob",
+      "description": "Essence Mob",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-30",
+      "direction": "out",
+      "amount": 100,
+      "category": "Travaux",
+      "description": "Saïd peintre - Ariane avance",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-30",
+      "direction": "out",
+      "amount": 3500,
+      "category": "Travaux",
+      "description": "Plâtrier Lahcen - Reste Ariane",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-30",
+      "direction": "in",
+      "amount": 5000,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-30",
+      "direction": "out",
+      "amount": 2400,
+      "category": "Alcool",
+      "description": "Victoria : 24 Casa et 12 Eclipse RG (plus 10 Dhs de caisse rouge)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-30",
+      "direction": "out",
+      "amount": 100,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-31",
+      "direction": "out",
+      "amount": 2000,
+      "category": "Divers",
+      "description": "Sortie Jérôme",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-31",
+      "direction": "out",
+      "amount": 500,
+      "category": "Salaire",
+      "description": "Salaire 01/2026 Fahida",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-31",
+      "direction": "out",
+      "amount": 3000,
+      "category": "Salaire",
+      "description": "Salaire 01/2026 Tarik",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-31",
+      "direction": "out",
+      "amount": 500,
+      "category": "Salaire",
+      "description": "Salaire 01/2026 Mohamed",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-31",
+      "direction": "out",
+      "amount": 500,
+      "category": "Salaire",
+      "description": "Salaire 01/2026 Zakaria",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-31",
+      "direction": "in",
+      "amount": 10000,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-31",
+      "direction": "out",
+      "amount": 1930,
+      "category": "Alcool",
+      "description": "Victoria : 48 Casa, 6 Dom Sah Rés Rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-01-31",
+      "direction": "out",
+      "amount": 50,
+      "category": "Travaux",
+      "description": "Saïd peintre - pour enduit Ariane",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-01",
+      "direction": "out",
+      "amount": 100,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-02",
+      "direction": "out",
+      "amount": 2500,
+      "category": "Travaux",
+      "description": "Jamal et Marwane Electriciens d'Abderrahim",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-02",
+      "direction": "out",
+      "amount": 200,
+      "category": "Travaux",
+      "description": "Saïd peintre - pour Ariane",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-02",
+      "direction": "out",
+      "amount": 400,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-02",
+      "direction": "in",
+      "amount": 17000,
+      "category": "Client",
+      "description": "Paiement AMIS VIC & ARIANE",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-02",
+      "direction": "out",
+      "amount": 200,
+      "category": "Divers",
+      "description": "Etiquettes pour clés 50 Dhs, cordes pour appliques 150",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-02",
+      "direction": "out",
+      "amount": 100,
+      "category": "Travaux",
+      "description": "Saïd peintre - peinture Ariane",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-02",
+      "direction": "out",
+      "amount": 200,
+      "category": "Divers",
+      "description": "Jamal & Marwane bons électriciens d'Abderrahim - complément de 2200 de Valérie ? Pour total 2700",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-02",
+      "direction": "out",
+      "amount": 30,
+      "category": "Livraison mob",
+      "description": "Taxi Zakari comptable AR",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-02",
+      "direction": "out",
+      "amount": 200,
+      "category": "Travaux",
+      "description": "Saïd peintre - 2e avance travail Ariane (& Cannelle ?)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-03",
+      "direction": "out",
+      "amount": 800,
+      "category": "Divers",
+      "description": "Sortie Valérie",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-03",
+      "direction": "out",
+      "amount": 1500,
+      "category": "Administratif",
+      "description": "Frais dépôt/enregistrement dossier demande attestation hygiène",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-03",
+      "direction": "out",
+      "amount": 100,
+      "category": "Administratif",
+      "description": "Frais administratifs attestation d'hygiène",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-03",
+      "direction": "out",
+      "amount": 450,
+      "category": "Travaux",
+      "description": "Boutons toilettes chambre Cannelle",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-03",
+      "direction": "out",
+      "amount": 150,
+      "category": "Administratif",
+      "description": "Azzeddine fiches police 01/2026",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-03",
+      "direction": "in",
+      "amount": 500,
+      "category": "Client",
+      "description": "Paiement vente FB - Béatrice grand pot tadelakt, lanterne terre cuite terrasse",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-03",
+      "direction": "out",
+      "amount": 100,
+      "category": "Travaux",
+      "description": "Saïd peintre - pour peinture plafond Cannelle",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-03",
+      "direction": "in",
+      "amount": 350,
+      "category": "Commission",
+      "description": "Commissions visite guidée 1/2j McSweeney (Hassan via Safi)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-03",
+      "direction": "out",
+      "amount": 800,
+      "category": "Salaire",
+      "description": "Salaire 01/2026 Imane extra 7j (déduit 200 d'avance 04/01)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-03",
+      "direction": "out",
+      "amount": 150,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-03",
+      "direction": "in",
+      "amount": 200,
+      "category": "Client",
+      "description": "Paiement McSWEENEY",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-03",
+      "direction": "out",
+      "amount": 5000,
+      "category": "Travaux",
+      "description": "Hamid noyer - reste sommier (8400), plaques pour niches (1200), plaques pour noms chambres (600)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-03",
+      "direction": "out",
+      "amount": 1000,
+      "category": "Travaux",
+      "description": "Saïd peintre - reste travail Ariane & Cannelle",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-03",
+      "direction": "out",
+      "amount": 200,
+      "category": "Travaux",
+      "description": "Khalid aide peintre Saïd - compensation mauvaise paye par Saïd (a du s'être perdu dans les calculs, sous-estimer)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-03",
+      "direction": "out",
+      "amount": 320,
+      "category": "Divers",
+      "description": "Livraison Bombay indien",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-03",
+      "direction": "out",
+      "amount": 50,
+      "category": "Livraison mob",
+      "description": "Lhima carossa Aswak",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-03",
+      "direction": "out",
+      "amount": 1500,
+      "category": "Travaux",
+      "description": "Jamal & Marwane bons électriciens d'Abderrahim - reste électricité Ariane",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-03",
+      "direction": "out",
+      "amount": 1200,
+      "category": "Divers",
+      "description": "Mohktar tapis - tapis",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-04",
+      "direction": "out",
+      "amount": 200,
+      "category": "Nourriture",
+      "description": "Souks - Dinde",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-04",
+      "direction": "out",
+      "amount": 50,
+      "category": "Livraison mob",
+      "description": "Carossa chaises réparation par Redouane tissu",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-04",
+      "direction": "in",
+      "amount": 240,
+      "category": "Commission",
+      "description": "Commissions MQP quad drom 01/2026",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-04",
+      "direction": "out",
+      "amount": 120,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-04",
+      "direction": "out",
+      "amount": 240,
+      "category": "Divers",
+      "description": "Parking 2 mob 02/2026",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-04",
+      "direction": "out",
+      "amount": 200,
+      "category": "Divers",
+      "description": "Bakchich hygiène",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-04",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-05",
+      "direction": "out",
+      "amount": 3500,
+      "category": "Nourriture",
+      "description": "Khadija briouattes - 280 pièces de briouattes et pastilla",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-06",
+      "direction": "in",
+      "amount": 657,
+      "category": "Divers",
+      "description": "CORRECTION",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-06",
+      "direction": "in",
+      "amount": 15,
+      "category": "Divers",
+      "description": "Pot commun pour correction caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-06",
+      "direction": "out",
+      "amount": 1300,
+      "category": "Travaux",
+      "description": "Console travertin Ariane",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-06",
+      "direction": "out",
+      "amount": 2300,
+      "category": "Divers",
+      "description": "Console travertin pour France",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-06",
+      "direction": "out",
+      "amount": 120,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-07",
+      "direction": "in",
+      "amount": 1660,
+      "category": "Client",
+      "description": "Paiement LEMPERRIERE",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-09",
+      "direction": "out",
+      "amount": 25,
+      "category": "Divers",
+      "description": "Cahier de police",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-09",
+      "direction": "out",
+      "amount": 13,
+      "category": "Divers",
+      "description": "Doliprane",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-09",
+      "direction": "out",
+      "amount": 20,
+      "category": "Livraison mob",
+      "description": "Essence Mob",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-09",
+      "direction": "out",
+      "amount": 180,
+      "category": "Divers",
+      "description": "Sacs poubelle tissu blanc chambre",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-09",
+      "direction": "out",
+      "amount": 20,
+      "category": "Livraison mob",
+      "description": "Partie de carossa Aswak",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-09",
+      "direction": "out",
+      "amount": 100,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-10",
+      "direction": "out",
+      "amount": 150,
+      "category": "Divers",
+      "description": "Feuillets transparents pour dossiers licence alcool",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-10",
+      "direction": "out",
+      "amount": 200,
+      "category": "Administratif",
+      "description": "Compensation Ilham muqataa pour être restée plus tard et légaliser demande licence",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-10",
+      "direction": "out",
+      "amount": 20,
+      "category": "Divers",
+      "description": "Recharge tel Tarik",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-10",
+      "direction": "out",
+      "amount": 25,
+      "category": "Livraison mob",
+      "description": "Tarik essence",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-10",
+      "direction": "in",
+      "amount": 1500,
+      "category": "Client",
+      "description": "Paiement INNAMORATO",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-11",
+      "direction": "out",
+      "amount": 120,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-12",
+      "direction": "out",
+      "amount": 1000,
+      "category": "Administratif",
+      "description": "Pour Moqdem travaux Ariane Cannelle",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-12",
+      "direction": "out",
+      "amount": 1060,
+      "category": "Change",
+      "description": "Change Gozum",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-13",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-14",
+      "direction": "out",
+      "amount": 435,
+      "category": "Divers",
+      "description": "CORRECTION",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-14",
+      "direction": "out",
+      "amount": 1060,
+      "category": "Change",
+      "description": "Change Gozum",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-14",
+      "direction": "in",
+      "amount": 1200,
+      "category": "Client",
+      "description": "Paiement IUCULANO",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-14",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-15",
+      "direction": "out",
+      "amount": 150,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-16",
+      "direction": "in",
+      "amount": 3100,
+      "category": "Client",
+      "description": "Paiement ATASOY",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-16",
+      "direction": "in",
+      "amount": 1450,
+      "category": "Client",
+      "description": "Paiement IUCULANO",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-16",
+      "direction": "in",
+      "amount": 791,
+      "category": "Client",
+      "description": "Paiement MUMBACH",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-16",
+      "direction": "out",
+      "amount": 20,
+      "category": "Divers",
+      "description": "Balayeurs derb",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-16",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-16",
+      "direction": "in",
+      "amount": 689,
+      "category": "Client",
+      "description": "Paiement VAN DER HEIJDEN",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-18",
+      "direction": "out",
+      "amount": 100,
+      "category": "Divers",
+      "description": "Aqua 6",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-18",
+      "direction": "out",
+      "amount": 150,
+      "category": "Divers",
+      "description": "Lavage tapis",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-18",
+      "direction": "in",
+      "amount": 5000,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-18",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-18",
+      "direction": "out",
+      "amount": 280,
+      "category": "Divers",
+      "description": "Fahida pantalon (130) et mocassins (150)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-19",
+      "direction": "in",
+      "amount": 700,
+      "category": "Client",
+      "description": "Paiement HUMMEL ANTUNANO (rendu 53 caisse rouge ?)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-20",
+      "direction": "in",
+      "amount": 443,
+      "category": "Commission",
+      "description": "Com Jardins Lotus",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-20",
+      "direction": "out",
+      "amount": 500,
+      "category": "Divers",
+      "description": "Lahcen informaticien - activation IPTV et intervention",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-20",
+      "direction": "in",
+      "amount": 1800,
+      "category": "Client",
+      "description": "Paiement GERARD",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-20",
+      "direction": "out",
+      "amount": 237.5,
+      "category": "Divers",
+      "description": "Chichaoua Gaz - 5 butanes",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-20",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-21",
+      "direction": "in",
+      "amount": 380,
+      "category": "Client",
+      "description": "Paiement MARVANNE",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-21",
+      "direction": "in",
+      "amount": 220,
+      "category": "Client",
+      "description": "Paiement BISHOP",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-21",
+      "direction": "out",
+      "amount": 500,
+      "category": "Entretien",
+      "description": "Tailleur Yousra (vers Riad Laarous) - avance sur 5 nouvelles tenues des filles (total 1500)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-21",
+      "direction": "in",
+      "amount": 60,
+      "category": "Divers",
+      "description": "Pot commun pour correction caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-21",
+      "direction": "in",
+      "amount": 178,
+      "category": "Divers",
+      "description": "CORRECTION",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-21",
+      "direction": "in",
+      "amount": 50,
+      "category": "Client",
+      "description": "Paiement Brun Justine",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-22",
+      "direction": "in",
+      "amount": 220,
+      "category": "Client",
+      "description": "Paiement Ruis Sabrina",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-22",
+      "direction": "in",
+      "amount": 125,
+      "category": "Client",
+      "description": "Paiement Beaufort",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-24",
+      "direction": "out",
+      "amount": 180,
+      "category": "Nourriture",
+      "description": "Monchos",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-24",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-24",
+      "direction": "in",
+      "amount": 2400,
+      "category": "Client",
+      "description": "Paiement  JOHSON LETICIA",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-24",
+      "direction": "in",
+      "amount": 1520,
+      "category": "Client",
+      "description": "Paiement BARBE ALICE",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-26",
+      "direction": "in",
+      "amount": 1260,
+      "category": "Client",
+      "description": "Paiement TOULMONDE",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-26",
+      "direction": "out",
+      "amount": 30,
+      "category": "Client",
+      "description": "Paiement MARTINEZ CHLOE",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-26",
+      "direction": "out",
+      "amount": 400,
+      "category": "Entretien",
+      "description": "Electricien Jamal ( colone josé/ les prises agafay/vic/terrasse",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-26",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-27",
+      "direction": "in",
+      "amount": 105,
+      "category": "Client",
+      "description": "Paiement JULIEN",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-27",
+      "direction": "out",
+      "amount": 1000,
+      "category": "Travaux",
+      "description": "Avance platrier chambre cannelle",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-28",
+      "direction": "out",
+      "amount": 200,
+      "category": "Divers",
+      "description": "Cour de cuisine clients victoire",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-28",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-28",
+      "direction": "out",
+      "amount": 100,
+      "category": "Divers",
+      "description": "Livraison chaises salon",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-28",
+      "direction": "in",
+      "amount": 1100,
+      "category": "Client",
+      "description": "Paiement clients exterieur 2massage 1h",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-02-28",
+      "direction": "in",
+      "amount": 1080,
+      "category": "Client",
+      "description": "Paiement THOMAS RHODES",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-02",
+      "direction": "out",
+      "amount": 2000,
+      "category": "Divers",
+      "description": "Hamid Noyer - 4 chaises remplacement cuir par tissu",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-03",
+      "direction": "out",
+      "amount": 22.5,
+      "category": "Travaux",
+      "description": "Electriciens Jamal & Marwane - div matos pour Cannelle",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-03",
+      "direction": "out",
+      "amount": 70,
+      "category": "Divers",
+      "description": "Applique-corde",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-03",
+      "direction": "out",
+      "amount": 150,
+      "category": "Prestataire",
+      "description": "Azzeddine fiches police 02/2026",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-03",
+      "direction": "out",
+      "amount": 250,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-03",
+      "direction": "in",
+      "amount": 2000,
+      "category": "Client",
+      "description": "Paiement Vente FB - Michel Cleret commode Cannelle, Ariane 4 appliques carrées, 2 appliques rondes",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-03",
+      "direction": "out",
+      "amount": 200,
+      "category": "Travaux",
+      "description": "Saïd peintre - Avance travail Cannelle & Ariane",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-03",
+      "direction": "out",
+      "amount": 40,
+      "category": "Client",
+      "description": "Paiement HISS",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-03",
+      "direction": "out",
+      "amount": 900,
+      "category": "Divers",
+      "description": "Redouane tissus - rideaux, suspension, div Valérie",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-03",
+      "direction": "out",
+      "amount": 650,
+      "category": "Divers",
+      "description": "Redouane tissus - Réhoussage 2 fauteuils du salon",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-04",
+      "direction": "in",
+      "amount": 10000,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-04",
+      "direction": "out",
+      "amount": 190,
+      "category": "Divers",
+      "description": "Chaussures pour Meriyeme",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-04",
+      "direction": "out",
+      "amount": 122.5,
+      "category": "Divers",
+      "description": "Droguerie",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-04",
+      "direction": "out",
+      "amount": 3000,
+      "category": "Travaux",
+      "description": "Lahcen plâtrier - travaille Cannelle",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-04",
+      "direction": "out",
+      "amount": 3000,
+      "category": "Salaire",
+      "description": "Salaire 02/2026 Tarik",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-04",
+      "direction": "out",
+      "amount": 500,
+      "category": "Salaire",
+      "description": "Salaire 02/2026 Fahida",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-04",
+      "direction": "out",
+      "amount": 500,
+      "category": "Salaire",
+      "description": "Salaire 02/2026 Mohamed",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-04",
+      "direction": "out",
+      "amount": 500,
+      "category": "Salaire",
+      "description": "Salaire 02/2026 Zakaria",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-05",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-05",
+      "direction": "out",
+      "amount": 80,
+      "category": "Divers",
+      "description": "Marwane et Jamal bons électriciens - div matos pour blocs de secours (lumières exit)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-05",
+      "direction": "out",
+      "amount": 20,
+      "category": "Livraison mob",
+      "description": "Transport matériel Fath",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-05",
+      "direction": "out",
+      "amount": 300,
+      "category": "Travaux",
+      "description": "Abderrahman Carreleur - arrangement Zellij Cannelle suite réinstallation douche/mitigeur",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-05",
+      "direction": "out",
+      "amount": 420,
+      "category": "Livraison mob",
+      "description": "Parking 3 mob et 60 Dhs Zakaria",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-05",
+      "direction": "out",
+      "amount": 200,
+      "category": "Travaux",
+      "description": "Saïd peintre - 2e Avance travail Cannelle & Ariane",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-05",
+      "direction": "out",
+      "amount": 1500,
+      "category": "Travaux",
+      "description": "Marwane et Jamal bons électriciens - Avance travail Ariane & Cannelle",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-06",
+      "direction": "out",
+      "amount": 2500,
+      "category": "Divers",
+      "description": "Pour meuble Anyssates (3000, corrigé -500 suite comptes Valérie 09/03)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-06",
+      "direction": "out",
+      "amount": 300,
+      "category": "Divers",
+      "description": "Bois de cheminée 150kg",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-06",
+      "direction": "out",
+      "amount": 70,
+      "category": "Livraison mob",
+      "description": "Livraison bois de cheminée",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-06",
+      "direction": "in",
+      "amount": 5000,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-06",
+      "direction": "out",
+      "amount": 500,
+      "category": "Administratif",
+      "description": "Frais d'affichage de licence d'alcool",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-06",
+      "direction": "out",
+      "amount": 700,
+      "category": "Travaux",
+      "description": "Marwane & Jamal bons électriciens - reste travail Cannelle, Ariane, blocs secours, RIA",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-07",
+      "direction": "out",
+      "amount": 1200,
+      "category": "Travaux",
+      "description": "Saïd peintre - reste travail Ariane & Cannelle et divers",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-07",
+      "direction": "in",
+      "amount": 400,
+      "category": "Client",
+      "description": "Paiement JACKSON",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-07",
+      "direction": "in",
+      "amount": 1800,
+      "category": "Client",
+      "description": "Paiement HAMRIN",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-09",
+      "direction": "out",
+      "amount": 600,
+      "category": "Salaire",
+      "description": "Salaire 02/2026 Khaoula (5j)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-09",
+      "direction": "out",
+      "amount": 840,
+      "category": "Salaire",
+      "description": "Salaire 02/2026 Halima (7j)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-09",
+      "direction": "in",
+      "amount": 80,
+      "category": "Client",
+      "description": "Paiement NAGASE",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-09",
+      "direction": "in",
+      "amount": 2000,
+      "category": "Client",
+      "description": "Paiement KEMP",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-09",
+      "direction": "in",
+      "amount": 800,
+      "category": "Client",
+      "description": "Paiement ANTONELLI",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-09",
+      "direction": "out",
+      "amount": 1200,
+      "category": "Divers",
+      "description": "Tapis Cannelle",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-09",
+      "direction": "out",
+      "amount": 1700,
+      "category": "Divers",
+      "description": "Etagère Anyssates",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-09",
+      "direction": "out",
+      "amount": 1000,
+      "category": "Divers",
+      "description": "Acompte chaise",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-09",
+      "direction": "out",
+      "amount": 4400,
+      "category": "Divers",
+      "description": "Prêt Caroline Richard",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-09",
+      "direction": "out",
+      "amount": 1300,
+      "category": "Divers",
+      "description": "Deco Bottega",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-09",
+      "direction": "out",
+      "amount": 300,
+      "category": "Divers",
+      "description": "Plaid vert pour France",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-09",
+      "direction": "out",
+      "amount": 600,
+      "category": "Divers",
+      "description": "Clopes pour Jérôme",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-09",
+      "direction": "in",
+      "amount": 10,
+      "category": "Divers",
+      "description": "CORRECTION",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-09",
+      "direction": "out",
+      "amount": 150,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-09",
+      "direction": "in",
+      "amount": 50,
+      "category": "Divers",
+      "description": "Pot commun pour correction caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-09",
+      "direction": "out",
+      "amount": 500,
+      "category": "Divers",
+      "description": "Nico fleurs Max",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-09",
+      "direction": "out",
+      "amount": 260,
+      "category": "Divers",
+      "description": "2 polo col roulé (pour Laila & Zineb)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-09",
+      "direction": "out",
+      "amount": 200,
+      "category": "Divers",
+      "description": "Sacs poubelle tissu blanc chambre",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-10",
+      "direction": "out",
+      "amount": 2000,
+      "category": "Divers",
+      "description": "Bakchich commission hygiène",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-11",
+      "direction": "out",
+      "amount": 1000,
+      "category": "Divers",
+      "description": "Tailleur Yousra (vers Riad Laarous) - reste pour 5 nouvelles tenues des filles (total 1500)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-11",
+      "direction": "out",
+      "amount": 130,
+      "category": "Divers",
+      "description": "Pull col roulé pour Meriyeme",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-11",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-11",
+      "direction": "out",
+      "amount": 120,
+      "category": "Salaire",
+      "description": "Salaire 02/2026 Imane (essai 1j)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-11",
+      "direction": "out",
+      "amount": 580,
+      "category": "Commission",
+      "description": "Jawad commission résa Mathieu 21-24/03 550€)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-11",
+      "direction": "out",
+      "amount": 50,
+      "category": "Livraison mob",
+      "description": "Livraison 2 derniers fauteuils réhoussés velours rouge/rose par Redouane",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-13",
+      "direction": "out",
+      "amount": 70,
+      "category": "Client",
+      "description": "Paiement PLEIJHUIS",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-13",
+      "direction": "out",
+      "amount": 1000,
+      "category": "Divers",
+      "description": "Bakchich Moqadem (merci général)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-13",
+      "direction": "out",
+      "amount": 150,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-14",
+      "direction": "in",
+      "amount": 300,
+      "category": "Commission",
+      "description": "Com visite guidée 1/2j Petrova (Hassan via Safi)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-14",
+      "direction": "out",
+      "amount": 1300,
+      "category": "Divers",
+      "description": "Redouane tissus - 2 coussins (FR) et 2 fauteuils",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-14",
+      "direction": "out",
+      "amount": 53,
+      "category": "Client",
+      "description": "Paiement PETROVA",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-14",
+      "direction": "out",
+      "amount": 120,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-16",
+      "direction": "in",
+      "amount": 50,
+      "category": "Client",
+      "description": "Paiement HOPPE",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-16",
+      "direction": "in",
+      "amount": 80,
+      "category": "Client",
+      "description": "Paiement SUWIWATCHAI",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-16",
+      "direction": "out",
+      "amount": 100,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-16",
+      "direction": "in",
+      "amount": 5000,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-17",
+      "direction": "out",
+      "amount": 30,
+      "category": "Livraison mob",
+      "description": "Carossa Aswak",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-17",
+      "direction": "out",
+      "amount": 75,
+      "category": "Livraison mob",
+      "description": "Huile moteur mob",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-18",
+      "direction": "out",
+      "amount": 1060,
+      "category": "Change",
+      "description": "Change Whittaker",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-19",
+      "direction": "out",
+      "amount": 630,
+      "category": "Change",
+      "description": "Change Whittaker",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-19",
+      "direction": "out",
+      "amount": 20,
+      "category": "Divers",
+      "description": "Balayeurs derb",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-19",
+      "direction": "out",
+      "amount": 100,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-20",
+      "direction": "in",
+      "amount": 400,
+      "category": "Client",
+      "description": "Paiement IULIANO",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-20",
+      "direction": "out",
+      "amount": 127,
+      "category": "Nourriture",
+      "description": "Souks - fruits & légumes",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-20",
+      "direction": "in",
+      "amount": 520,
+      "category": "Client",
+      "description": "Paiement WHITTAKER",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-20",
+      "direction": "in",
+      "amount": 2000,
+      "category": "Client",
+      "description": "Paiement MAYER",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-21",
+      "direction": "in",
+      "amount": 2500,
+      "category": "Client",
+      "description": "Paiement DILLINGER",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-21",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-23",
+      "direction": "in",
+      "amount": 750,
+      "category": "Client",
+      "description": "Paiement MAURIELLO",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-23",
+      "direction": "in",
+      "amount": 4000,
+      "category": "Client",
+      "description": "Paiement DANIELS",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-23",
+      "direction": "in",
+      "amount": 180,
+      "category": "Commission",
+      "description": "Commission visite guidée 1/2j Collin 23/03 (Naima)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-23",
+      "direction": "out",
+      "amount": 8400,
+      "category": "Change",
+      "description": "Change Bourchid",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-23",
+      "direction": "in",
+      "amount": 200,
+      "category": "Client",
+      "description": "Paiement MATHIEU",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-24",
+      "direction": "in",
+      "amount": 1800,
+      "category": "Client",
+      "description": "Paiement COLLIN",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-24",
+      "direction": "in",
+      "amount": 200,
+      "category": "Commission",
+      "description": "Commission visite guidée 1/2j Mauriello 22/03 (Hassan via Safi)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-24",
+      "direction": "out",
+      "amount": 4000,
+      "category": "Divers",
+      "description": "Hamid noyer - 2 tables en bois, 3 tablettes pour niches, pieds pour meuble d'Anyssates",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-24",
+      "direction": "out",
+      "amount": 100,
+      "category": "Livraison mob",
+      "description": "Livraison Hamid noyer",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-25",
+      "direction": "out",
+      "amount": 3200,
+      "category": "Change",
+      "description": "Change Bourchid",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-25",
+      "direction": "in",
+      "amount": 10000,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-26",
+      "direction": "in",
+      "amount": 320,
+      "category": "Client",
+      "description": "Paiement WHITE",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-26",
+      "direction": "out",
+      "amount": 100,
+      "category": "Entretien",
+      "description": "Réparation 2 cocottes & 1 casserole",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-26",
+      "direction": "out",
+      "amount": 60,
+      "category": "Salaire",
+      "description": "Salaire 03/2026 Loubna essai 1/2j",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-26",
+      "direction": "out",
+      "amount": 3050,
+      "category": "Salaire",
+      "description": "Salaire 03/2026 Zaineb (24j travail)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-26",
+      "direction": "out",
+      "amount": 100,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-27",
+      "direction": "in",
+      "amount": 1800,
+      "category": "Client",
+      "description": "Paiement SATU",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-27",
+      "direction": "out",
+      "amount": 300,
+      "category": "Client",
+      "description": "Change Satu",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-27",
+      "direction": "out",
+      "amount": 210,
+      "category": "Change",
+      "description": "Change Bourchid",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-27",
+      "direction": "out",
+      "amount": 227,
+      "category": "Divers",
+      "description": "Cahiers du Riad : Liaison, nuit et caisse rouge, 1 de chaque",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-27",
+      "direction": "out",
+      "amount": 86.4,
+      "category": "Divers",
+      "description": "Chic Print - impression cahier présentation projet Riad",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-28",
+      "direction": "in",
+      "amount": 1103,
+      "category": "Client",
+      "description": "Paiement WONG",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-28",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-28",
+      "direction": "in",
+      "amount": 220,
+      "category": "Client",
+      "description": "Paiement BOURCHID",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-28",
+      "direction": "out",
+      "amount": 70,
+      "category": "Divers",
+      "description": "Pour dragées",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-29",
+      "direction": "out",
+      "amount": 3220,
+      "category": "Change",
+      "description": "Change Mesquida",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-29",
+      "direction": "in",
+      "amount": 2200,
+      "category": "Client",
+      "description": "Paiement MITCHELL",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-30",
+      "direction": "out",
+      "amount": 100,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-31",
+      "direction": "out",
+      "amount": 1050,
+      "category": "Change",
+      "description": "Change Borioli",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-31",
+      "direction": "out",
+      "amount": 1300,
+      "category": "Divers",
+      "description": "Hanane sport 5 en ligne et le 300 du 31/03",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-31",
+      "direction": "out",
+      "amount": 1000,
+      "category": "Salaire",
+      "description": "Salaire 03/2026 Zakaria (ND & prime)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-31",
+      "direction": "out",
+      "amount": 300,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-31",
+      "direction": "out",
+      "amount": 500,
+      "category": "Salaire",
+      "description": "Salaire 03/2026 Laila",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-31",
+      "direction": "out",
+      "amount": 70,
+      "category": "Nourriture",
+      "description": "Dragées (erreur rose)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-03-31",
+      "direction": "out",
+      "amount": 250,
+      "category": "Salaire",
+      "description": "Salaire 03/2026 Fatim-Zahra (2j)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-01",
+      "direction": "out",
+      "amount": 2200,
+      "category": "Divers",
+      "description": "Sortie Valérie",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-02",
+      "direction": "out",
+      "amount": 2300,
+      "category": "Divers",
+      "description": "Hanane sport - 300 du 02/04 et 2000 pour 10 séances visio FR",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-02",
+      "direction": "in",
+      "amount": 1615,
+      "category": "Client",
+      "description": "Paiement JUHL JESSEN",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-02",
+      "direction": "out",
+      "amount": 500,
+      "category": "Salaire",
+      "description": "Salaire 03/2026 Fahida",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-02",
+      "direction": "out",
+      "amount": 500,
+      "category": "Salaire",
+      "description": "Salaire 03/2026 Mohamed",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-03",
+      "direction": "in",
+      "amount": 10000,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-03",
+      "direction": "out",
+      "amount": 3000,
+      "category": "Salaire",
+      "description": "Salaire 03/2026 Tarik",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-03",
+      "direction": "out",
+      "amount": 150,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-03",
+      "direction": "out",
+      "amount": 150,
+      "category": "Prestataire",
+      "description": "Azzeddine fiches police 03/2026",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-04",
+      "direction": "in",
+      "amount": 200,
+      "category": "Client",
+      "description": "Paiement MESQUIDA",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-04",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-04",
+      "direction": "out",
+      "amount": 120,
+      "category": "Salaire",
+      "description": "Salaire 03/2026 Yamina 1j essai",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-06",
+      "direction": "in",
+      "amount": 1300,
+      "category": "Client",
+      "description": "Paiement OTT",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-06",
+      "direction": "in",
+      "amount": 325,
+      "category": "Client",
+      "description": "Paiement MUENSTERMANN",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-06",
+      "direction": "in",
+      "amount": 440,
+      "category": "Client",
+      "description": "Paiement BORIOLI",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-06",
+      "direction": "in",
+      "amount": 580,
+      "category": "Client",
+      "description": "Paiement GOUTTENOIRE",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-06",
+      "direction": "out",
+      "amount": 45,
+      "category": "Client",
+      "description": "Change Geanta (et caisse cuisine 55)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-06",
+      "direction": "in",
+      "amount": 130,
+      "category": "Commission",
+      "description": "Commission Jardins du Lotus 03/2026 (Petrova 14/3)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-06",
+      "direction": "out",
+      "amount": 480,
+      "category": "Prestataire",
+      "description": "Parking 4 mob",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-06",
+      "direction": "in",
+      "amount": 200,
+      "category": "Commission",
+      "description": "Commission visite guidée 1/2j Rowden par Hassan via Safi",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-06",
+      "direction": "in",
+      "amount": 540,
+      "category": "Client",
+      "description": "Paiement VERWEE",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-07",
+      "direction": "out",
+      "amount": 400,
+      "category": "Salaire",
+      "description": "Salaire 03/2026 Chaimaa (4j)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-08",
+      "direction": "out",
+      "amount": 8,
+      "category": "Divers",
+      "description": "Zakaria - remboursement payé perso div courses du jour",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-08",
+      "direction": "in",
+      "amount": 1670,
+      "category": "Client",
+      "description": "Paiement THORON",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-08",
+      "direction": "out",
+      "amount": 200,
+      "category": "Divers",
+      "description": "Sacs poubelle tissu blanc chambre",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-08",
+      "direction": "out",
+      "amount": 50,
+      "category": "Divers",
+      "description": "Pochettes \"tissu\" noir pour cotons sdb x150",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-08",
+      "direction": "out",
+      "amount": 150,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-08",
+      "direction": "out",
+      "amount": 1500,
+      "category": "Divers",
+      "description": "Khadija 20 mini pastilla poulet, 25 briouattes légumes (taille un peu grande), 20 cigares formage, 25 cigares fruits de mer, 20 brouettes de poulet",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-08",
+      "direction": "out",
+      "amount": 40,
+      "category": "Client",
+      "description": "Paiement ROWDEN",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-09",
+      "direction": "out",
+      "amount": 583,
+      "category": "Change",
+      "description": "Change Schaum",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-09",
+      "direction": "in",
+      "amount": 610,
+      "category": "Client",
+      "description": "Paiement LOPEZ",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-09",
+      "direction": "out",
+      "amount": 70,
+      "category": "Divers",
+      "description": "Abdessadq porte-clé Agafay",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-09",
+      "direction": "in",
+      "amount": 500,
+      "category": "Commission",
+      "description": "Commission visite guidée journée complète Ginestet Naima",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-10",
+      "direction": "out",
+      "amount": 1535,
+      "category": "Divers",
+      "description": "Redouane tissus - nouvelles housses de canapés et coussins, façon des rideaux et serviettes",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-10",
+      "direction": "out",
+      "amount": 150,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-11",
+      "direction": "out",
+      "amount": 75,
+      "category": "Livraison mob",
+      "description": "Essence mob",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-11",
+      "direction": "out",
+      "amount": 5,
+      "category": "Livraison mob",
+      "description": "Gardiens Moncho's & Aswak",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-11",
+      "direction": "out",
+      "amount": 110,
+      "category": "Divers",
+      "description": "Lavage 2 grands tapis (60) et 2 petits tapis (30), séchage 20",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-11",
+      "direction": "in",
+      "amount": 93.4,
+      "category": "Divers",
+      "description": "CORRECTION",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-13",
+      "direction": "in",
+      "amount": 180,
+      "category": "Client",
+      "description": "Paiement ROLDOS",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-13",
+      "direction": "out",
+      "amount": 80,
+      "category": "Divers",
+      "description": "Lavage 1 grand tapis et 1 petit tapis",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-13",
+      "direction": "out",
+      "amount": 5,
+      "category": "Livraison mob",
+      "description": "Gardien Aswak & Hanaf",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-14",
+      "direction": "in",
+      "amount": 170,
+      "category": "Client",
+      "description": "Paiement GINESTET",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-14",
+      "direction": "in",
+      "amount": 120,
+      "category": "Client",
+      "description": "Paiement JACQUOT (rendu 10 Dhs caisse cuisine)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-14",
+      "direction": "out",
+      "amount": 900,
+      "category": "Divers",
+      "description": "Handi Medic - Pour location fauteuil roulant",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-14",
+      "direction": "out",
+      "amount": 100,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-15",
+      "direction": "out",
+      "amount": 170,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-15",
+      "direction": "out",
+      "amount": 150,
+      "category": "Entretien",
+      "description": "Jamal bon électricien d'Abderrahim - Problèmes élec Victoire",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-15",
+      "direction": "out",
+      "amount": 1000,
+      "category": "Divers",
+      "description": "Sortie Valérie",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-16",
+      "direction": "in",
+      "amount": 1550,
+      "category": "Client",
+      "description": "Paiement BENSON",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-16",
+      "direction": "out",
+      "amount": 350,
+      "category": "Entretien",
+      "description": "Abdelaziz Palmier",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-16",
+      "direction": "out",
+      "amount": 200,
+      "category": "Divers",
+      "description": "Lhima carossa - dégagement coupe palmier dont tronc, 3 voyages (effectivement grosse masse)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-16",
+      "direction": "out",
+      "amount": 100,
+      "category": "Livraison mob",
+      "description": "Livraison cache RIA par Hamid",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-16",
+      "direction": "out",
+      "amount": 500,
+      "category": "Prestataire",
+      "description": "NDT pour dîner Agafay 2pax Lopez 09/04",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-17",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-17",
+      "direction": "out",
+      "amount": 1800,
+      "category": "Divers",
+      "description": "Hamid noyer - 8 tabourets, cache RIA, pieds meuble Anyssates",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-18",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-18",
+      "direction": "in",
+      "amount": 2600,
+      "category": "Client",
+      "description": "Paiement FREIERMUTH & LAUTENSCHLAGER",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-20",
+      "direction": "in",
+      "amount": 200,
+      "category": "Client",
+      "description": "Paiement GAUDEFROY",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-20",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-20",
+      "direction": "in",
+      "amount": 3200,
+      "category": "Client",
+      "description": "Paiement FREIERMUTH & LAUTENSCHLAGER (rendu 20 Caisse cuisine)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-20",
+      "direction": "in",
+      "amount": 400,
+      "category": "Client",
+      "description": "Paiement GAUTHIER-POINT (rendu 70 caisse cuisine)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-20",
+      "direction": "in",
+      "amount": 100,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-20",
+      "direction": "out",
+      "amount": 200,
+      "category": "Divers",
+      "description": "Aqua 6 - partie de facture 350 Dhs (150 caisse cuisine)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-20",
+      "direction": "in",
+      "amount": 220,
+      "category": "Client",
+      "description": "Paiement RAULT",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-20",
+      "direction": "out",
+      "amount": 3000,
+      "category": "Divers",
+      "description": "Caid pour licence alcool",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-22",
+      "direction": "in",
+      "amount": 800,
+      "category": "Client",
+      "description": "Paiement FICINI",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-22",
+      "direction": "out",
+      "amount": 400,
+      "category": "Entretien",
+      "description": "Jamal bon électricien d'Abderrahim - pour réparation refoulement lave-linge dans lavabo salle linge (matériel & travail)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-23",
+      "direction": "in",
+      "amount": 350,
+      "category": "Client",
+      "description": "Paiement AKRAM",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-23",
+      "direction": "out",
+      "amount": 125,
+      "category": "Divers",
+      "description": "Chatr - Papier bienvenue",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-23",
+      "direction": "out",
+      "amount": 780,
+      "category": "Divers",
+      "description": "Extra Ennakhil - Brôme",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-23",
+      "direction": "out",
+      "amount": 100,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-24",
+      "direction": "out",
+      "amount": 160,
+      "category": "Client",
+      "description": "Paiement KLOK-KWAKS",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-24",
+      "direction": "in",
+      "amount": 400,
+      "category": "Commission",
+      "description": "Commission visites guidées 1/2j Brosnan 22/04 et Kwaks 24/04",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-24",
+      "direction": "out",
+      "amount": 195,
+      "category": "Spa",
+      "description": "Gants hammam 15 Dhs x13",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-24",
+      "direction": "in",
+      "amount": 424,
+      "category": "Client",
+      "description": "Paiement BROSNAN",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-24",
+      "direction": "out",
+      "amount": 20,
+      "category": "Client",
+      "description": "Paiement BEAUFILS & BOUT",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-24",
+      "direction": "in",
+      "amount": 1640,
+      "category": "Client",
+      "description": "Paiement VINCENT (excursion)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-25",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-27",
+      "direction": "out",
+      "amount": 20,
+      "category": "Divers",
+      "description": "Balayeurs derb",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-27",
+      "direction": "in",
+      "amount": 220,
+      "category": "Client",
+      "description": "Paiement VINCENT",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-27",
+      "direction": "in",
+      "amount": 1520,
+      "category": "Client",
+      "description": "Paiement BANSTER",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-27",
+      "direction": "in",
+      "amount": 2400,
+      "category": "Client",
+      "description": "Paiement LATHIERE VERGNE",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-28",
+      "direction": "out",
+      "amount": 2000,
+      "category": "Salaire",
+      "description": "Salaire 04/2026 Tarik",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-28",
+      "direction": "out",
+      "amount": 500,
+      "category": "Salaire",
+      "description": "Salaire 04/2026 Fahida",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-29",
+      "direction": "out",
+      "amount": 150,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-29",
+      "direction": "out",
+      "amount": 220,
+      "category": "Divers",
+      "description": "Pour fleurs Victoire, et ballons 20",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-29",
+      "direction": "out",
+      "amount": 500,
+      "category": "Salaire",
+      "description": "Salaire 04/2026 Zakaria",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-30",
+      "direction": "in",
+      "amount": 200,
+      "category": "Client",
+      "description": "Paiement BIELSA ANTUNEZ",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-30",
+      "direction": "out",
+      "amount": 3250,
+      "category": "Salaire",
+      "description": "Salaire 04/2026 Nadia (24j)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-04-30",
+      "direction": "out",
+      "amount": 500,
+      "category": "Salaire",
+      "description": "Salaire 04/2026 Mohamed",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-01",
+      "direction": "in",
+      "amount": 175,
+      "category": "Client",
+      "description": "Paiement SHAHZAD",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-01",
+      "direction": "out",
+      "amount": 1900,
+      "category": "Divers",
+      "description": "Aboubakar Dépôt Contemporain - 2e chaise noyer cordelette blanche comme Ariane",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-01",
+      "direction": "out",
+      "amount": 160,
+      "category": "Client",
+      "description": "Paiement ROCHER",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-02",
+      "direction": "in",
+      "amount": 100,
+      "category": "Client",
+      "description": "Paiement LAUREAU",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-02",
+      "direction": "in",
+      "amount": 2490,
+      "category": "Client",
+      "description": "Paiement MANSFELD",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-02",
+      "direction": "out",
+      "amount": 2900,
+      "category": "Salaire",
+      "description": "Salaire 04/2026 Fatim-Zahra (26j dont 2j Avril)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-02",
+      "direction": "out",
+      "amount": 50,
+      "category": "Nourriture",
+      "description": "Feuilles pastilla",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-02",
+      "direction": "out",
+      "amount": 30,
+      "category": "Livraison mob",
+      "description": "Livraison Aswak",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-02",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-04",
+      "direction": "in",
+      "amount": 800,
+      "category": "Client",
+      "description": "Paiement HUTLEY (rendu 14 Dhs caisse cuisine)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-04",
+      "direction": "out",
+      "amount": 400,
+      "category": "Salaire",
+      "description": "Salaire 05/2026 Ayoub (2 nuits)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-04",
+      "direction": "in",
+      "amount": 1800,
+      "category": "Client",
+      "description": "Paiement ROCHER (exc Agafay & dîner)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-04",
+      "direction": "in",
+      "amount": 2665,
+      "category": "Divers",
+      "description": "CORRECTION",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-04",
+      "direction": "out",
+      "amount": 150,
+      "category": "Divers",
+      "description": "Azzeddine fiches police 04/2026",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-04",
+      "direction": "out",
+      "amount": 200,
+      "category": "Divers",
+      "description": "Sacs poubelle tissu blanc chambre",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-04",
+      "direction": "out",
+      "amount": 180,
+      "category": "Divers",
+      "description": "Gants hammam 15 Dhs x12",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-05",
+      "direction": "in",
+      "amount": 220,
+      "category": "Client",
+      "description": "Paiement BOUKHETAM",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-05",
+      "direction": "out",
+      "amount": 20,
+      "category": "Divers",
+      "description": "Balayeurs derb",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-05",
+      "direction": "out",
+      "amount": 2400,
+      "category": "Prestataire",
+      "description": "NDT pour : 24/4 Kik Agafay 2 quads, 2 drom, 2 dîners, 01/05 Mansfeld Imlil guide & 1 déj, 04/05 Rocher Agafay 2 dîners",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-06",
+      "direction": "in",
+      "amount": 180,
+      "category": "Commission",
+      "description": "Commissions visite guidée 1/2j Rocher (Naima)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-07",
+      "direction": "in",
+      "amount": 740,
+      "category": "Client",
+      "description": "Paiement BACON (Charlotte, Cannelle, spa)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-08",
+      "direction": "in",
+      "amount": 1100,
+      "category": "Commission",
+      "description": "Commission visite guidée 1/2j Bacon (Benji via Safi)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-08",
+      "direction": "in",
+      "amount": 500,
+      "category": "Client",
+      "description": "Paiement AMIS FRONTARD (console Blanche)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-09",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-10",
+      "direction": "out",
+      "amount": 1000,
+      "category": "Divers",
+      "description": "Sortie Valérie",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-11",
+      "direction": "in",
+      "amount": 1050,
+      "category": "Client",
+      "description": "Paiement BACON (Danielle, Joséphine, Spa)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-11",
+      "direction": "in",
+      "amount": 1050,
+      "category": "Client",
+      "description": "Paiement BACON (Elaine, Blanche, spa)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-11",
+      "direction": "in",
+      "amount": 1050,
+      "category": "Client",
+      "description": "Paiement BACON (Tara, Ariane, spa)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-11",
+      "direction": "in",
+      "amount": 1050,
+      "category": "Client",
+      "description": "Paiement BACON (Emma, Sarah, spa)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-11",
+      "direction": "in",
+      "amount": 420,
+      "category": "Client",
+      "description": "Paiement BACON (Lara, Victoire, spa)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-12",
+      "direction": "in",
+      "amount": 1300,
+      "category": "Client",
+      "description": "Paiement BACON (Amanda & Stephanie, Anyssates & Ariane, spa)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-12",
+      "direction": "out",
+      "amount": 30,
+      "category": "Livraison mob",
+      "description": "Carossa Bouteilles Cergam",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-12",
+      "direction": "in",
+      "amount": 270,
+      "category": "Client",
+      "description": "Paiement BACON (exclu, dernières consos)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-12",
+      "direction": "out",
+      "amount": 400,
+      "category": "Divers",
+      "description": "Clopes Jérôme Winston",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-12",
+      "direction": "out",
+      "amount": 250,
+      "category": "Change",
+      "description": "Change pot commun",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-13",
+      "direction": "out",
+      "amount": 2200,
+      "category": "Divers",
+      "description": "Sortie Valérie",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-13",
+      "direction": "out",
+      "amount": 80,
+      "category": "Nourriture",
+      "description": "1kg nougat",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-13",
+      "direction": "out",
+      "amount": 945,
+      "category": "Change",
+      "description": "Change Diochon",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-13",
+      "direction": "out",
+      "amount": 100,
+      "category": "Entretien",
+      "description": "Jamal plombier d'Abderrahim - passsage contrôle Agafay & Blanche",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-13",
+      "direction": "out",
+      "amount": 40,
+      "category": "Livraison mob",
+      "description": "Carossa Messi Aswak",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-14",
+      "direction": "in",
+      "amount": 150,
+      "category": "Client",
+      "description": "Paiement IVALDI",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-14",
+      "direction": "out",
+      "amount": 3500,
+      "category": "Divers",
+      "description": "Hanane sport : 3 séances maroc (900), 3 séances France passées (600), 10 séances d'avance France (2000)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-15",
+      "direction": "out",
+      "amount": 200,
+      "category": "Entretien",
+      "description": "Jamal plombier d'Abderrahim - réparation tuyau terrasse explosé",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-15",
+      "direction": "out",
+      "amount": 3100,
+      "category": "Change",
+      "description": "Change Didier",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-15",
+      "direction": "in",
+      "amount": 1980,
+      "category": "Client",
+      "description": "Paiement MARQUAIS",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-15",
+      "direction": "out",
+      "amount": 150,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-15",
+      "direction": "out",
+      "amount": 570,
+      "category": "Divers",
+      "description": "CORRECTION",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-16",
+      "direction": "out",
+      "amount": 100,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-17",
+      "direction": "in",
+      "amount": 15,
+      "category": "Divers",
+      "description": "Nico perso Aswak",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-17",
+      "direction": "in",
+      "amount": 220,
+      "category": "Client",
+      "description": "Paiement CANCADE",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-19",
+      "direction": "out",
+      "amount": 800,
+      "category": "Entretien",
+      "description": "Jamal plombier d'Abderrahim - Réparation colonne évacuation fendue à côté hammam",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-23",
+      "direction": "in",
+      "amount": 1100,
+      "category": "Client",
+      "description": "Paiement GERARTS",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-23",
+      "direction": "out",
+      "amount": 150,
+      "category": "Spa",
+      "description": "Gants hammam x10",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-23",
+      "direction": "out",
+      "amount": 100,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-23",
+      "direction": "out",
+      "amount": 600,
+      "category": "Entretien",
+      "description": "Hassan pergola - replacement d'une poutre",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-25",
+      "direction": "in",
+      "amount": 720,
+      "category": "Client",
+      "description": "Paiement JORIO (Irving)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-25",
+      "direction": "out",
+      "amount": 500,
+      "category": "Administratif",
+      "description": "Bakchich technicien hygiène",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-25",
+      "direction": "out",
+      "amount": 500,
+      "category": "Administratif",
+      "description": "Trésorerie Préfectorale de Marrakech - Taxe sur les opérations de construction (pour autorisation de travaux)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-25",
+      "direction": "out",
+      "amount": 1000,
+      "category": "Administratif",
+      "description": "Moqadem - Services rendus autorisation de travaux",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-26",
+      "direction": "out",
+      "amount": 100,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-27",
+      "direction": "out",
+      "amount": 1000,
+      "category": "Salaire",
+      "description": "Salaire 05/2026 Fahida (500 ND, 500 prime Aïd)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-27",
+      "direction": "out",
+      "amount": 1000,
+      "category": "Salaire",
+      "description": "Salaire 05/2026 Zakaria (500 ND, 500 nuit)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-28",
+      "direction": "in",
+      "amount": 300,
+      "category": "Client",
+      "description": "Paiement HOQUE (rendu 20 Dhs caisse rouge)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-28",
+      "direction": "out",
+      "amount": 100,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-28",
+      "direction": "in",
+      "amount": 5000,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-28",
+      "direction": "in",
+      "amount": 420,
+      "category": "Divers",
+      "description": "CORRECTION",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-29",
+      "direction": "out",
+      "amount": 200,
+      "category": "Entretien",
+      "description": "Jamal Electricien - Réparation pb élec bhou/Victoire/Anyssates",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-29",
+      "direction": "in",
+      "amount": 5000,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-29",
+      "direction": "out",
+      "amount": 4200,
+      "category": "Change",
+      "description": "Change Distazio",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-30",
+      "direction": "out",
+      "amount": 2000,
+      "category": "Salaire",
+      "description": "Salaire 05/2026 Tarik",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-30",
+      "direction": "out",
+      "amount": 200,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-30",
+      "direction": "out",
+      "amount": 500,
+      "category": "Salaire",
+      "description": "Salaire 05/2026 (prime Aïd)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-05-31",
+      "direction": "in",
+      "amount": 300,
+      "category": "Client",
+      "description": "Paiement RADULESCU",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-01",
+      "direction": "out",
+      "amount": 150,
+      "category": "Prestataire",
+      "description": "Azzeddine fiches police 05/2026",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-01",
+      "direction": "out",
+      "amount": 250,
+      "category": "Prestataire",
+      "description": "Parking 2 mob 06/2026",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-01",
+      "direction": "out",
+      "amount": 200,
+      "category": "Entretien",
+      "description": "Jamal plombier/elec d'Abderrahim - Réparation électricité Victoire (lampes chevet) et grande lampe de nuit petit patio",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-02",
+      "direction": "out",
+      "amount": 450,
+      "category": "Salaire",
+      "description": "Salaire 06/2026 Hayat (3j)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-02",
+      "direction": "in",
+      "amount": 220,
+      "category": "Client",
+      "description": "Paiement DOS SANTOS",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-02",
+      "direction": "in",
+      "amount": 3100,
+      "category": "Client",
+      "description": "Paiement DISTAZIO",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-03",
+      "direction": "in",
+      "amount": 300,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Marie-Charlotte Briastre (table ronde bois pour café Joséphine)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-03",
+      "direction": "in",
+      "amount": 400,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Antoine Van Doorne (acompte sur canapé à côté bureau, total 1000)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-03",
+      "direction": "in",
+      "amount": 2380,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Sophie (6 assiettes à soupe, 2 lampes de chevet grosse ampoule de Bambou, grand canapé piscine)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-04",
+      "direction": "in",
+      "amount": 220,
+      "category": "Client",
+      "description": "Paiement CARRASCO GODINHO",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-04",
+      "direction": "in",
+      "amount": 500,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Nathalie (tapis beni ouarain blanc sous table ronde devant piscine)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-04",
+      "direction": "in",
+      "amount": 150,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Malika Riad Ta'achaqa (poubelle métal Joséphine)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-04",
+      "direction": "out",
+      "amount": 120,
+      "category": "Salaire",
+      "description": "Salaire 05/2026 essai 1j",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-05",
+      "direction": "in",
+      "amount": 2900,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Michel Clérel (plein de choses)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-05",
+      "direction": "in",
+      "amount": 6400,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Emmanuelle Riad Chergui (plein de choses)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-06",
+      "direction": "out",
+      "amount": 42,
+      "category": "Client",
+      "description": "Paiement VOEGELI",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-08",
+      "direction": "in",
+      "amount": 50,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Fahida (lanterne tôle blanche plafond sdb Victoire)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-08",
+      "direction": "in",
+      "amount": 250,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Emmanuelle Riad Chergui (banquette Bambou)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-09",
+      "direction": "out",
+      "amount": 3500,
+      "category": "Divers",
+      "description": "Acompte pour Ciel de Lit",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-09",
+      "direction": "in",
+      "amount": 505,
+      "category": "Client",
+      "description": "Paiement CAU",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-09",
+      "direction": "in",
+      "amount": 70,
+      "category": "Divers",
+      "description": "CORRECTION",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-09",
+      "direction": "in",
+      "amount": 1700,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Michel Clérel (reliquat de plein de choses et lanterne Joséphine)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-09",
+      "direction": "in",
+      "amount": 1300,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Antoine Van Doorne (Canapé bureau moins 400 acompte, chaise bureau, minibar rdc, 10 tarbouches rouges)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-12",
+      "direction": "out",
+      "amount": 50,
+      "category": "Caisse rouge",
+      "description": "Alimentation caisse rouge",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-13",
+      "direction": "out",
+      "amount": 240,
+      "category": "Administratif",
+      "description": "Photocopies plans",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-13",
+      "direction": "out",
+      "amount": 70,
+      "category": "Livraison mob",
+      "description": "Essence mob",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-13",
+      "direction": "out",
+      "amount": 400,
+      "category": "Divers",
+      "description": "Bakchich photocopies plans",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-13",
+      "direction": "out",
+      "amount": 240,
+      "category": "Divers",
+      "description": "Cartons",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-13",
+      "direction": "out",
+      "amount": 30,
+      "category": "Divers",
+      "description": "Lessive",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-13",
+      "direction": "out",
+      "amount": 36,
+      "category": "Nourriture",
+      "description": "Légumes pour dîner clients",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-13",
+      "direction": "out",
+      "amount": 29,
+      "category": "Nourriture",
+      "description": "Légumes",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-14",
+      "direction": "out",
+      "amount": 460,
+      "category": "Spa",
+      "description": "Halima Esthéticienne Masseuse par Hanane sport",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-14",
+      "direction": "out",
+      "amount": 3500,
+      "category": "Divers",
+      "description": "Ciel de lit en bois de Bab Khemis - complément",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-14",
+      "direction": "out",
+      "amount": 150,
+      "category": "Livraison mob",
+      "description": "Livraison ciel de lit",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-14",
+      "direction": "out",
+      "amount": 170,
+      "category": "Entretien",
+      "description": "Menuisier arrangement commode noire & tables Joséphine",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-15",
+      "direction": "out",
+      "amount": 150,
+      "category": "Divers",
+      "description": "Lessive",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-15",
+      "direction": "out",
+      "amount": 100,
+      "category": "Divers",
+      "description": "Lavage tapis",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-15",
+      "direction": "out",
+      "amount": 70,
+      "category": "Divers",
+      "description": "Essence mob",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-15",
+      "direction": "in",
+      "amount": 200,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Youssef triporteur (matelas blanche)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-16",
+      "direction": "in",
+      "amount": 160,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Michel Clerel (2 lampes de chevet bleues)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-16",
+      "direction": "out",
+      "amount": 70,
+      "category": "Divers",
+      "description": "Div courses Zakaria",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-16",
+      "direction": "out",
+      "amount": 100,
+      "category": "Alcool",
+      "description": "Victoria - 1 bt vin",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-17",
+      "direction": "in",
+      "amount": 4000,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Michel Clerel (plein de choses) - sur total de 5000, reste 1000",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-17",
+      "direction": "in",
+      "amount": 170,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Employée de Michel (housse de couette)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-17",
+      "direction": "out",
+      "amount": 92.5,
+      "category": "Nourriture",
+      "description": "Pour déj",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-17",
+      "direction": "in",
+      "amount": 1260,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Visiteurs vente (plaids, pochons, 3 lampes bluetooth, etc)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-17",
+      "direction": "out",
+      "amount": 54,
+      "category": "Divers",
+      "description": "Grands sacs pour rangements",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-17",
+      "direction": "in",
+      "amount": 1150,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Acheteurs Agadir (Table beldi noire et petite beige, banquette, plafonnier sphérique verre, 2 lampes bluetooth, 5 foutas etc)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-18",
+      "direction": "in",
+      "amount": 20000,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-18",
+      "direction": "in",
+      "amount": 2000,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Hanane (divers)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-18",
+      "direction": "out",
+      "amount": 2000,
+      "category": "Divers",
+      "description": "Hanane sport : 10 séances FR d'avance",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-18",
+      "direction": "in",
+      "amount": 1000,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Antoine (lit)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-18",
+      "direction": "out",
+      "amount": 900,
+      "category": "Divers",
+      "description": "Hanane sport : 3 séances maroc",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-18",
+      "direction": "out",
+      "amount": 1300,
+      "category": "Divers",
+      "description": "Sortie Valérie",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-18",
+      "direction": "in",
+      "amount": 2200,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Mec Bab Khemis (plan de lavabo)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-18",
+      "direction": "in",
+      "amount": 50,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Fahida (1 applique d'Agafay)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-18",
+      "direction": "out",
+      "amount": 40,
+      "category": "Administratif",
+      "description": "Ecrivain public pour local stockage travaux (reconnaissance de dette 20000 caution, accord location local pour stockage meubles)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-18",
+      "direction": "out",
+      "amount": 100,
+      "category": "Administratif",
+      "description": "Bakchich légalisation reconnaissance de dettes & accord stockage pour meubles local travaux été 2026",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-18",
+      "direction": "out",
+      "amount": 15000,
+      "category": "Administratif",
+      "description": "Local stockage pour travaux - Loyer 20/06-20/12/2026 (2500x6)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-18",
+      "direction": "out",
+      "amount": 20000,
+      "category": "Administratif",
+      "description": "Local stockage pour travaux - Caution",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-19",
+      "direction": "out",
+      "amount": 2500,
+      "category": "Administratif",
+      "description": "Omar Samsar - paye arrangement location local",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-19",
+      "direction": "in",
+      "amount": 2200,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Hassan Pergola (tonneaux et plateaux, 4 chaises de bar, table-évier inox)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-19",
+      "direction": "out",
+      "amount": 150,
+      "category": "Divers",
+      "description": "15 couvercles de pot pour cotons-tiges",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-19",
+      "direction": "out",
+      "amount": 550,
+      "category": "Livraison mob",
+      "description": "Réparation & entretien mob (panne vers 17/6)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-19",
+      "direction": "out",
+      "amount": 190,
+      "category": "Alcool",
+      "description": "Victoria - 1 bt vin",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-19",
+      "direction": "out",
+      "amount": 2540,
+      "category": "Salaire",
+      "description": "Salaire 05/2026 Nadia (22j)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-19",
+      "direction": "out",
+      "amount": 2420,
+      "category": "Salaire",
+      "description": "Salaire 05/2026 Fouzia (21j)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-19",
+      "direction": "in",
+      "amount": 1000,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Michel Clerel (complément)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-20",
+      "direction": "out",
+      "amount": 100,
+      "category": "Divers",
+      "description": "Echantillons marbre",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-20",
+      "direction": "out",
+      "amount": 72,
+      "category": "Divers",
+      "description": "Tarik essence et gardien",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-20",
+      "direction": "in",
+      "amount": 150,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Employé d'une \"Astrid\" (plaque de cuisson, casseroles inox)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-22",
+      "direction": "out",
+      "amount": 120,
+      "category": "Livraison mob",
+      "description": "Lhima carossa journée déménagement cartons",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-23",
+      "direction": "out",
+      "amount": 360,
+      "category": "Divers",
+      "description": "Div emballage (papier bulle, plastiques, etc)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-23",
+      "direction": "out",
+      "amount": 30,
+      "category": "Nourriture",
+      "description": "Déj équipe",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-23",
+      "direction": "out",
+      "amount": 10,
+      "category": "Nourriture",
+      "description": "Thon",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-29",
+      "direction": "out",
+      "amount": 1000,
+      "category": "Salaire",
+      "description": "Salaire 06/2026 Zakaria (STC 22j travail et 9,5j congés)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-29",
+      "direction": "out",
+      "amount": 500,
+      "category": "Livraison mob",
+      "description": "Lhima carossa journée déménagement cartons (Jeudi & Vendredi)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-29",
+      "direction": "out",
+      "amount": 180,
+      "category": "Divers",
+      "description": "Plastiques d'emballage",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-29",
+      "direction": "in",
+      "amount": 4620,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Laeticia (Divers)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-29",
+      "direction": "in",
+      "amount": 2900,
+      "category": "Divers",
+      "description": "Vente pré-travaux - Michel Clerel (Divers)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-29",
+      "direction": "out",
+      "amount": 50,
+      "category": "Nourriture",
+      "description": "Déj equipe",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-29",
+      "direction": "out",
+      "amount": 150,
+      "category": "Divers",
+      "description": "Emballages et plastiques, scotch",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-29",
+      "direction": "out",
+      "amount": 300,
+      "category": "Livraison mob",
+      "description": "Lhima carossa Mardi",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-29",
+      "direction": "out",
+      "amount": 155,
+      "category": "Divers",
+      "description": "Emballages et plastiques 26/06",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-29",
+      "direction": "out",
+      "amount": 265,
+      "category": "Divers",
+      "description": "CORRECTION",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-06-30",
+      "direction": "out",
+      "amount": 400,
+      "category": "Divers",
+      "description": "Déj, essence Tarik, eau",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-10",
+      "direction": "in",
+      "amount": 5000,
+      "category": "Divers",
+      "description": "Vente Bab Khemis sur 10000 total",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-10",
+      "direction": "out",
+      "amount": 1000,
+      "category": "Salaire",
+      "description": "Salaire 06/2026 Tarik prime",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-10",
+      "direction": "out",
+      "amount": 2460,
+      "category": "Divers",
+      "description": "Sortie Valérie",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-11",
+      "direction": "out",
+      "amount": 750,
+      "category": "Travaux",
+      "description": "Transport Hamid noyer",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-11",
+      "direction": "out",
+      "amount": 790,
+      "category": "Divers",
+      "description": "Chaussures Jérôme",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-15",
+      "direction": "out",
+      "amount": 400,
+      "category": "Divers",
+      "description": "Div nourriture",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-20",
+      "direction": "out",
+      "amount": 70,
+      "category": "Livraison mob",
+      "description": "Essence mob",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-22",
+      "direction": "out",
+      "amount": 275,
+      "category": "Nourriture",
+      "description": "Div nourriture",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-22",
+      "direction": "out",
+      "amount": 75,
+      "category": "Livraison mob",
+      "description": "Tarik Essence mob",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-22",
+      "direction": "out",
+      "amount": 20,
+      "category": "Divers",
+      "description": "Recharge appels Tarik",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-24",
+      "direction": "out",
+      "amount": 1800,
+      "category": "Divers",
+      "description": "Fauteuils",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-24",
+      "direction": "out",
+      "amount": 100,
+      "category": "Livraison mob",
+      "description": "Livraison tapis",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-24",
+      "direction": "out",
+      "amount": 400,
+      "category": "Divers",
+      "description": "Mon Quotidien",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-24",
+      "direction": "out",
+      "amount": 80,
+      "category": "Divers",
+      "description": "Epices, gingembre",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-24",
+      "direction": "out",
+      "amount": 300,
+      "category": "Divers",
+      "description": "Clopes Jérôme Gauloises",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-24",
+      "direction": "out",
+      "amount": 20,
+      "category": "Divers",
+      "description": "Tupperware pour transport gâteaux",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-24",
+      "direction": "out",
+      "amount": 1200,
+      "category": "Divers",
+      "description": "Sortie Valérie",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-24",
+      "direction": "out",
+      "amount": 1500,
+      "category": "Administratif",
+      "description": "Nadia notaire - pour levée hypothèque",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-27",
+      "direction": "in",
+      "amount": 1000,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-27",
+      "direction": "out",
+      "amount": 80,
+      "category": "Divers",
+      "description": "Div nourriture & produits",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-27",
+      "direction": "out",
+      "amount": 50,
+      "category": "Nourriture",
+      "description": "Pain (test ?)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-27",
+      "direction": "out",
+      "amount": 120,
+      "category": "Divers",
+      "description": "Div nourriture & produits",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-29",
+      "direction": "in",
+      "amount": 1000,
+      "category": "Divers",
+      "description": "Retrait",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-29",
+      "direction": "out",
+      "amount": 300,
+      "category": "Travaux",
+      "description": "Carossa déménagement local",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-29",
+      "direction": "out",
+      "amount": 310,
+      "category": "Travaux",
+      "description": "Cartons & plastiques emballage",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-29",
+      "direction": "out",
+      "amount": 300,
+      "category": "Salaire",
+      "description": "Aide déménagement 2j",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-30",
+      "direction": "out",
+      "amount": 80,
+      "category": "Travaux",
+      "description": "Cahier des charges",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-07-30",
+      "direction": "out",
+      "amount": 200,
+      "category": "Travaux",
+      "description": "Carossa déménagement local",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-08-01",
+      "direction": "in",
+      "amount": 5000,
+      "category": "Divers",
+      "description": "Vente Bab Khemis sur 10000 total (reste)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-08-01",
+      "direction": "out",
+      "amount": 2043,
+      "category": "Divers",
+      "description": "CORRECTION",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-08-03",
+      "direction": "out",
+      "amount": 70,
+      "category": "Livraison mob",
+      "description": "Carrossa Lhima réparation bâche jacuzzi",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-08-03",
+      "direction": "out",
+      "amount": 3400,
+      "category": "Divers",
+      "description": "Mister Kraft - Avance sur total 6800 DHs (Pied 800, table 1100, lit 4900)",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    },
+    {
+      "date": "2026-08-03",
+      "direction": "out",
+      "amount": 40,
+      "category": "Livraison mob",
+      "description": "Tarik essence",
+      "currency": "MAD",
+      "employee_name": "Administrateur"
+    }
+  ]
+}
