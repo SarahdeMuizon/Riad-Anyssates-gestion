@@ -260,7 +260,7 @@ function DashboardTab() {
  
 // ─── Entries Tab ───────────────────────────────────────────────────────────────
  
-const DEPENSES_CATEGORIES = ['Alimentation/Courses','Fournitures & bureautique','Entretien & maintenance','Transport','Restauration','Pharmacie/Hygiène','Décoration & fleurs','Autre']
+const DEPENSES_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Radeema','Divers']
  
 interface InvoiceData {
   date: string; amount: number; amountTransaction?: number
@@ -320,7 +320,7 @@ function generateInvoice(entry: InvoiceData) {
   const w = window.open('','_blank')
   if (w) { w.document.write(html); w.document.close() }
 }
-const ENCAISSEMENTS_CATEGORIES = ['Boissons bar','Repas/Restauration','Activité/Excursion','Service spa/Hammam','Transfert/Transport','Pourboire collectif','Autre encaissement']
+const ENCAISSEMENTS_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Radeema','Divers']
 const PAYMENT_MODES = ['CB', 'Virement', 'Chèque', 'Espèces']
 const CURRENCIES = ['MAD', 'EUR']
  
@@ -1288,7 +1288,7 @@ function BanqueTab() {
  
 // ─── Coffre Fort Tab ──────────────────────────────────────────────────────────
  
-const COFFRE_CATEGORIES = ['Dépôt espèces', 'Retrait espèces', 'Chèque', 'Document', 'Bijou / objet de valeur', 'Autre']
+const COFFRE_CATEGORIES = ['Client', 'Commission', 'Administratif', 'Nourriture', 'Spa', 'Prestataire', 'Salaire', 'Maroc Telecom', 'Travaux', 'Divers']
  
 interface CoffreEntry {
   id: number
