@@ -737,24 +737,26 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
               </div>
             )}
  
-            {/* Devise — MAD par défaut */}
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>Devise</label>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button type="button" onClick={() => setFCurrency('MAD')} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fCurrency === 'MAD' ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: fCurrency === 'MAD' ? '#FFF5F0' : 'white', fontWeight: fCurrency === 'MAD' ? 700 : 400, cursor: 'pointer', color: fCurrency === 'MAD' ? 'var(--terracotta)' : 'var(--text)' }}>MAD</button>
-                <button type="button" onClick={() => setFCurrency('EUR')} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fCurrency === 'EUR' ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: fCurrency === 'EUR' ? '#FFF5F0' : 'white', fontWeight: fCurrency === 'EUR' ? 700 : 400, cursor: 'pointer', color: fCurrency === 'EUR' ? 'var(--terracotta)' : 'var(--text)' }}>EUR</button>
-              </div>
-            </div>
- 
             {/* Mode paiement */}
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>Mode de paiement</label>
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                 {PAYMENT_MODES.map(p => (
-                  <button key={p} type="button" onClick={() => { setFPayment(p); if (p !== 'CB') setFTransactionAmount('') }} style={{ flex: 1, minWidth: '4rem', padding: '0.5rem', border: `2px solid ${fPayment === p ? color : '#ddd'}`, borderRadius: '0.5rem', background: fPayment === p ? (type === 'cb' ? '#FFF5F0' : '#F0FDF4') : 'white', fontWeight: fPayment === p ? 700 : 400, cursor: 'pointer', color: fPayment === p ? color : 'var(--text)', fontSize: '0.85rem' }}>{p}</button>
+                  <button key={p} type="button" onClick={() => { setFPayment(p); if (p !== 'CB') setFTransactionAmount(''); if (p !== 'Espèces') setFCurrency('MAD') }} style={{ flex: 1, minWidth: '4rem', padding: '0.5rem', border: `2px solid ${fPayment === p ? color : '#ddd'}`, borderRadius: '0.5rem', background: fPayment === p ? (type === 'cb' ? '#FFF5F0' : '#F0FDF4') : 'white', fontWeight: fPayment === p ? 700 : 400, cursor: 'pointer', color: fPayment === p ? color : 'var(--text)', fontSize: '0.85rem' }}>{p}</button>
                 ))}
               </div>
             </div>
+ 
+            {/* Devise — uniquement pour les espèces (Fond de caisse). Les mouvements bancaires (CB/Virement/Chèque) sont toujours en MAD. */}
+            {fPayment === 'Espèces' && (
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>Devise</label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button type="button" onClick={() => setFCurrency('MAD')} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fCurrency === 'MAD' ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: fCurrency === 'MAD' ? '#FFF5F0' : 'white', fontWeight: fCurrency === 'MAD' ? 700 : 400, cursor: 'pointer', color: fCurrency === 'MAD' ? 'var(--terracotta)' : 'var(--text)' }}>MAD</button>
+                  <button type="button" onClick={() => setFCurrency('EUR')} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fCurrency === 'EUR' ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: fCurrency === 'EUR' ? '#FFF5F0' : 'white', fontWeight: fCurrency === 'EUR' ? 700 : 400, cursor: 'pointer', color: fCurrency === 'EUR' ? 'var(--terracotta)' : 'var(--text)' }}>EUR</button>
+                </div>
+              </div>
+            )}
  
             {/* Catégorie + Description */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
@@ -1017,9 +1019,7 @@ function BanqueTab() {
   const [allEntries, setAllEntries] = useState<Entry[]>([])
   const [loading, setLoading] = useState(true)
   const [soldeInitMAD, setSoldeInitMAD] = useState('')
-  const [soldeInitEUR, setSoldeInitEUR] = useState('')
   const [targetMAD, setTargetMAD] = useState(0)
-  const [targetEUR, setTargetEUR] = useState(0)
   const [savingSolde, setSavingSolde] = useState(false)
   const [msg, setMsg] = useState('')
  
@@ -1045,7 +1045,6 @@ function BanqueTab() {
     ])
     setAllEntries(Array.isArray(ents) ? ents : [])
     if (settings?.solde_bancaire_mad !== undefined) setTargetMAD(settings.solde_bancaire_mad)
-    if (settings?.solde_bancaire_eur !== undefined) setTargetEUR(settings.solde_bancaire_eur)
     setLoading(false)
   }, [])
  
@@ -1091,29 +1090,28 @@ function BanqueTab() {
     setPointageUploading(false)
   }
  
-  // Mouvements bancaires = tout ce qui n'est PAS payé en espèces (CB, Virement, Chèque)
+  // Mouvements bancaires = tout ce qui n'est PAS payé en espèces (CB, Virement, Chèque),
+  // uniquement en MAD (les mouvements en EUR ne sont pas suivis dans cet onglet)
   const bankEntries = useMemo(
-    () => allEntries.filter(e => e.payment && e.payment !== 'Espèces'),
+    () => allEntries.filter(e => e.payment && e.payment !== 'Espèces' && (!e.currency || e.currency === 'MAD')),
     [allEntries]
   )
  
-  function computeBalance(currency: string, target: number) {
-    const inflow = bankEntries.filter(e => e.type === 'cash' && (e.currency === currency || (!e.currency && currency === 'MAD'))).reduce((s, e) => s + Number(e.amount), 0)
-    const outflow = bankEntries.filter(e => e.type === 'cb' && (e.currency === currency || (!e.currency && currency === 'MAD'))).reduce((s, e) => s + Number(e.amount), 0)
+  function computeBalance(target: number) {
+    const inflow = bankEntries.filter(e => e.type === 'cash').reduce((s, e) => s + Number(e.amount), 0)
+    const outflow = bankEntries.filter(e => e.type === 'cb').reduce((s, e) => s + Number(e.amount), 0)
     return { balance: target + inflow - outflow, inflow, outflow }
   }
  
-  const madStats = useMemo(() => computeBalance('MAD', targetMAD), [bankEntries, targetMAD])
-  const eurStats = useMemo(() => computeBalance('EUR', targetEUR), [bankEntries, targetEUR])
+  const madStats = useMemo(() => computeBalance(targetMAD), [bankEntries, targetMAD])
  
   async function saveSolde() {
     setSavingSolde(true)
     const body: Record<string, number> = {}
     if (soldeInitMAD !== '') body.solde_bancaire_mad = parseFloat(soldeInitMAD)
-    if (soldeInitEUR !== '') body.solde_bancaire_eur = parseFloat(soldeInitEUR)
     await fetch('/api/settings/solde-bancaire', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     await reload()
-    setSoldeInitMAD(''); setSoldeInitEUR('')
+    setSoldeInitMAD('')
     setMsg('✓ Solde initial mis à jour')
     setTimeout(() => setMsg(''), 4000)
     setSavingSolde(false)
@@ -1139,30 +1137,20 @@ function BanqueTab() {
         Regroupe tous les mouvements payés/encaissés par CB, Virement ou Chèque (hors espèces, suivies dans le Fond de caisse).
       </p>
  
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.25rem' }}>
-        {[{ cur: 'MAD', s: madStats }, { cur: 'EUR', s: eurStats }].map(({ cur, s }) => (
-          <div key={cur} className="stat-card" style={{ borderLeftColor: '#3730A3' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#3730A3', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Solde net {cur}</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#3730A3' }}>{fmt(s.balance)} {cur}</div>
-            <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.3rem' }}>+{fmt(s.inflow)} / -{fmt(s.outflow)}</div>
-          </div>
-        ))}
+      <div className="stat-card" style={{ borderLeftColor: '#3730A3', marginBottom: '1.25rem' }}>
+        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#3730A3', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Solde net MAD</div>
+        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#3730A3' }}>{fmt(madStats.balance)} MAD</div>
+        <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.3rem' }}>+{fmt(madStats.inflow)} / -{fmt(madStats.outflow)}</div>
       </div>
  
       <div className="card" style={{ marginBottom: '1.25rem' }}>
         <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', color: '#374151' }}>🏁 Solde bancaire initial</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.3rem' }}>Solde initial MAD (actuel : {fmt(targetMAD)})</label>
-            <input className="form-input" type="number" step="0.01" value={soldeInitMAD} onChange={e => setSoldeInitMAD(e.target.value)} placeholder={`${targetMAD}`} />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.3rem' }}>Solde initial EUR (actuel : {fmt(targetEUR)})</label>
-            <input className="form-input" type="number" step="0.01" value={soldeInitEUR} onChange={e => setSoldeInitEUR(e.target.value)} placeholder={`${targetEUR}`} />
-          </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.3rem' }}>Solde initial MAD (actuel : {fmt(targetMAD)})</label>
+          <input className="form-input" type="number" step="0.01" value={soldeInitMAD} onChange={e => setSoldeInitMAD(e.target.value)} placeholder={`${targetMAD}`} />
         </div>
         {msg && <p style={{ color: 'var(--green)', fontSize: '0.85rem', margin: '0.5rem 0 0' }}>{msg}</p>}
-        <button onClick={saveSolde} disabled={savingSolde || (soldeInitMAD === '' && soldeInitEUR === '')} className="btn-primary" style={{ marginTop: '0.75rem', opacity: (soldeInitMAD === '' && soldeInitEUR === '') ? 0.5 : 1 }}>
+        <button onClick={saveSolde} disabled={savingSolde || soldeInitMAD === ''} className="btn-primary" style={{ marginTop: '0.75rem', opacity: soldeInitMAD === '' ? 0.5 : 1 }}>
           {savingSolde ? 'Enregistrement…' : 'Mettre à jour le solde initial'}
         </button>
       </div>
@@ -1229,7 +1217,7 @@ function BanqueTab() {
         <div style={{ overflowX: 'auto' }}>
           <table>
             <thead>
-              <tr><th>Date</th><th>Sens</th><th>Catégorie</th><th>Mode</th><th>Devise</th><th>Montant</th><th>Pointé</th></tr>
+              <tr><th>Date</th><th>Sens</th><th>Catégorie</th><th>Mode</th><th>Montant</th><th>Pointé</th></tr>
             </thead>
             <tbody>
               {[...bankEntries].sort((a, b) => b.date.localeCompare(a.date)).map(e => (
@@ -1238,7 +1226,6 @@ function BanqueTab() {
                   <td style={{ color: e.type === 'cash' ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>{e.type === 'cash' ? '↑ Encaissement' : '↓ Dépense'}</td>
                   <td>{e.category}</td>
                   <td>{e.payment}</td>
-                  <td>{e.currency || 'MAD'}</td>
                   <td style={{ fontWeight: 600, color: e.type === 'cash' ? 'var(--green)' : 'var(--red)' }}>{e.type === 'cash' ? '+' : '-'}{fmt(Number(e.amount))}</td>
                   <td style={{ textAlign: 'center' }}>
                     <input
