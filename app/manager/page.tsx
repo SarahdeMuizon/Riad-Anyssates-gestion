@@ -1818,6 +1818,9 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
   const [importCoffreLoading, setImportCoffreLoading] = useState(false)
   const [importCoffreMsg, setImportCoffreMsg] = useState('')
   const [importCoffreError, setImportCoffreError] = useState('')
+  const [fixCoffreLoading, setFixCoffreLoading] = useState(false)
+  const [fixCoffreMsg, setFixCoffreMsg] = useState('')
+  const [fixCoffreError, setFixCoffreError] = useState('')
   const [excelFile, setExcelFile] = useState<File | null>(null)
   const [excelUploading, setExcelUploading] = useState(false)
   const [excelMsg, setExcelMsg] = useState('')
@@ -1897,6 +1900,19 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
       setImportCoffreError(d.error || 'Erreur lors de l\'import.')
     }
     setImportCoffreLoading(false)
+  }
+ 
+  async function fixCoffreLocation() {
+    setFixCoffreLoading(true); setFixCoffreMsg(''); setFixCoffreError('')
+    const r = await fetch('/api/settings/fix-coffre-location', { method: 'POST' })
+    if (r.ok) {
+      const d = await r.json()
+      setFixCoffreMsg(`✓ Vérifié ${d.total} lignes — ${d.alreadyInCoffre} déjà correctement en Coffre, ${d.foundInFonds} trouvées en Fond de caisse et déplacées vers le Coffre (${d.deletedFromFonds} supprimées de Fond de caisse, ${d.inserted} ajoutées au Coffre).`)
+    } else {
+      const d = await r.json().catch(() => ({}))
+      setFixCoffreError(d.error || 'Erreur lors de la correction.')
+    }
+    setFixCoffreLoading(false)
   }
  
   return (
@@ -1992,6 +2008,14 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
           </div>
         </div>
       )}
+ 
+      <div className="card" style={{ maxWidth: 420, marginBottom: '1.5rem', borderLeft: '4px solid #B45309' }}>
+        <h3 style={{ fontWeight: 700, marginBottom: '0.5rem', color: '#B45309' }}>Vérifier / corriger emplacement import Coffre</h3>
+        <p style={{ fontSize: '0.875rem', color: '#888', marginBottom: '1rem' }}>Vérifie pour chacune des 623 lignes importées si elle est bien dans le Coffre-fort. Si des lignes se trouvent en Fond de caisse, elles sont automatiquement déplacées vers le Coffre-fort. Sans danger à relancer plusieurs fois.</p>
+        <button style={{ background: '#B45309', color: 'white', border: 'none', borderRadius: '0.5rem', padding: '0.5rem 1.25rem', cursor: 'pointer', fontWeight: 600 }} onClick={fixCoffreLocation} disabled={fixCoffreLoading}>{fixCoffreLoading ? 'Vérification…' : 'Vérifier et corriger'}</button>
+        {fixCoffreMsg && <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--green)', fontWeight: 600 }}>{fixCoffreMsg}</p>}
+        {fixCoffreError && <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--red)', fontWeight: 600 }}>{fixCoffreError}</p>}
+      </div>
  
       <div className="card" style={{ maxWidth: 420, marginBottom: '1.5rem', borderLeft: '4px solid var(--red)' }}>
         <h3 style={{ fontWeight: 700, marginBottom: '0.5rem', color: 'var(--red)' }}>Vider les entrées</h3>
