@@ -91,6 +91,30 @@ export async function sql(strings: TemplateStringsArray, ...values: unknown[]) {
  
 export default sql
  
+// Envoie plusieurs requêtes en un seul aller-retour HTTP vers Turso (au lieu
+// d'un await sql`...` par ligne). Utile pour les imports en masse — chaque
+// statement est exécuté séquentiellement côté Turso mais un seul round-trip
+// réseau suffit pour tout le lot, ce qui évite les timeouts de fonction
+// serverless sur de gros volumes.
+export async function sqlBatch(statements: Array<{ sql: string; args?: unknown[] }>) {
+  const results = await tursoRequest(statements)
+  results.forEach((result, i) => {
+    if (result.type === 'error') {
+      throw new Error(`Batch statement #${i} failed: ${result.error?.message ?? 'Query error'}`)
+    }
+  })
+  return results.map(result => {
+    const { cols, rows } = result.response!.result
+    return rows.map(row => {
+      const obj: Record<string, unknown> = {}
+      cols.forEach((col, i) => {
+        obj[col.name] = fromHranaValue(row[i])
+      })
+      return obj
+    })
+  })
+}
+ 
 export async function initDb() {
   // Create core tables (idempotent)
   const results = await tursoRequest([
