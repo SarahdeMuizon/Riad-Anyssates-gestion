@@ -44,15 +44,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Onglet BANQUE introuvable dans ce fichier — vérifie que c'est bien un export généré par l'application" }, { status: 400 })
     }
  
-    // Ligne 1 = en-têtes, lignes 2-3 = SOLDE INITIAL, mouvements à partir de la ligne 4
+    // Ligne 1 = en-têtes, ligne 2 = SOLDE INITIAL, mouvements à partir de la ligne 3
     const updates: { id: number; pointed: boolean }[] = []
-    for (let rowNum = 4; rowNum <= wsBanque.rowCount; rowNum++) {
+    for (let rowNum = 3; rowNum <= wsBanque.rowCount; rowNum++) {
       const row = wsBanque.getRow(rowNum)
-      const idRaw = row.getCell(13).value
+      const idRaw = row.getCell(14).value
       const id = typeof idRaw === 'number' ? idRaw : parseInt(String(idRaw ?? ''), 10)
       if (!Number.isFinite(id) || id <= 0) continue // ligne vide ou colonne ID manquante (fichier non conforme)
  
-      const pointageRaw = row.getCell(10).value
+      const pointageRaw = row.getCell(11).value
       const pointed = !!(pointageRaw && String(pointageRaw).trim())
       updates.push({ id, pointed })
     }
