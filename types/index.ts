@@ -19,6 +19,7 @@ export interface Entry {
   status: EntryStatus
   validated_at?: string
   pointed?: boolean | number
+  reference?: string
   created_at: string
 }
  
