@@ -22,6 +22,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json(result[0])
     }
  
+    if (body.reference !== undefined) {
+      const result = await sql`UPDATE entries SET reference = ${body.reference || null} WHERE id = ${id} RETURNING *`
+      return NextResponse.json(result[0])
+    }
+ 
     const { status } = body
     if (status === 'validated') {
       const result = await sql`
