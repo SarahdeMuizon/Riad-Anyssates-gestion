@@ -1808,6 +1808,8 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
   const [pinMsg, setPinMsg] = useState('')
   const [pinError, setPinError] = useState('')
   const [resetModal, setResetModal] = useState(false)
+  const [resetEntriesModal, setResetEntriesModal] = useState(false)
+  const [resetEntriesLoading, setResetEntriesLoading] = useState(false)
   const [excelFile, setExcelFile] = useState<File | null>(null)
   const [excelUploading, setExcelUploading] = useState(false)
   const [excelMsg, setExcelMsg] = useState('')
@@ -1851,6 +1853,14 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
     await fetch('/api/settings/reset', { method: 'DELETE' })
     setResetModal(false)
     onLogout()
+  }
+ 
+  async function resetEntries() {
+    setResetEntriesLoading(true)
+    await fetch('/api/settings/reset-entries', { method: 'DELETE' })
+    setResetEntriesLoading(false)
+    setResetEntriesModal(false)
+    window.location.reload()
   }
  
   return (
@@ -1907,6 +1917,23 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
           <button className="btn-primary" type="submit">Enregistrer</button>
         </form>
       </div>
+      <div className="card" style={{ maxWidth: 420, marginBottom: '1.5rem', borderLeft: '4px solid var(--red)' }}>
+        <h3 style={{ fontWeight: 700, marginBottom: '0.5rem', color: 'var(--red)' }}>Vider les entrées</h3>
+        <p style={{ fontSize: '0.875rem', color: '#888', marginBottom: '1rem' }}>Supprime toutes les Encaissements, Dépenses, entrées de Fond de caisse et de Coffre. Les employés, le PIN et les soldes de départ ne sont pas touchés.</p>
+        <button style={{ background: 'var(--red)', color: 'white', border: 'none', borderRadius: '0.5rem', padding: '0.5rem 1.25rem', cursor: 'pointer', fontWeight: 600 }} onClick={() => setResetEntriesModal(true)}>Vider toutes les entrées</button>
+      </div>
+      {resetEntriesModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+          <div className="card" style={{ maxWidth: 380, width: '90%', textAlign: 'center' }}>
+            <p style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--red)' }}>⚠️ Vider les entrées</p>
+            <p style={{ fontSize: '0.875rem', color: '#888', marginBottom: '1.5rem' }}>Toutes les Encaissements, Dépenses, entrées de Fond de caisse et de Coffre seront supprimées définitivement. Les employés, le PIN et les soldes de départ resteront inchangés.</p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button className="btn-secondary" onClick={() => setResetEntriesModal(false)} disabled={resetEntriesLoading}>Annuler</button>
+              <button className="btn-red" onClick={resetEntries} disabled={resetEntriesLoading}>{resetEntriesLoading ? 'Suppression…' : 'Vider'}</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="card" style={{ maxWidth: 420, borderLeft: '4px solid var(--red)' }}>
         <h3 style={{ fontWeight: 700, marginBottom: '0.5rem', color: 'var(--red)' }}>Zone dangereuse</h3>
         <p style={{ fontSize: '0.875rem', color: '#888', marginBottom: '1rem' }}>Réinitialiser supprime toutes les données et remet le PIN par défaut.</p>
