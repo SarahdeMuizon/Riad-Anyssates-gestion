@@ -422,10 +422,10 @@ export async function GET() {
       { key: 'date', width: 12 }, { key: 'mois', width: 16 }, { key: 'categorie', width: 22 },
       { key: 'description', width: 28 }, { key: 'mode', width: 14 }, { key: 'devise', width: 8 },
       { key: 'entrees', width: 14 }, { key: 'sorties', width: 14 }, { key: 'solde', width: 14 },
-      { key: 'pointage', width: 12 }, { key: 'statut', width: 12 },
+      { key: 'pointage', width: 12 }, { key: 'statut', width: 12 }, { key: 'reference', width: 18 },
       { key: 'id', width: 8, hidden: true }, // colonne technique (masquée) : sert à ré-associer la ligne au bon mouvement lors d'un ré-import du pointage
     ]
-    const soldesHeaders = ['Date', 'Mois', 'Catégorie', 'Description', 'Mode paiement', 'Devise', 'Entrées', 'Sorties', 'Solde', 'Pointage', 'Statut']
+    const soldesHeaders = ['Date', 'Mois', 'Catégorie', 'Description', 'Mode paiement', 'Devise', 'Entrées', 'Sorties', 'Solde', 'Pointage', 'Statut', 'Référence (chèque/facture)']
     soldesHeaders.forEach((h, i) => hdr(wsSoldes.getCell(1, i + 1), h, C_BLUE_BG))
     wsSoldes.getRow(1).height = 22
  
@@ -506,9 +506,12 @@ export async function GET() {
       stc.font = { name: 'Arial', size: 9, bold: true, color: { argb: status === 'validated' ? 'FF2D6A4F' : 'FFD97706' } }
       stc.alignment = { horizontal: 'center' }
  
+      // Référence (n° de chèque ou de facture)
+      cell(row.getCell(12), e.reference || '')
+ 
       // ID technique (colonne masquée) — utilisé pour ré-associer la ligne au
       // bon mouvement en base lors d'un ré-import du fichier pointé
-      cell(row.getCell(12), e.id)
+      cell(row.getCell(13), e.id)
  
       altRow(row, idx + 4)
  
@@ -516,11 +519,11 @@ export async function GET() {
       soldesByMode[mode] = (soldesByMode[mode] || 0) + (isIn ? amt : -amt)
       soldesByMonth[mois] = (soldesByMonth[mois] || 0) + (isIn ? amt : -amt)
     })
-    wsSoldes.autoFilter = { from: 'A1', to: 'K1' }
+    wsSoldes.autoFilter = { from: 'A1', to: 'L1' }
  
     // Surligne en vert les lignes pointées
     wsSoldes.addConditionalFormatting({
-      ref: `A2:K${wsSoldes.rowCount}`,
+      ref: `A2:L${wsSoldes.rowCount}`,
       rules: [{
         type: 'expression',
         formulae: ['$J2="✓"'],
