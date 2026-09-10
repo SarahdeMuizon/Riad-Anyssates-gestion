@@ -19,6 +19,11 @@ const TAB_BLUE  = 'FF1F3864'   // banque — bleu foncé
 const TAB_GOLD  = 'FFB8860B'   // coffre — doré/moutarde
 const TAB_BLACK = 'FF000000'   // tableau de bord
  
+const MONTHS_FR = ['JANVIER', 'FÉVRIER', 'MARS', 'AVRIL', 'MAI', 'JUIN', 'JUILLET', 'AOÛT', 'SEPTEMBRE', 'OCTOBRE', 'NOVEMBRE', 'DÉCEMBRE']
+ 
+// Doit rester synchronisé avec DEPENSES_CATEGORIES dans app/manager/page.tsx
+const DEPENSES_CATEGORIES_TDB = ['Alimentation/Courses', 'Fournitures & bureautique', 'Entretien & maintenance', 'Transport', 'Restauration', 'Pharmacie/Hygiène', 'Décoration & fleurs', 'Autre']
+ 
 function hdr(cell: ExcelJS.Cell, text: string, bgColor = C_HEADER_BG, fgColor = C_HEADER_FG) {
   cell.value = text
   cell.font = { bold: true, color: { argb: fgColor }, name: 'Arial', size: 10 }
@@ -42,6 +47,37 @@ function altRow(row: ExcelJS.Row, idx: number) {
       }
     })
   }
+}
+ 
+// Carte indicateur (KPI) : libellé sur 2 colonnes fusionnées, valeur (formule) juste en dessous
+function kpiCard(ws: ExcelJS.Worksheet, startCol: number, labelRow: number, label: string, formula: string, color: string) {
+  const endCol = startCol + 1
+  ws.mergeCells(labelRow, startCol, labelRow, endCol)
+  const lc = ws.getCell(labelRow, startCol)
+  lc.value = label
+  lc.font = { bold: true, size: 9, name: 'Arial', color: { argb: 'FF6B7280' } }
+  lc.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+  lc.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F4F6' } }
+  ws.mergeCells(labelRow + 1, startCol, labelRow + 1, endCol)
+  const vc = ws.getCell(labelRow + 1, startCol)
+  vc.value = { formula }
+  vc.numFmt = '#,##0.00'
+  vc.font = { bold: true, size: 15, name: 'Arial', color: { argb: color } }
+  vc.alignment = { horizontal: 'center', vertical: 'middle' }
+  vc.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8F9FA' } }
+  ws.getRow(labelRow).height = 18
+  ws.getRow(labelRow + 1).height = 26
+}
+ 
+// Bandeau de titre de section, sur toute la largeur du tableau
+function sectionTitle(ws: ExcelJS.Worksheet, row: number, text: string, lastCol: number) {
+  ws.mergeCells(row, 1, row, lastCol)
+  const c = ws.getCell(row, 1)
+  c.value = text
+  c.font = { bold: true, size: 10, name: 'Arial', color: { argb: 'FF1F2937' } }
+  c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEDE0D6' } }
+  c.alignment = { horizontal: 'left', vertical: 'middle' }
+  ws.getRow(row).height = 20
 }
  
 function formatMois(dateStr: string) {
@@ -73,7 +109,13 @@ export async function GET() {
     encaissements.forEach((e) => { encTotal += Number(e.amount) })
  
     let depTotal = 0
-    depenses.forEach((e) => { depTotal += Number(e.amount) })
+    const depByCategoryTotal: Record<string, number> = {}
+    depenses.forEach((e) => {
+      const amt = Number(e.amount)
+      depTotal += amt
+      const cat = (e.category as string) || 'Autre'
+      depByCategoryTotal[cat] = (depByCategoryTotal[cat] || 0) + amt
+    })
  
     const tdbResultat = encTotal - depTotal // utilisé uniquement pour la couleur (vert/rouge)
  
@@ -105,80 +147,159 @@ export async function GET() {
     }
  
     // ── Sheet: TABLEAU DE BORD (synthèse générale — 1er et unique onglet de synthèse) ─
+    const year = new Date().getFullYear()
+    const lastFondsRow = 2 + fonds.length // ligne 1 = en-têtes, ligne 2 = dotation, puis les mouvements
+ 
     const wsTdb = wb.addWorksheet('TABLEAU DE BORD', {
       views: [{ showGridLines: false }],
       properties: { tabColor: { argb: TAB_BLACK } },
     })
     ;(wsTdb as unknown as { orderNo: number }).orderNo = -1 // force en tout premier, même devant les onglets d'un fichier de base chargé (propriété interne non typée par exceljs)
     wsTdb.getColumn(1).width = 26
-    wsTdb.getColumn(2).width = 30
-    wsTdb.getColumn(3).width = 18
+    for (let c = 2; c <= 8; c++) wsTdb.getColumn(c).width = 16
+    wsTdb.getColumn(9).width = 13
  
-    wsTdb.mergeCells('A1:C1')
+    // Bannière + date de mise à jour
+    wsTdb.mergeCells(1, 1, 1, 9)
     const tdbTitle = wsTdb.getCell('A1')
-    tdbTitle.value = '📊 TABLEAU DE BORD — Synthèse générale'
+    tdbTitle.value = `🏮 RIAD ANYSSATES — TABLEAU DE BORD COMPTABLE ${year}`
     tdbTitle.font = { bold: true, size: 14, name: 'Arial', color: { argb: 'FFFFFFFF' } }
     tdbTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: TAB_BLACK } }
     tdbTitle.alignment = { horizontal: 'center', vertical: 'middle' }
     wsTdb.getRow(1).height = 32
  
-    // KPI — vue d'ensemble Encaissements / Dépenses / Résultat net
-    // Total encaissements/dépenses = valeurs (il n'y a plus d'onglet de détail
-    // à référencer par formule) ; Résultat net reste une formule (A4-B4).
-    const tdbKpis: { label: string; value?: number; formula?: string; color: string }[] = [
-      { label: 'Total encaissements', value: encTotal, color: 'FF2D6A4F' },
-      { label: 'Total dépenses', value: depTotal, color: 'FF991B1B' },
-      { label: 'Résultat net', formula: 'A4-B4', color: tdbResultat >= 0 ? 'FF2D6A4F' : 'FF991B1B' },
-    ]
-    let tdbKpiCol = 1
-    for (const k of tdbKpis) {
-      const kCell = wsTdb.getCell(3, tdbKpiCol)
-      kCell.value = k.label
-      kCell.font = { bold: true, size: 9, name: 'Arial', color: { argb: 'FF6B7280' } }
-      kCell.alignment = { horizontal: 'left' }
-      const vCell = wsTdb.getCell(4, tdbKpiCol)
-      vCell.value = k.formula ? { formula: k.formula } : (k.value ?? 0)
-      vCell.numFmt = '#,##0.00'
-      vCell.font = { bold: true, size: 16, name: 'Arial', color: { argb: k.color } }
-      vCell.alignment = { horizontal: 'left' }
-      vCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8F9FA' } }
-      tdbKpiCol++
+    wsTdb.mergeCells(2, 1, 2, 9)
+    const tdbSubtitle = wsTdb.getCell('A2')
+    tdbSubtitle.value = `Mis à jour le ${new Date().toLocaleDateString('fr-FR')}`
+    tdbSubtitle.font = { italic: true, size: 9, name: 'Arial', color: { argb: 'FF6B7280' } }
+    tdbSubtitle.alignment = { horizontal: 'center', vertical: 'middle' }
+ 
+    // ── 4 indicateurs de solde (formules auditables, pointent vers les onglets bruts) ──
+    kpiCard(wsTdb, 1, 4, 'COFFRE — SOLDE DHS', `'COFFRE'!H${1 + coffre.length}`, C_GOLD_BG)
+    kpiCard(wsTdb, 3, 4, 'COFFRE — SOLDE €', `'COFFRE'!L${1 + coffre.length}`, C_GOLD_BG)
+    kpiCard(wsTdb, 5, 4, 'BANQUE — SOLDE MAD', `'BANQUE'!J${2 + bankMoves.length}`, TAB_BLUE)
+    kpiCard(wsTdb, 7, 4, 'FOND DE CAISSE — SOLDE DHS', `'FOND DE CAISSE'!J${lastFondsRow}`, TAB_RED)
+ 
+    // ── Synthèse par mois (Entrées / Charges / Résultat) ──────────────────────
+    sectionTitle(wsTdb, 7, `SYNTHÈSE PAR MOIS (DHS) — ${year}`, 9)
+    const synHeaders = ['MOIS', 'ENTRÉES COFFRE', 'ENTRÉES BANQUE', 'TOTAL ENTRÉES', 'CHARGES COFFRE', 'CHARGES BANQUE', 'TOTAL CHARGES', 'RÉSULTAT', '% MARGE']
+    synHeaders.forEach((h, i) => hdr(wsTdb.getCell(8, i + 1), h, C_HEADER_BG))
+    wsTdb.getRow(8).height = 26
+ 
+    const synFirstRow = 9
+    MONTHS_FR.forEach((mois, i) => {
+      const row = synFirstRow + i
+      const moisLabel = `${mois} ${year}`
+      cell(wsTdb.getCell(row, 1), moisLabel, true)
+      const bEnt = wsTdb.getCell(row, 2); bEnt.value = { formula: `SUMIF('COFFRE'!B:B,"${moisLabel}",'COFFRE'!G:G)` }
+      const cEnt = wsTdb.getCell(row, 3); cEnt.value = { formula: `SUMIF('BANQUE'!B:B,"${moisLabel}",'BANQUE'!I:I)` }
+      const dTot = wsTdb.getCell(row, 4); dTot.value = { formula: `B${row}+C${row}` }
+      const eChg = wsTdb.getCell(row, 5); eChg.value = { formula: `SUMIF('COFFRE'!B:B,"${moisLabel}",'COFFRE'!F:F)` }
+      const fChg = wsTdb.getCell(row, 6); fChg.value = { formula: `SUMIF('BANQUE'!B:B,"${moisLabel}",'BANQUE'!H:H)` }
+      const gTot = wsTdb.getCell(row, 7); gTot.value = { formula: `E${row}+F${row}` }
+      const hRes = wsTdb.getCell(row, 8); hRes.value = { formula: `D${row}-G${row}` }
+      const iMarge = wsTdb.getCell(row, 9); iMarge.value = { formula: `IFERROR(H${row}/D${row},0)` }
+      for (const col of [2, 3, 4, 5, 6, 7, 8]) { const c = wsTdb.getCell(row, col); c.numFmt = '#,##0.00'; c.font = { name: 'Arial', size: 9 }; c.alignment = { horizontal: 'right' } }
+      iMarge.numFmt = '0.0%'; iMarge.font = { name: 'Arial', size: 9 }; iMarge.alignment = { horizontal: 'right' }
+      wsTdb.getCell(row, 8).font = { name: 'Arial', size: 9, bold: true }
+      altRow(wsTdb.getRow(row), row)
+    })
+    const synTotalRow = synFirstRow + 12
+    cell(wsTdb.getCell(synTotalRow, 1), `TOTAL ${year}`, true)
+    for (const col of [2, 3, 4, 5, 6, 7, 8]) {
+      const colLetter = String.fromCharCode(64 + col)
+      const c = wsTdb.getCell(synTotalRow, col)
+      c.value = { formula: `SUM(${colLetter}${synFirstRow}:${colLetter}${synTotalRow - 1})` }
+      c.numFmt = '#,##0.00'; c.font = { name: 'Arial', size: 9, bold: true }; c.alignment = { horizontal: 'right' }
+      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEDE0D6' } }
     }
-    wsTdb.getRow(4).height = 28
+    const synTotalMarge = wsTdb.getCell(synTotalRow, 9)
+    synTotalMarge.value = { formula: `IFERROR(H${synTotalRow}/D${synTotalRow},0)` }
+    synTotalMarge.numFmt = '0.0%'; synTotalMarge.font = { name: 'Arial', size: 9, bold: true }; synTotalMarge.alignment = { horizontal: 'right' }
+    synTotalMarge.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEDE0D6' } }
+    wsTdb.getCell(synTotalRow, 1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEDE0D6' } }
  
-    // Détail par section
-    wsTdb.getCell('A6').value = 'DÉTAIL PAR SECTION'
-    wsTdb.getCell('A6').font = { bold: true, size: 9, name: 'Arial', color: { argb: 'FF6B7280' } }
-    hdr(wsTdb.getCell('A7'), 'Section', C_HEADER_BG)
-    hdr(wsTdb.getCell('B7'), 'Indicateur', C_HEADER_BG)
-    hdr(wsTdb.getCell('C7'), 'Montant', C_HEADER_BG)
+    // ── Top dépenses par catégorie (cumul année) ──────────────────────────────
+    // Sourcé directement depuis les Dépenses de l'appli (toutes méthodes de
+    // paiement confondues) : valeurs calculées (pas de formule Excel possible,
+    // il n'y a plus d'onglet de détail transaction par transaction dans cet export).
+    const topDepRow0 = synTotalRow + 2
+    sectionTitle(wsTdb, topDepRow0, `TOP DÉPENSES PAR CATÉGORIE (Cumul ${year})`, 9)
+    hdr(wsTdb.getCell(topDepRow0 + 1, 1), 'CATÉGORIE', C_HEADER_BG)
+    hdr(wsTdb.getCell(topDepRow0 + 1, 2), 'MONTANT (DHS)', C_HEADER_BG)
+    hdr(wsTdb.getCell(topDepRow0 + 1, 3), '% DU TOTAL', C_HEADER_BG)
+    const sortedDepCats = [...DEPENSES_CATEGORIES_TDB].sort((a, b) => (depByCategoryTotal[b] || 0) - (depByCategoryTotal[a] || 0))
+    const topDepFirstRow = topDepRow0 + 2
+    sortedDepCats.forEach((catName, i) => {
+      const row = topDepFirstRow + i
+      cell(wsTdb.getCell(row, 1), catName)
+      const mCell = wsTdb.getCell(row, 2)
+      mCell.value = depByCategoryTotal[catName] || 0
+      mCell.numFmt = '#,##0.00'; mCell.font = { name: 'Arial', size: 9, bold: true }; mCell.alignment = { horizontal: 'right' }
+      const pCell = wsTdb.getCell(row, 3)
+      pCell.value = { formula: `IFERROR(B${row}/SUM($B$${topDepFirstRow}:$B$${topDepFirstRow + sortedDepCats.length - 1}),0)` }
+      pCell.numFmt = '0.0%'; pCell.font = { name: 'Arial', size: 9 }; pCell.alignment = { horizontal: 'right' }
+      altRow(wsTdb.getRow(row), row)
+    })
+    const topDepTotalRow = topDepFirstRow + sortedDepCats.length
+    cell(wsTdb.getCell(topDepTotalRow, 1), 'TOTAL', true)
+    const topDepTotalCell = wsTdb.getCell(topDepTotalRow, 2)
+    topDepTotalCell.value = { formula: `SUM(B${topDepFirstRow}:B${topDepTotalRow - 1})` }
+    topDepTotalCell.numFmt = '#,##0.00'; topDepTotalCell.font = { name: 'Arial', size: 9, bold: true }; topDepTotalCell.alignment = { horizontal: 'right' }
+    wsTdb.getCell(topDepTotalRow, 3).value = '100%'
+    for (const col of [1, 2, 3]) wsTdb.getCell(topDepTotalRow, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEDE0D6' } }
+    const topDepNoteRow = wsTdb.getRow(topDepTotalRow + 1)
+    topDepNoteRow.getCell(1).value = 'Calculé à partir des dépenses enregistrées dans l\'application, toutes méthodes de paiement confondues (valeurs figées, pas des formules Excel).'
+    topDepNoteRow.getCell(1).font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF6B7280' } }
  
-    // Valeurs = formules qui pointent directement vers les onglets de détail
-    // (FOND DE CAISSE / BANQUE / COFFRE), donc toujours auditables dans Excel.
-    const tdbSectionRows: { section: string; label: string; formula: string; color: string }[] = [
-      { section: 'Fond de caisse', label: 'Entrées', formula: "SUMIF('FOND DE CAISSE'!C:C,\"↑ Entrée\",'FOND DE CAISSE'!F:F)", color: 'FF2D6A4F' },
-      { section: 'Fond de caisse', label: 'Sorties', formula: "SUMIF('FOND DE CAISSE'!C:C,\"↓ Sortie\",'FOND DE CAISSE'!F:F)*-1", color: 'FF991B1B' },
-      { section: 'Banque', label: 'Solde net MAD', formula: `'BANQUE'!J${2 + bankMoves.length}`, color: TAB_BLUE },
-      { section: 'Coffre fort', label: 'Solde DHS', formula: `'COFFRE'!H${1 + coffre.length}`, color: TAB_GOLD },
-      { section: 'Coffre fort', label: 'Solde €', formula: `'COFFRE'!L${1 + coffre.length}`, color: TAB_GOLD },
+    // ── Dépenses sans facture (SF) — Coffre uniquement ────────────────────────
+    const sfRow0 = topDepTotalRow + 3
+    sectionTitle(wsTdb, sfRow0, '⚠️ DÉPENSES SANS FACTURE (SF) — Non justifiées · Coffre uniquement', 9)
+    hdr(wsTdb.getCell(sfRow0 + 1, 1), 'MOIS', C_HEADER_BG)
+    hdr(wsTdb.getCell(sfRow0 + 1, 2), 'TOTAL SF (DHS)', C_HEADER_BG)
+    hdr(wsTdb.getCell(sfRow0 + 1, 3), 'TOTAL DÉPENSES COFFRE (DHS)', C_HEADER_BG)
+    hdr(wsTdb.getCell(sfRow0 + 1, 4), '% NON JUSTIFIÉ', C_HEADER_BG)
+    const sfFirstRow = sfRow0 + 2
+    MONTHS_FR.forEach((mois, i) => {
+      const row = sfFirstRow + i
+      const moisLabel = `${mois} ${year}`
+      cell(wsTdb.getCell(row, 1), moisLabel, true)
+      const bSf = wsTdb.getCell(row, 2); bSf.value = { formula: `SUMIFS('COFFRE'!F:F,'COFFRE'!I:I,"SF",'COFFRE'!B:B,"${moisLabel}")` }
+      const cTot = wsTdb.getCell(row, 3); cTot.value = { formula: `SUMIF('COFFRE'!B:B,"${moisLabel}",'COFFRE'!F:F)` }
+      const dPct = wsTdb.getCell(row, 4); dPct.value = { formula: `IFERROR(B${row}/C${row},0)` }
+      bSf.numFmt = '#,##0.00'; bSf.font = { name: 'Arial', size: 9 }; bSf.alignment = { horizontal: 'right' }
+      cTot.numFmt = '#,##0.00'; cTot.font = { name: 'Arial', size: 9 }; cTot.alignment = { horizontal: 'right' }
+      dPct.numFmt = '0.0%'; dPct.font = { name: 'Arial', size: 9 }; dPct.alignment = { horizontal: 'right' }
+      altRow(wsTdb.getRow(row), row)
+    })
+    const sfTotalRow = sfFirstRow + 12
+    cell(wsTdb.getCell(sfTotalRow, 1), `TOTAL ${year}`, true)
+    const sfTotB = wsTdb.getCell(sfTotalRow, 2); sfTotB.value = { formula: `SUM(B${sfFirstRow}:B${sfTotalRow - 1})` }
+    const sfTotC = wsTdb.getCell(sfTotalRow, 3); sfTotC.value = { formula: `SUM(C${sfFirstRow}:C${sfTotalRow - 1})` }
+    const sfTotD = wsTdb.getCell(sfTotalRow, 4); sfTotD.value = { formula: `IFERROR(B${sfTotalRow}/C${sfTotalRow},0)` }
+    sfTotB.numFmt = '#,##0.00'; sfTotB.font = { name: 'Arial', size: 9, bold: true }; sfTotB.alignment = { horizontal: 'right' }
+    sfTotC.numFmt = '#,##0.00'; sfTotC.font = { name: 'Arial', size: 9, bold: true }; sfTotC.alignment = { horizontal: 'right' }
+    sfTotD.numFmt = '0.0%'; sfTotD.font = { name: 'Arial', size: 9, bold: true }; sfTotD.alignment = { horizontal: 'right' }
+    for (const col of [1, 2, 3, 4]) wsTdb.getCell(sfTotalRow, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEDE0D6' } }
+ 
+    // ── Fond de caisse — suivi des liquidités physiques ───────────────────────
+    const fdcRow0 = sfTotalRow + 2
+    sectionTitle(wsTdb, fdcRow0, '💰 FOND DE CAISSE — Suivi des liquidités physiques', 9)
+    const fdcRows: { label: string; value?: number; formula?: string }[] = [
+      { label: 'Seuil minimum fond de caisse (DHS)', value: settings.fond_caisse_mad },
+      { label: 'Solde actuel fond de caisse (DHS)', formula: `'FOND DE CAISSE'!J${lastFondsRow}` },
+      { label: 'Alerte', formula: `IF(B${fdcRow0 + 2}<B${fdcRow0 + 1},"⚠️ SOLDE INFÉRIEUR AU SEUIL — Réapprovisionner","✅ Solde suffisant")` },
+      { label: 'Écart au seuil (DHS)', formula: `B${fdcRow0 + 2}-B${fdcRow0 + 1}` },
     ]
-    let tdbRow = 8
-    for (const r of tdbSectionRows) {
-      const secColor = r.section === 'Fond de caisse' ? TAB_RED : r.section === 'Banque' ? TAB_BLUE : TAB_GOLD
-      cell(wsTdb.getCell(tdbRow, 1), r.section, true, secColor)
-      cell(wsTdb.getCell(tdbRow, 2), r.label)
-      const vc = wsTdb.getCell(tdbRow, 3)
-      vc.value = { formula: r.formula }
-      vc.numFmt = '#,##0.00'
-      vc.font = { name: 'Arial', size: 9, bold: true, color: { argb: r.color } }
-      vc.alignment = { horizontal: 'right' }
-      altRow(wsTdb.getRow(tdbRow), tdbRow)
-      tdbRow++
-    }
- 
-    const tdbNoteRow = wsTdb.getRow(tdbRow + 1)
-    tdbNoteRow.getCell(1).value = `Fond de caisse — dotation initiale : ${settings.fond_caisse_mad} MAD + ${settings.fond_caisse_eur} EUR`
-    tdbNoteRow.getCell(1).font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF6B7280' } }
+    fdcRows.forEach((r, i) => {
+      const row = fdcRow0 + 1 + i
+      cell(wsTdb.getCell(row, 1), r.label, true)
+      const vC = wsTdb.getCell(row, 2)
+      vC.value = r.formula ? { formula: r.formula } : (r.value ?? 0)
+      if (r.label !== 'Alerte') { vC.numFmt = '#,##0.00'; vC.alignment = { horizontal: 'right' } }
+      vC.font = { name: 'Arial', size: 9, bold: true, color: { argb: TAB_RED } }
+      altRow(wsTdb.getRow(row), row)
+    })
  
     // ── Sheet: Fond de caisse ─────────────────────────────────────────────────
     const wsFonds = wb.addWorksheet('FOND DE CAISSE', {
@@ -190,12 +311,14 @@ export async function GET() {
       { key: 'categorie', width: 22 }, { key: 'employe', width: 18 },
       { key: 'montant', width: 12 }, { key: 'devise', width: 8 },
       { key: 'description', width: 28 }, { key: 'statut', width: 12 },
+      { key: 'solde', width: 14 },
     ]
-    const fondsHeaders = ['Date', 'Mois', 'Sens', 'Catégorie', 'Employé', 'Montant', 'Devise', 'Description', 'Statut']
+    const fondsHeaders = ['Date', 'Mois', 'Sens', 'Catégorie', 'Employé', 'Montant', 'Devise', 'Description', 'Statut', 'Solde DHS']
     fondsHeaders.forEach((h, i) => hdr(wsFonds.getCell(1, i + 1), h, C_PURPLE_BG))
     wsFonds.getRow(1).height = 22
  
-    // Dotation row
+    // Dotation row — J2 sert de point de départ au solde cumulé DHS ci-dessous
+    // (la dotation en EUR reste indicative en colonne H, pas de solde € suivi ici)
     wsFonds.addRow({})
     const dotRow = wsFonds.lastRow!
     dotRow.getCell(1).value = 'DOTATION INITIALE'
@@ -207,9 +330,15 @@ export async function GET() {
     dotRow.getCell(7).value = 'MAD'; dotRow.getCell(7).alignment = { horizontal: 'center' }
     dotRow.getCell(8).value = `+ ${settings.fond_caisse_eur.toFixed(2)} EUR`
     dotRow.getCell(8).font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF4338CA' } }
+    const dotSoldeC = dotRow.getCell(10)
+    dotSoldeC.value = { formula: 'F2' }
+    dotSoldeC.numFmt = '#,##0.00'
+    dotSoldeC.font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF4338CA' } }
+    dotSoldeC.alignment = { horizontal: 'right' }
  
     fonds.forEach((e, idx) => {
       const row = wsFonds.addRow({})
+      const rowNum = row.number
       const dateStr = (e.date as string).slice(0, 10)
       const mois = formatMois(dateStr)
       const amt = Number(e.amount)
@@ -233,9 +362,16 @@ export async function GET() {
       stc.value = status === 'validated' ? 'Validé' : 'En attente'
       stc.font = { name: 'Arial', size: 9, bold: true, color: { argb: status === 'validated' ? 'FF2D6A4F' : 'FFD97706' } }
       stc.alignment = { horizontal: 'center' }
+      // Solde DHS cumulé — formule Excel (auditable) : ne compte que les
+      // mouvements en devise MAD (une ligne en EUR laisse le solde DHS inchangé)
+      const soldeC = row.getCell(10)
+      soldeC.value = { formula: `J${rowNum - 1}+IF(G${rowNum}="MAD",F${rowNum},0)` }
+      soldeC.numFmt = '#,##0.00'
+      soldeC.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF4338CA' } }
+      soldeC.alignment = { horizontal: 'right' }
       altRow(row, idx + 3)
     })
-    wsFonds.autoFilter = { from: 'A1', to: 'I1' }
+    wsFonds.autoFilter = { from: 'A1', to: 'J1' }
  
     // ── Sheet: Banque (chèque, CB, virement — hors espèces) ──────────────────
     const wsSoldes = wb.addWorksheet('BANQUE', {
