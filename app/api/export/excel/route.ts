@@ -8,12 +8,9 @@ export const dynamic = 'force-dynamic'
 // Colors
 const C_HEADER_BG = 'FF8B4513'   // terracotta
 const C_HEADER_FG = 'FFFFFFFF'
-const C_GREEN_BG  = 'FF2D6A4F'
 const C_BLUE_BG   = 'FF3730A3'
 const C_PURPLE_BG = 'FF6366F1'
 const C_GOLD_BG   = 'FF92400E'   // coffre-fort
-const C_DASH_BG   = 'FFF8F9FA'
-const C_TITLE_BG  = 'FFEDE0D6'
 const C_ALT_ROW   = 'FFFAFAFA'
  
 // Couleurs d'onglet (tabColor)
@@ -47,129 +44,6 @@ function altRow(row: ExcelJS.Row, idx: number) {
   }
 }
  
-type DashTotal = { label: string; formula?: string; value?: number; color: string }
- 
-// Ajoute un onglet "Dashboard" — les totaux (KPI) sont des formules Excel quand
-// une source est disponible (onglet de détail ou table Par catégorie/Par statut
-// du même onglet), afin que tous les calculs restent visibles/auditables dans Excel.
-function addDashboard(
-  ws: ExcelJS.Worksheet,
-  title: string,
-  byCategory: Record<string, number>,
-  byMonth: Record<string, number>,
-  totals: DashTotal[],
-  byStatus?: Record<string, number>
-) {
-  ws.getColumn(1).width = 28
-  ws.getColumn(2).width = 16
-  ws.getColumn(3).width = 6
-  ws.getColumn(4).width = 28
-  ws.getColumn(5).width = 16
-  if (byStatus) {
-    ws.getColumn(6).width = 6
-    ws.getColumn(7).width = 22
-    ws.getColumn(8).width = 16
-  }
- 
-  // Title
-  ws.mergeCells('A1:E1')
-  const titleCell = ws.getCell('A1')
-  titleCell.value = `📊 Dashboard — ${title}`
-  titleCell.font = { bold: true, size: 13, name: 'Arial', color: { argb: 'FF1F2937' } }
-  titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TITLE_BG } }
-  titleCell.alignment = { horizontal: 'center', vertical: 'middle' }
-  ws.getRow(1).height = 30
- 
-  // KPI cards row
-  let col = 1
-  for (const t of totals) {
-    const kCell = ws.getCell(3, col)
-    kCell.value = t.label
-    kCell.font = { bold: true, size: 9, name: 'Arial', color: { argb: 'FF6B7280' } }
-    kCell.alignment = { horizontal: 'center' }
-    const vCell = ws.getCell(4, col)
-    vCell.value = t.formula ? { formula: t.formula } : (t.value ?? 0)
-    vCell.numFmt = '#,##0.00'
-    vCell.font = { bold: true, size: 14, name: 'Arial', color: { argb: t.color } }
-    vCell.alignment = { horizontal: 'center' }
-    vCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_DASH_BG } }
-    col += 2
-  }
-  ws.getRow(4).height = 28
- 
-  // By category
-  ws.getCell('A6').value = 'PAR CATÉGORIE'
-  ws.getCell('A6').font = { bold: true, size: 9, name: 'Arial', color: { argb: 'FF6B7280' } }
-  hdr(ws.getCell('A7'), 'Catégorie', C_HEADER_BG)
-  hdr(ws.getCell('B7'), 'Montant', C_HEADER_BG)
-  let r = 8
-  const sortedCats = Object.entries(byCategory).sort((a, b) => b[1] - a[1])
-  for (const [cat, total] of sortedCats) {
-    cell(ws.getCell(r, 1), cat)
-    const mc = ws.getCell(r, 2)
-    mc.value = total
-    mc.numFmt = '#,##0.00'
-    mc.font = { name: 'Arial', size: 9, bold: true }
-    mc.alignment = { horizontal: 'right' }
-    altRow(ws.getRow(r), r)
-    r++
-  }
-  // Total (formule SUM — auditable dans Excel)
-  ws.getCell(r, 1).value = 'TOTAL'
-  ws.getCell(r, 1).font = { bold: true, name: 'Arial', size: 9 }
-  ws.getCell(r, 2).value = { formula: `SUM(B8:B${r - 1})` }
-  ws.getCell(r, 2).numFmt = '#,##0.00'
-  ws.getCell(r, 2).font = { bold: true, name: 'Arial', size: 9 }
-  ws.getCell(r, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TITLE_BG } }
-  ws.getCell(r, 1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TITLE_BG } }
- 
-  // By month
-  const startCol = 4
-  ws.getCell(6, startCol).value = 'PAR MOIS'
-  ws.getCell(6, startCol).font = { bold: true, size: 9, name: 'Arial', color: { argb: 'FF6B7280' } }
-  hdr(ws.getCell(7, startCol), 'Mois', C_BLUE_BG)
-  hdr(ws.getCell(7, startCol + 1), 'Montant', C_BLUE_BG)
-  let mr = 8
-  for (const [month, total] of Object.entries(byMonth).sort()) {
-    cell(ws.getCell(mr, startCol), month)
-    const mc2 = ws.getCell(mr, startCol + 1)
-    mc2.value = total
-    mc2.numFmt = '#,##0.00'
-    mc2.font = { name: 'Arial', size: 9, bold: true }
-    mc2.alignment = { horizontal: 'right' }
-    altRow(ws.getRow(mr), mr)
-    mr++
-  }
- 
-  // By status (optionnel) — permet aux KPI "Validés" / "En attente" de référencer
-  // une vraie cellule (donc une formule) plutôt qu'un nombre figé
-  if (byStatus) {
-    const scCol = 7
-    ws.getCell(6, scCol).value = 'PAR STATUT'
-    ws.getCell(6, scCol).font = { bold: true, size: 9, name: 'Arial', color: { argb: 'FF6B7280' } }
-    hdr(ws.getCell(7, scCol), 'Statut', C_GREEN_BG)
-    hdr(ws.getCell(7, scCol + 1), 'Montant', C_GREEN_BG)
-    let sr = 8
-    for (const [st, total] of Object.entries(byStatus)) {
-      cell(ws.getCell(sr, scCol), st)
-      const vc = ws.getCell(sr, scCol + 1)
-      vc.value = total
-      vc.numFmt = '#,##0.00'
-      vc.font = { name: 'Arial', size: 9, bold: true }
-      vc.alignment = { horizontal: 'right' }
-      altRow(ws.getRow(sr), sr)
-      sr++
-    }
-    ws.getCell(sr, scCol).value = 'TOTAL'
-    ws.getCell(sr, scCol).font = { bold: true, name: 'Arial', size: 9 }
-    ws.getCell(sr, scCol + 1).value = { formula: `SUM(H8:H${sr - 1})` }
-    ws.getCell(sr, scCol + 1).numFmt = '#,##0.00'
-    ws.getCell(sr, scCol + 1).font = { bold: true, name: 'Arial', size: 9 }
-    ws.getCell(sr, scCol + 1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TITLE_BG } }
-    ws.getCell(sr, scCol).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TITLE_BG } }
-  }
-}
- 
 function formatMois(dateStr: string) {
   const d = new Date(dateStr + 'T00:00:00')
   return d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }).toUpperCase()
@@ -193,40 +67,22 @@ export async function GET() {
     const settings: Record<string, number> = { fond_caisse_mad: 2000, fond_caisse_eur: 200, solde_bancaire_mad: 0, solde_bancaire_eur: 0 }
     for (const r of settingsRows) settings[r.key as string] = parseFloat(r.value as string) || 0
  
-    // ── Agrégats Encaissements / Dépenses (calculés en amont : le Tableau de
-    //    bord référence la ligne TOTAL du dashboard correspondant par formule,
-    //    il faut donc connaître son numéro de ligne avant de l'écrire) ─────────
-    const encByCategory: Record<string, number> = {}
-    const encByMonth: Record<string, number> = {}
-    let encTotal = 0, encValidated = 0
-    encaissements.forEach((e) => {
-      const dateStr = (e.date as string).slice(0, 10)
-      const mois = formatMois(dateStr)
-      const amt = Number(e.amount)
-      const status = e.status as string
-      encByCategory[e.category as string] = (encByCategory[e.category as string] || 0) + amt
-      encByMonth[mois] = (encByMonth[mois] || 0) + amt
-      encTotal += amt
-      if (status === 'validated') encValidated += amt
-    })
-    const encTotalRow = 8 + Object.keys(encByCategory).length
+    // ── Totaux Encaissements / Dépenses (le détail par transaction ne vit que
+    //    dans les onglets bruts — il n'y a plus de dashboards par catégorie) ──
+    let encTotal = 0
+    encaissements.forEach((e) => { encTotal += Number(e.amount) })
  
-    const depByCategory: Record<string, number> = {}
-    const depByMonth: Record<string, number> = {}
-    let depTotal = 0, depValidated = 0
-    depenses.forEach((e) => {
-      const dateStr = (e.date as string).slice(0, 10)
-      const mois = formatMois(dateStr)
-      const amt = Number(e.amount)
-      const status = e.status as string
-      depByCategory[e.category as string] = (depByCategory[e.category as string] || 0) + amt
-      depByMonth[mois] = (depByMonth[mois] || 0) + amt
-      depTotal += amt
-      if (status === 'validated') depValidated += amt
-    })
-    const depTotalRow = 8 + Object.keys(depByCategory).length
+    let depTotal = 0
+    depenses.forEach((e) => { depTotal += Number(e.amount) })
  
     const tdbResultat = encTotal - depTotal // utilisé uniquement pour la couleur (vert/rouge)
+ 
+    // Mouvements bancaires (chèque, CB, virement — hors espèces, MAD uniquement)
+    // Calculé ici (avant la construction de l'onglet BANQUE) pour connaître le
+    // nombre de lignes et pouvoir y faire référence depuis le TABLEAU DE BORD.
+    const bankMoves = [...encaissements, ...depenses]
+      .filter(e => e.payment && e.payment !== 'Espèces' && (!e.currency || e.currency === 'MAD'))
+      .sort((a, b) => (a.date as string).localeCompare(b.date as string))
  
     const wb = new ExcelJS.Workbook()
     wb.creator = 'Riad Anyssates'
@@ -248,7 +104,7 @@ export async function GET() {
       }
     }
  
-    // ── Sheet: TABLEAU DE BORD (synthèse générale — 1er onglet) ───────────────
+    // ── Sheet: TABLEAU DE BORD (synthèse générale — 1er et unique onglet de synthèse) ─
     const wsTdb = wb.addWorksheet('TABLEAU DE BORD', {
       views: [{ showGridLines: false }],
       properties: { tabColor: { argb: TAB_BLACK } },
@@ -267,10 +123,11 @@ export async function GET() {
     wsTdb.getRow(1).height = 32
  
     // KPI — vue d'ensemble Encaissements / Dépenses / Résultat net
-    // Valeurs = formules qui pointent vers les dashboards de détail (auditable dans Excel)
-    const tdbKpis: { label: string; formula: string; color: string }[] = [
-      { label: 'Total encaissements', formula: `'DASHBOARD ENCAISSEMENTS'!B${encTotalRow}`, color: 'FF2D6A4F' },
-      { label: 'Total dépenses', formula: `'DASHBOARD DÉPENSES'!B${depTotalRow}`, color: 'FF991B1B' },
+    // Total encaissements/dépenses = valeurs (il n'y a plus d'onglet de détail
+    // à référencer par formule) ; Résultat net reste une formule (A4-B4).
+    const tdbKpis: { label: string; value?: number; formula?: string; color: string }[] = [
+      { label: 'Total encaissements', value: encTotal, color: 'FF2D6A4F' },
+      { label: 'Total dépenses', value: depTotal, color: 'FF991B1B' },
       { label: 'Résultat net', formula: 'A4-B4', color: tdbResultat >= 0 ? 'FF2D6A4F' : 'FF991B1B' },
     ]
     let tdbKpiCol = 1
@@ -280,11 +137,11 @@ export async function GET() {
       kCell.font = { bold: true, size: 9, name: 'Arial', color: { argb: 'FF6B7280' } }
       kCell.alignment = { horizontal: 'left' }
       const vCell = wsTdb.getCell(4, tdbKpiCol)
-      vCell.value = { formula: k.formula }
+      vCell.value = k.formula ? { formula: k.formula } : (k.value ?? 0)
       vCell.numFmt = '#,##0.00'
       vCell.font = { bold: true, size: 16, name: 'Arial', color: { argb: k.color } }
       vCell.alignment = { horizontal: 'left' }
-      vCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_DASH_BG } }
+      vCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8F9FA' } }
       tdbKpiCol++
     }
     wsTdb.getRow(4).height = 28
@@ -296,13 +153,14 @@ export async function GET() {
     hdr(wsTdb.getCell('B7'), 'Indicateur', C_HEADER_BG)
     hdr(wsTdb.getCell('C7'), 'Montant', C_HEADER_BG)
  
-    // Valeurs = formules qui pointent vers les dashboards de détail (auditable dans Excel)
+    // Valeurs = formules qui pointent directement vers les onglets de détail
+    // (FOND DE CAISSE / BANQUE / COFFRE), donc toujours auditables dans Excel.
     const tdbSectionRows: { section: string; label: string; formula: string; color: string }[] = [
-      { section: 'Fond de caisse', label: 'Entrées', formula: "'DASHBOARD FOND DE CAISSE'!C4", color: 'FF2D6A4F' },
-      { section: 'Fond de caisse', label: 'Sorties', formula: "'DASHBOARD FOND DE CAISSE'!E4", color: 'FF991B1B' },
-      { section: 'Banque', label: 'Solde net MAD', formula: "'DASHBOARD BANQUE'!A4", color: TAB_BLUE },
-      { section: 'Banque', label: 'Solde net EUR', formula: "'DASHBOARD BANQUE'!C4", color: TAB_BLUE },
-      { section: 'Coffre fort', label: 'Solde estimé', formula: "'DASHBOARD COFFRE'!E4", color: TAB_GOLD },
+      { section: 'Fond de caisse', label: 'Entrées', formula: "SUMIF('FOND DE CAISSE'!C:C,\"↑ Entrée\",'FOND DE CAISSE'!F:F)", color: 'FF2D6A4F' },
+      { section: 'Fond de caisse', label: 'Sorties', formula: "SUMIF('FOND DE CAISSE'!C:C,\"↓ Sortie\",'FOND DE CAISSE'!F:F)*-1", color: 'FF991B1B' },
+      { section: 'Banque', label: 'Solde net MAD', formula: `'BANQUE'!J${2 + bankMoves.length}`, color: TAB_BLUE },
+      { section: 'Coffre fort', label: 'Solde DHS', formula: `'COFFRE'!H${1 + coffre.length}`, color: TAB_GOLD },
+      { section: 'Coffre fort', label: 'Solde €', formula: `'COFFRE'!L${1 + coffre.length}`, color: TAB_GOLD },
     ]
     let tdbRow = 8
     for (const r of tdbSectionRows) {
@@ -321,22 +179,6 @@ export async function GET() {
     const tdbNoteRow = wsTdb.getRow(tdbRow + 1)
     tdbNoteRow.getCell(1).value = `Fond de caisse — dotation initiale : ${settings.fond_caisse_mad} MAD + ${settings.fond_caisse_eur} EUR`
     tdbNoteRow.getCell(1).font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF6B7280' } }
- 
-    // ── Dashboard Encaissements ───────────────────────────────────────────────
-    const wsDashEnc = wb.addWorksheet('DASHBOARD ENCAISSEMENTS', { views: [{ showGridLines: false }] })
-    addDashboard(wsDashEnc, 'Encaissements', encByCategory, encByMonth, [
-      { label: 'Total', formula: `B${encTotalRow}`, color: 'FF2D6A4F' },
-      { label: 'Validés', formula: 'H8', color: 'FF3730A3' },
-      { label: 'En attente', formula: 'H9', color: 'FFD97706' },
-    ], { 'Validé': encValidated, 'En attente': encTotal - encValidated })
- 
-    // ── Dashboard Dépenses ────────────────────────────────────────────────────
-    const wsDashDep = wb.addWorksheet('DASHBOARD DÉPENSES', { views: [{ showGridLines: false }] })
-    addDashboard(wsDashDep, 'Dépenses', depByCategory, depByMonth, [
-      { label: 'Total dépenses', formula: `B${depTotalRow}`, color: 'FF991B1B' },
-      { label: 'Validées', formula: 'H8', color: 'FF2D6A4F' },
-      { label: 'En attente', formula: 'H9', color: 'FFD97706' },
-    ], { 'Validée': depValidated, 'En attente': depTotal - depValidated })
  
     // ── Sheet: Fond de caisse ─────────────────────────────────────────────────
     const wsFonds = wb.addWorksheet('FOND DE CAISSE', {
@@ -366,9 +208,6 @@ export async function GET() {
     dotRow.getCell(8).value = `+ ${settings.fond_caisse_eur.toFixed(2)} EUR`
     dotRow.getCell(8).font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF4338CA' } }
  
-    const fondsByCategory: Record<string, number> = {}
-    const fondsByMonth: Record<string, number> = {}
- 
     fonds.forEach((e, idx) => {
       const row = wsFonds.addRow({})
       const dateStr = (e.date as string).slice(0, 10)
@@ -395,23 +234,8 @@ export async function GET() {
       stc.font = { name: 'Arial', size: 9, bold: true, color: { argb: status === 'validated' ? 'FF2D6A4F' : 'FFD97706' } }
       stc.alignment = { horizontal: 'center' }
       altRow(row, idx + 3)
-      fondsByCategory[e.category as string] = (fondsByCategory[e.category as string] || 0) + amt
-      fondsByMonth[mois] = (fondsByMonth[mois] || 0) + (isIn ? amt : -amt)
     })
     wsFonds.autoFilter = { from: 'A1', to: 'I1' }
- 
-    // ── Dashboard Fond de caisse ──────────────────────────────────────────────
-    // Valeurs = formules qui lisent directement l'onglet FOND DE CAISSE (auditable)
-    const wsDashFonds = wb.addWorksheet('DASHBOARD FOND DE CAISSE', { views: [{ showGridLines: false }] })
-    addDashboard(wsDashFonds, 'Fond de caisse', fondsByCategory, fondsByMonth, [
-      { label: 'Dotation MAD', formula: "'FOND DE CAISSE'!F2", color: 'FF4338CA' },
-      { label: 'Entrées', formula: "SUMIF('FOND DE CAISSE'!C:C,\"↑ Entrée\",'FOND DE CAISSE'!F:F)", color: 'FF2D6A4F' },
-      { label: 'Sorties', formula: "SUMIF('FOND DE CAISSE'!C:C,\"↓ Sortie\",'FOND DE CAISSE'!F:F)*-1", color: 'FF991B1B' },
-    ])
-    // Add solde note
-    const soldeRow = wsDashFonds.getRow(5)
-    soldeRow.getCell(1).value = `Solde = Dotation (${settings.fond_caisse_mad} MAD + ${settings.fond_caisse_eur} EUR) + Entrées − Sorties`
-    soldeRow.getCell(1).font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF6B7280' } }
  
     // ── Sheet: Banque (chèque, CB, virement — hors espèces) ──────────────────
     const wsSoldes = wb.addWorksheet('BANQUE', {
@@ -461,13 +285,6 @@ export async function GET() {
       ecC.alignment = { horizontal: 'right' }
       row.eachCell(c => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEF2FF' } } })
     }
- 
-    const bankMoves = [...encaissements, ...depenses]
-      .filter(e => e.payment && e.payment !== 'Espèces' && (!e.currency || e.currency === 'MAD'))
-      .sort((a, b) => (a.date as string).localeCompare(b.date as string))
- 
-    const soldesByMode: Record<string, number> = {}
-    const soldesByMonth: Record<string, number> = {}
  
     bankMoves.forEach((e, idx) => {
       const row = wsSoldes.addRow({})
@@ -532,10 +349,6 @@ export async function GET() {
       cell(row.getCell(14), e.id)
  
       altRow(row, idx + 3)
- 
-      const mode = (e.payment as string) || '—'
-      soldesByMode[mode] = (soldesByMode[mode] || 0) + (isIn ? amt : -amt)
-      soldesByMonth[mois] = (soldesByMonth[mois] || 0) + (isIn ? amt : -amt)
     })
     wsSoldes.autoFilter = { from: 'A1', to: 'M1' }
  
@@ -549,18 +362,6 @@ export async function GET() {
         priority: 1,
       }],
     })
- 
-    // ── Dashboard Banque ──────────────────────────────────────────────────────
-    // Valeurs = formules qui lisent directement l'onglet BANQUE (auditable)
-    const wsDashSoldes = wb.addWorksheet('DASHBOARD BANQUE', { views: [{ showGridLines: false }] })
-    addDashboard(wsDashSoldes, 'Banque', soldesByMode, soldesByMonth, [
-      { label: 'Solde net MAD', formula: `'BANQUE'!J${wsSoldes.rowCount}`, color: 'FF3730A3' },
-      { label: 'Total entrées', formula: "SUM('BANQUE'!I:I)", color: 'FF2D6A4F' },
-      { label: 'Total sorties', formula: "SUM('BANQUE'!H:H)", color: 'FF991B1B' },
-    ])
-    const soldeNoteRow = wsDashSoldes.getRow(5)
-    soldeNoteRow.getCell(1).value = `Solde = Solde initial (${settings.solde_bancaire_mad} MAD) + Entrées CB/Virement/Chèque − Sorties CB/Virement/Chèque`
-    soldeNoteRow.getCell(1).font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF6B7280' } }
  
     // ── Sheet: Coffre (coffre-fort) ───────────────────────────────────────────
     const wsCoffre = wb.addWorksheet('COFFRE', {
@@ -577,9 +378,6 @@ export async function GET() {
     const coffreHeaders = ['Date', 'Mois', 'Employé', 'Catégorie', 'Libellé', 'Sortie DHS', 'Entrée DHS', 'Solde DHS', 'AF/SF', 'Sortie €', 'Entrée €', 'Solde €']
     coffreHeaders.forEach((h, i) => hdr(wsCoffre.getCell(1, i + 1), h, C_GOLD_BG))
     wsCoffre.getRow(1).height = 22
- 
-    const coffreByCategory: Record<string, number> = {}
-    const coffreByMonth: Record<string, number> = {}
  
     coffre.forEach((e, idx) => {
       const row = wsCoffre.addRow({})
@@ -629,20 +427,8 @@ export async function GET() {
       soldeEurC.alignment = { horizontal: 'right' }
  
       altRow(row, idx + 2)
-      coffreByCategory[e.category as string] = (coffreByCategory[e.category as string] || 0) + amt
-      coffreByMonth[mois] = (coffreByMonth[mois] || 0) + (isIn ? amt : -amt)
     })
     wsCoffre.autoFilter = { from: 'A1', to: 'L1' }
- 
-    // ── Dashboard Coffre ──────────────────────────────────────────────────────
-    // Valeurs = formules qui lisent directement l'onglet COFFRE (auditable)
-    const wsDashCoffre = wb.addWorksheet('DASHBOARD COFFRE', { views: [{ showGridLines: false }] })
-    addDashboard(wsDashCoffre, 'Coffre fort', coffreByCategory, coffreByMonth, [
-      { label: 'Solde DHS', formula: "SUM('COFFRE'!G:G)-SUM('COFFRE'!F:F)", color: C_GOLD_BG },
-      { label: 'Solde €', formula: "SUM('COFFRE'!K:K)-SUM('COFFRE'!J:J)", color: C_GOLD_BG },
-      { label: 'Dépôts DHS', formula: "SUM('COFFRE'!G:G)", color: 'FF2D6A4F' },
-      { label: 'Retraits DHS', formula: "SUM('COFFRE'!F:F)*-1", color: 'FF991B1B' },
-    ])
  
     // Generate buffer and return
     const buffer = await wb.xlsx.writeBuffer()
