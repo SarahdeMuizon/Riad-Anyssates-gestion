@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Format non supporté (image ou PDF uniquement)' }, { status: 400 })
   }
  
-  const DEPENSES_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Radeema','Divers']
+  const DEPENSES_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Radeema','Impôts','Divers']
  
   const prompt = entryType === 'cb'
     ? `Analyse cette facture/reçu. Réponds UNIQUEMENT avec un JSON strict (aucun texte autour).
