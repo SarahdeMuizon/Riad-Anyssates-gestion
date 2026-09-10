@@ -419,35 +419,51 @@ export async function GET() {
       properties: { tabColor: { argb: TAB_BLUE } },
     })
     wsSoldes.columns = [
-      { key: 'date', width: 12 }, { key: 'mois', width: 16 }, { key: 'categorie', width: 22 },
-      { key: 'description', width: 28 }, { key: 'mode', width: 14 }, { key: 'devise', width: 8 },
-      { key: 'entrees', width: 14 }, { key: 'sorties', width: 14 }, { key: 'solde', width: 14 },
-      { key: 'pointage', width: 12 }, { key: 'statut', width: 12 }, { key: 'reference', width: 18 },
+      { key: 'date', width: 12 }, { key: 'mois', width: 16 }, { key: 'employe', width: 16 },
+      { key: 'mode', width: 14 }, { key: 'facture', width: 14 }, { key: 'categorie', width: 20 },
+      { key: 'libelle', width: 30 }, { key: 'sortie', width: 14 }, { key: 'entree', width: 14 },
+      { key: 'theorique', width: 14 }, { key: 'pointage', width: 10 }, { key: 'reel', width: 14 },
+      { key: 'ecart', width: 10 },
       { key: 'id', width: 8, hidden: true }, // colonne technique (masquée) : sert à ré-associer la ligne au bon mouvement lors d'un ré-import du pointage
     ]
-    const soldesHeaders = ['Date', 'Mois', 'Catégorie', 'Description', 'Mode paiement', 'Devise', 'Entrées', 'Sorties', 'Solde', 'Pointage', 'Statut', 'Référence (chèque/facture)']
+    const soldesHeaders = ['Date', 'Mois', 'Employé', 'Mode', 'N° Facture', 'Catégorie', 'Libellé', 'Sortie DHS', 'Entrée DHS', 'Théorique', 'Pointé', 'Réel', 'Écart']
     soldesHeaders.forEach((h, i) => hdr(wsSoldes.getCell(1, i + 1), h, C_BLUE_BG))
     wsSoldes.getRow(1).height = 22
  
-    // Solde initial (une ligne par devise) — ligne 2 = MAD, ligne 3 = EUR.
-    // Ces deux cellules (I2/I3) servent ensuite de point de départ aux formules
-    // de solde cumulé ci-dessous.
-    for (const [dev, val] of [['MAD', settings.solde_bancaire_mad], ['EUR', settings.solde_bancaire_eur]] as const) {
+    // Solde initial — ligne 2 (l'onglet BANQUE ne suit désormais que le MAD).
+    // J2 sert ensuite de point de départ aux formules de Théorique ci-dessous.
+    {
       const row = wsSoldes.addRow({})
-      row.getCell(3).value = 'SOLDE INITIAL'
-      row.getCell(3).font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF3730A3' } }
-      row.getCell(6).value = dev
-      row.getCell(6).alignment = { horizontal: 'center' }
-      row.getCell(6).font = { name: 'Arial', size: 9, color: { argb: 'FF374151' } }
-      const sc = row.getCell(9)
-      sc.value = val; sc.numFmt = '#,##0.00'
-      sc.font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF3730A3' } }
-      sc.alignment = { horizontal: 'right' }
+      row.getCell(7).value = 'SOLDE INITIAL'
+      row.getCell(7).font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF3730A3' } }
+      const ec = row.getCell(9)
+      ec.value = settings.solde_bancaire_mad; ec.numFmt = '#,##0.00'
+      ec.font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF3730A3' } }
+      ec.alignment = { horizontal: 'right' }
+      const thC = row.getCell(10)
+      thC.value = { formula: 'I2-H2' }
+      thC.numFmt = '#,##0.00'
+      thC.font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF3730A3' } }
+      thC.alignment = { horizontal: 'right' }
+      const ptC = row.getCell(11)
+      ptC.value = '✓'
+      ptC.alignment = { horizontal: 'center' }
+      ptC.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF2D6A4F' } }
+      const reC = row.getCell(12)
+      reC.value = { formula: 'IF(K2="✓",I2-H2,0)' }
+      reC.numFmt = '#,##0.00'
+      reC.font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF3730A3' } }
+      reC.alignment = { horizontal: 'right' }
+      const ecC = row.getCell(13)
+      ecC.value = { formula: 'IF(L2="","",L2-J2)' }
+      ecC.numFmt = '#,##0.00'
+      ecC.font = { name: 'Arial', size: 9, color: { argb: 'FF6B7280' } }
+      ecC.alignment = { horizontal: 'right' }
       row.eachCell(c => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEF2FF' } } })
     }
  
     const bankMoves = [...encaissements, ...depenses]
-      .filter(e => e.payment && e.payment !== 'Espèces')
+      .filter(e => e.payment && e.payment !== 'Espèces' && (!e.currency || e.currency === 'MAD'))
       .sort((a, b) => (a.date as string).localeCompare(b.date as string))
  
     const soldesByMode: Record<string, number> = {}
@@ -460,17 +476,17 @@ export async function GET() {
       const mois = formatMois(dateStr)
       const amt = Number(e.amount)
       const isIn = e.type === 'cash'
-      const currency = (e.currency as string) || 'MAD'
  
       cell(row.getCell(1), dateStr)
       cell(row.getCell(2), mois)
-      cell(row.getCell(3), e.category)
-      cell(row.getCell(4), e.description || '')
-      cell(row.getCell(5), e.payment || '—')
-      cell(row.getCell(6), currency, false, 'FF374151', 'center')
+      cell(row.getCell(3), e.employee_name)
+      cell(row.getCell(4), e.payment || '—')
+      cell(row.getCell(5), e.reference || '')
+      cell(row.getCell(6), e.category)
+      cell(row.getCell(7), e.description || '')
  
       if (isIn) {
-        const ec = row.getCell(7)
+        const ec = row.getCell(9)
         ec.value = amt; ec.numFmt = '#,##0.00'
         ec.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF2D6A4F' } }
         ec.alignment = { horizontal: 'right' }
@@ -481,52 +497,54 @@ export async function GET() {
         sc.alignment = { horizontal: 'right' }
       }
  
-      // Solde cumulé — formule Excel (auditable) : solde initial de la devise de
-      // cette ligne (I2 si MAD, I3 si EUR) + somme des Entrées de cette devise
-      // jusqu'à cette ligne − somme des Sorties de cette devise jusqu'à cette ligne
-      const soldeC = row.getCell(9)
-      soldeC.value = {
-        formula: `IF(F${rowNum}="MAD",$I$2,$I$3)+SUMIFS($G$4:G${rowNum},$F$4:F${rowNum},F${rowNum})-SUMIFS($H$4:H${rowNum},$F$4:F${rowNum},F${rowNum})`,
-      }
-      soldeC.numFmt = '#,##0.00'
-      soldeC.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF3730A3' } }
-      soldeC.alignment = { horizontal: 'right' }
+      // Théorique — formule Excel (auditable) : théorique de la ligne précédente
+      // + Entrée de cette ligne − Sortie de cette ligne
+      const thC = row.getCell(10)
+      thC.value = { formula: `J${rowNum - 1}+I${rowNum}-H${rowNum}` }
+      thC.numFmt = '#,##0.00'
+      thC.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF3730A3' } }
+      thC.alignment = { horizontal: 'right' }
  
-      // Pointage — case à cocher manuelle pour rapprocher avec le relevé bancaire.
+      // Pointé — case à cocher manuelle pour rapprocher avec le relevé bancaire.
       // Pré-cochée si ce mouvement est déjà marqué pointé en base (import précédent).
-      const pointageC = row.getCell(10)
-      pointageC.value = e.pointed ? '✓' : undefined
-      pointageC.alignment = { horizontal: 'center' }
-      pointageC.dataValidation = { type: 'list', allowBlank: true, formulae: ['"✓"'] }
-      pointageC.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF2D6A4F' } }
+      const ptC = row.getCell(11)
+      ptC.value = e.pointed ? '✓' : undefined
+      ptC.alignment = { horizontal: 'center' }
+      ptC.dataValidation = { type: 'list', allowBlank: true, formulae: ['"✓"'] }
+      ptC.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF2D6A4F' } }
  
-      const status = e.status as string
-      const stc = row.getCell(11)
-      stc.value = status === 'validated' ? 'Validé' : 'En attente'
-      stc.font = { name: 'Arial', size: 9, bold: true, color: { argb: status === 'validated' ? 'FF2D6A4F' : 'FFD97706' } }
-      stc.alignment = { horizontal: 'center' }
+      // Réel — solde cumulé ne comptant que les lignes pointées
+      const reC = row.getCell(12)
+      reC.value = { formula: `L${rowNum - 1}+IF(K${rowNum}="✓",I${rowNum}-H${rowNum},0)` }
+      reC.numFmt = '#,##0.00'
+      reC.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF3730A3' } }
+      reC.alignment = { horizontal: 'right' }
  
-      // Référence (n° de chèque ou de facture)
-      cell(row.getCell(12), e.reference || '')
+      // Écart — différence entre le Réel (pointé) et le Théorique
+      const ecC = row.getCell(13)
+      ecC.value = { formula: `IF(L${rowNum}="","",L${rowNum}-J${rowNum})` }
+      ecC.numFmt = '#,##0.00'
+      ecC.font = { name: 'Arial', size: 9, color: { argb: 'FF6B7280' } }
+      ecC.alignment = { horizontal: 'right' }
  
       // ID technique (colonne masquée) — utilisé pour ré-associer la ligne au
       // bon mouvement en base lors d'un ré-import du fichier pointé
-      cell(row.getCell(13), e.id)
+      cell(row.getCell(14), e.id)
  
-      altRow(row, idx + 4)
+      altRow(row, idx + 3)
  
       const mode = (e.payment as string) || '—'
       soldesByMode[mode] = (soldesByMode[mode] || 0) + (isIn ? amt : -amt)
       soldesByMonth[mois] = (soldesByMonth[mois] || 0) + (isIn ? amt : -amt)
     })
-    wsSoldes.autoFilter = { from: 'A1', to: 'L1' }
+    wsSoldes.autoFilter = { from: 'A1', to: 'M1' }
  
     // Surligne en vert les lignes pointées
     wsSoldes.addConditionalFormatting({
-      ref: `A2:L${wsSoldes.rowCount}`,
+      ref: `A2:M${wsSoldes.rowCount}`,
       rules: [{
         type: 'expression',
-        formulae: ['$J2="✓"'],
+        formulae: ['$K2="✓"'],
         style: { fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } } },
         priority: 1,
       }],
@@ -536,13 +554,12 @@ export async function GET() {
     // Valeurs = formules qui lisent directement l'onglet BANQUE (auditable)
     const wsDashSoldes = wb.addWorksheet('DASHBOARD BANQUE', { views: [{ showGridLines: false }] })
     addDashboard(wsDashSoldes, 'Banque', soldesByMode, soldesByMonth, [
-      { label: 'Solde net MAD', formula: "'BANQUE'!$I$2+SUMIF('BANQUE'!F:F,\"MAD\",'BANQUE'!G:G)-SUMIF('BANQUE'!F:F,\"MAD\",'BANQUE'!H:H)", color: 'FF3730A3' },
-      { label: 'Solde net EUR', formula: "'BANQUE'!$I$3+SUMIF('BANQUE'!F:F,\"EUR\",'BANQUE'!G:G)-SUMIF('BANQUE'!F:F,\"EUR\",'BANQUE'!H:H)", color: 'FF3730A3' },
-      { label: 'Total entrées', formula: "SUM('BANQUE'!G:G)", color: 'FF2D6A4F' },
+      { label: 'Solde net MAD', formula: `'BANQUE'!J${wsSoldes.rowCount}`, color: 'FF3730A3' },
+      { label: 'Total entrées', formula: "SUM('BANQUE'!I:I)", color: 'FF2D6A4F' },
       { label: 'Total sorties', formula: "SUM('BANQUE'!H:H)", color: 'FF991B1B' },
     ])
     const soldeNoteRow = wsDashSoldes.getRow(5)
-    soldeNoteRow.getCell(1).value = `Solde = Solde initial (${settings.solde_bancaire_mad} MAD + ${settings.solde_bancaire_eur} EUR) + Entrées CB/Virement/Chèque − Sorties CB/Virement/Chèque`
+    soldeNoteRow.getCell(1).value = `Solde = Solde initial (${settings.solde_bancaire_mad} MAD) + Entrées CB/Virement/Chèque − Sorties CB/Virement/Chèque`
     soldeNoteRow.getCell(1).font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF6B7280' } }
  
     // ── Sheet: Coffre (coffre-fort) ───────────────────────────────────────────
@@ -551,12 +568,13 @@ export async function GET() {
       properties: { tabColor: { argb: TAB_GOLD } },
     })
     wsCoffre.columns = [
-      { key: 'date', width: 12 }, { key: 'mois', width: 16 }, { key: 'sens', width: 12 },
-      { key: 'categorie', width: 22 }, { key: 'employe', width: 18 },
-      { key: 'montant', width: 12 }, { key: 'devise', width: 8 },
-      { key: 'description', width: 28 }, { key: 'facture', width: 10 }, { key: 'statut', width: 12 },
+      { key: 'date', width: 12 }, { key: 'mois', width: 16 }, { key: 'employe', width: 16 },
+      { key: 'categorie', width: 20 }, { key: 'libelle', width: 30 },
+      { key: 'sortieDhs', width: 14 }, { key: 'entreeDhs', width: 14 }, { key: 'soldeDhs', width: 14 },
+      { key: 'afsf', width: 10 },
+      { key: 'sortieEur', width: 14 }, { key: 'entreeEur', width: 14 }, { key: 'soldeEur', width: 14 },
     ]
-    const coffreHeaders = ['Date', 'Mois', 'Sens', 'Catégorie', 'Par', 'Montant', 'Devise', 'Description', 'Facture', 'Statut']
+    const coffreHeaders = ['Date', 'Mois', 'Employé', 'Catégorie', 'Libellé', 'Sortie DHS', 'Entrée DHS', 'Solde DHS', 'AF/SF', 'Sortie €', 'Entrée €', 'Solde €']
     coffreHeaders.forEach((h, i) => hdr(wsCoffre.getCell(1, i + 1), h, C_GOLD_BG))
     wsCoffre.getRow(1).height = 22
  
@@ -565,24 +583,33 @@ export async function GET() {
  
     coffre.forEach((e, idx) => {
       const row = wsCoffre.addRow({})
+      const rowNum = row.number
       const dateStr = (e.date as string).slice(0, 10)
       const mois = formatMois(dateStr)
       const amt = Number(e.amount)
       const isIn = (e.direction as string) === 'in'
+      const isEur = (e.currency as string) === 'EUR'
+ 
       cell(row.getCell(1), dateStr)
       cell(row.getCell(2), mois)
-      const sc = row.getCell(3)
-      sc.value = isIn ? '🔒 Dépôt' : '🔓 Retrait'
-      sc.font = { name: 'Arial', size: 9, bold: true, color: { argb: isIn ? 'FF2D6A4F' : 'FF991B1B' } }
-      sc.alignment = { horizontal: 'center' }
+      cell(row.getCell(3), e.employee_name)
       cell(row.getCell(4), e.category)
-      cell(row.getCell(5), e.employee_name)
-      const mc = row.getCell(6)
-      mc.value = isIn ? amt : -amt; mc.numFmt = '#,##0.00'
-      mc.font = { name: 'Arial', size: 9, bold: true, color: { argb: isIn ? 'FF2D6A4F' : 'FF991B1B' } }
-      mc.alignment = { horizontal: 'right' }
-      cell(row.getCell(7), (e.currency as string) || 'MAD', false, 'FF374151', 'center')
-      cell(row.getCell(8), e.description || '')
+      cell(row.getCell(5), e.description || '')
+ 
+      const amtCol = isEur ? (isIn ? 11 : 10) : (isIn ? 7 : 6)
+      const ac = row.getCell(amtCol)
+      ac.value = amt; ac.numFmt = '#,##0.00'
+      ac.font = { name: 'Arial', size: 9, bold: true, color: { argb: isIn ? 'FF2D6A4F' : 'FF991B1B' } }
+      ac.alignment = { horizontal: 'right' }
+ 
+      // Solde DHS cumulé — formule Excel (auditable)
+      const soldeDhsC = row.getCell(8)
+      soldeDhsC.value = { formula: rowNum === 2 ? 'G2-F2' : `H${rowNum - 1}+G${rowNum}-F${rowNum}` }
+      soldeDhsC.numFmt = '#,##0.00'
+      soldeDhsC.font = { name: 'Arial', size: 9, bold: true, color: { argb: C_GOLD_BG } }
+      soldeDhsC.alignment = { horizontal: 'right' }
+ 
+      // AF/SF — justificatif joint (Avec Facture) ou non (Sans Facture)
       const fc = row.getCell(9)
       const hasInvoice = !!(e.invoice_url as string)
       if (hasInvoice) {
@@ -593,24 +620,28 @@ export async function GET() {
         fc.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF9CA3AF' } }
       }
       fc.alignment = { horizontal: 'center' }
-      const stc = row.getCell(10)
-      const status = e.status as string
-      stc.value = status === 'validated' ? 'Validé' : 'En attente'
-      stc.font = { name: 'Arial', size: 9, bold: true, color: { argb: status === 'validated' ? 'FF2D6A4F' : 'FFD97706' } }
-      stc.alignment = { horizontal: 'center' }
+ 
+      // Solde € cumulé — formule Excel (auditable)
+      const soldeEurC = row.getCell(12)
+      soldeEurC.value = { formula: rowNum === 2 ? 'K2-J2' : `L${rowNum - 1}+K${rowNum}-J${rowNum}` }
+      soldeEurC.numFmt = '#,##0.00'
+      soldeEurC.font = { name: 'Arial', size: 9, bold: true, color: { argb: C_GOLD_BG } }
+      soldeEurC.alignment = { horizontal: 'right' }
+ 
       altRow(row, idx + 2)
       coffreByCategory[e.category as string] = (coffreByCategory[e.category as string] || 0) + amt
       coffreByMonth[mois] = (coffreByMonth[mois] || 0) + (isIn ? amt : -amt)
     })
-    wsCoffre.autoFilter = { from: 'A1', to: 'J1' }
+    wsCoffre.autoFilter = { from: 'A1', to: 'L1' }
  
     // ── Dashboard Coffre ──────────────────────────────────────────────────────
     // Valeurs = formules qui lisent directement l'onglet COFFRE (auditable)
     const wsDashCoffre = wb.addWorksheet('DASHBOARD COFFRE', { views: [{ showGridLines: false }] })
     addDashboard(wsDashCoffre, 'Coffre fort', coffreByCategory, coffreByMonth, [
-      { label: 'Dépôts', formula: "SUMIF('COFFRE'!C:C,\"🔒 Dépôt\",'COFFRE'!F:F)", color: 'FF2D6A4F' },
-      { label: 'Retraits', formula: "SUMIF('COFFRE'!C:C,\"🔓 Retrait\",'COFFRE'!F:F)*-1", color: 'FF991B1B' },
-      { label: 'Solde estimé', formula: "SUM('COFFRE'!F:F)", color: C_GOLD_BG },
+      { label: 'Solde DHS', formula: "SUM('COFFRE'!G:G)-SUM('COFFRE'!F:F)", color: C_GOLD_BG },
+      { label: 'Solde €', formula: "SUM('COFFRE'!K:K)-SUM('COFFRE'!J:J)", color: C_GOLD_BG },
+      { label: 'Dépôts DHS', formula: "SUM('COFFRE'!G:G)", color: 'FF2D6A4F' },
+      { label: 'Retraits DHS', formula: "SUM('COFFRE'!F:F)*-1", color: 'FF991B1B' },
     ])
  
     // Generate buffer and return
