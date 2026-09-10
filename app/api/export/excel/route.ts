@@ -1,4 +1,3 @@
-Route export excel · TS
 import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getManagerSession } from '@/lib/auth'
