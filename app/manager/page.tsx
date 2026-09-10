@@ -1821,6 +1821,10 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
   const [fixCoffreLoading, setFixCoffreLoading] = useState(false)
   const [fixCoffreMsg, setFixCoffreMsg] = useState('')
   const [fixCoffreError, setFixCoffreError] = useState('')
+  const [moveAllModal, setMoveAllModal] = useState(false)
+  const [moveAllLoading, setMoveAllLoading] = useState(false)
+  const [moveAllMsg, setMoveAllMsg] = useState('')
+  const [moveAllError, setMoveAllError] = useState('')
   const [excelFile, setExcelFile] = useState<File | null>(null)
   const [excelUploading, setExcelUploading] = useState(false)
   const [excelMsg, setExcelMsg] = useState('')
@@ -1915,6 +1919,20 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
     setFixCoffreLoading(false)
   }
  
+  async function moveAllFondsToCoffre() {
+    setMoveAllLoading(true); setMoveAllMsg(''); setMoveAllError('')
+    const r = await fetch('/api/settings/move-all-fonds-to-coffre', { method: 'POST' })
+    if (r.ok) {
+      const d = await r.json()
+      setMoveAllMsg(`✓ ${d.moved} lignes déplacées de Fond de caisse vers Coffre-fort. Fond de caisse est maintenant vide.`)
+      setMoveAllModal(false)
+    } else {
+      const d = await r.json().catch(() => ({}))
+      setMoveAllError(d.error || 'Erreur lors du déplacement.')
+    }
+    setMoveAllLoading(false)
+  }
+ 
   return (
     <div>
       <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.5rem', color: 'var(--terracotta)' }}>⚙️ Paramètres</h2>
@@ -2004,6 +2022,26 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
               <button className="btn-secondary" onClick={() => setImportCoffreModal(false)} disabled={importCoffreLoading}>Annuler</button>
               <button className="btn-primary" style={{ background: '#0D9488' }} onClick={importCoffre2026} disabled={importCoffreLoading}>{importCoffreLoading ? 'Import…' : 'Importer'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+ 
+      <div className="card" style={{ maxWidth: 420, marginBottom: '1.5rem', borderLeft: '4px solid var(--red)' }}>
+        <h3 style={{ fontWeight: 700, marginBottom: '0.5rem', color: 'var(--red)' }}>Tout déplacer de Fond de caisse vers Coffre-fort</h3>
+        <p style={{ fontSize: '0.875rem', color: '#888', marginBottom: '1rem' }}>Déplace TOUTES les lignes actuellement dans Fond de caisse vers le Coffre-fort. Fond de caisse sera vidé. Action définitive.</p>
+        <button style={{ background: 'var(--red)', color: 'white', border: 'none', borderRadius: '0.5rem', padding: '0.5rem 1.25rem', cursor: 'pointer', fontWeight: 600 }} onClick={() => setMoveAllModal(true)}>Tout déplacer vers le Coffre-fort</button>
+        {moveAllMsg && <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--green)', fontWeight: 600 }}>{moveAllMsg}</p>}
+        {moveAllError && <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--red)', fontWeight: 600 }}>{moveAllError}</p>}
+      </div>
+      {moveAllModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+          <div className="card" style={{ maxWidth: 380, width: '90%', textAlign: 'center' }}>
+            <p style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--red)' }}>Tout déplacer vers le Coffre-fort</p>
+            <p style={{ fontSize: '0.875rem', color: '#888', marginBottom: '1.5rem' }}>Toutes les lignes actuellement dans Fond de caisse seront copiées dans le Coffre-fort, puis supprimées de Fond de caisse (qui sera vide). Cette action est définitive.</p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button className="btn-secondary" onClick={() => setMoveAllModal(false)} disabled={moveAllLoading}>Annuler</button>
+              <button className="btn-primary" style={{ background: 'var(--red)' }} onClick={moveAllFondsToCoffre} disabled={moveAllLoading}>{moveAllLoading ? 'Déplacement…' : 'Confirmer'}</button>
             </div>
           </div>
         </div>
