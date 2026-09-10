@@ -1117,6 +1117,21 @@ function BanqueTab() {
  
   const madStats = useMemo(() => computeBalance(targetMAD), [bankEntries, targetMAD])
  
+  // Théorique / Réel / Écart — cumul chronologique, comme dans l'Excel :
+  // Théorique compte tous les mouvements, Réel ne compte que les mouvements pointés.
+  const bankRows = useMemo(() => {
+    const sorted = [...bankEntries].sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id)
+    let theorique = targetMAD
+    let reel = targetMAD
+    return sorted.map(e => {
+      const isIn = e.type === 'cash'
+      const amt = Number(e.amount)
+      theorique += isIn ? amt : -amt
+      if (e.pointed) reel += isIn ? amt : -amt
+      return { ...e, theorique, reel, ecart: reel - theorique }
+    })
+  }, [bankEntries, targetMAD])
+ 
   async function saveSolde() {
     setSavingSolde(true)
     const body: Record<string, number> = {}
@@ -1229,28 +1244,40 @@ function BanqueTab() {
         <div style={{ overflowX: 'auto' }}>
           <table>
             <thead>
-              <tr><th>Date</th><th>Sens</th><th>Catégorie</th><th>Mode</th><th>Réf.</th><th>Montant</th><th>Pointé</th></tr>
+              <tr>
+                <th>Date</th><th>Employé</th><th>Mode</th><th>N° Facture</th><th>Catégorie</th><th>Libellé</th>
+                <th>Sortie DHS</th><th>Entrée DHS</th><th>Théorique</th><th>Pointé</th><th>Réel</th><th>Écart</th>
+              </tr>
             </thead>
             <tbody>
-              {[...bankEntries].sort((a, b) => b.date.localeCompare(a.date)).map(e => (
-                <tr key={`${e.type}-${e.id}`}>
-                  <td style={{ whiteSpace: 'nowrap' }}>{new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR')}</td>
-                  <td style={{ color: e.type === 'cash' ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>{e.type === 'cash' ? '↑ Encaissement' : '↓ Dépense'}</td>
-                  <td>{e.category}</td>
-                  <td>{e.payment}</td>
-                  <td style={{ fontSize: '0.8rem', color: '#666' }}>{e.reference || '—'}</td>
-                  <td style={{ fontWeight: 600, color: e.type === 'cash' ? 'var(--green)' : 'var(--red)' }}>{e.type === 'cash' ? '+' : '-'}{fmt(Number(e.amount))}</td>
-                  <td style={{ textAlign: 'center' }}>
-                    <input
-                      type="checkbox"
-                      checked={!!e.pointed}
-                      onChange={() => togglePointed(e)}
-                      style={{ width: '1.1rem', height: '1.1rem', cursor: 'pointer', accentColor: 'var(--green)' }}
-                      title={e.pointed ? 'Cliquer pour dépointer' : 'Cliquer pour pointer'}
-                    />
-                  </td>
-                </tr>
-              ))}
+              {bankRows.map(e => {
+                const isIn = e.type === 'cash'
+                const amt = Number(e.amount)
+                return (
+                  <tr key={`${e.type}-${e.id}`}>
+                    <td style={{ whiteSpace: 'nowrap' }}>{new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR')}</td>
+                    <td>{e.employee_name}</td>
+                    <td>{e.payment}</td>
+                    <td style={{ fontSize: '0.8rem', color: '#666' }}>{e.reference || '—'}</td>
+                    <td>{e.category}</td>
+                    <td style={{ fontSize: '0.85rem', color: '#666' }}>{e.description || '—'}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--red)' }}>{!isIn ? fmt(amt) : '—'}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--green)' }}>{isIn ? fmt(amt) : '—'}</td>
+                    <td style={{ fontWeight: 600, color: '#3730A3' }}>{fmt(e.theorique)}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={!!e.pointed}
+                        onChange={() => togglePointed(e)}
+                        style={{ width: '1.1rem', height: '1.1rem', cursor: 'pointer', accentColor: 'var(--green)' }}
+                        title={e.pointed ? 'Cliquer pour dépointer' : 'Cliquer pour pointer'}
+                      />
+                    </td>
+                    <td style={{ fontWeight: 600, color: '#3730A3' }}>{fmt(e.reel)}</td>
+                    <td style={{ fontWeight: 600, color: Math.abs(e.ecart) > 0.005 ? 'var(--red)' : '#aaa' }}>{fmt(e.ecart)}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -1281,7 +1308,7 @@ function CoffreTab() {
   const now = new Date()
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const [month, setMonth] = useState(currentMonth)
-  const [entries, setEntries] = useState<CoffreEntry[]>([])
+  const [allEntries, setAllEntries] = useState<CoffreEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [deleteModal, setDeleteModal] = useState<number | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -1310,12 +1337,16 @@ function CoffreTab() {
   const [uploadingEntryId, setUploadingEntryId] = useState<number | null>(null)
   const rowFileRef = useRef<HTMLInputElement>(null)
  
+  // On charge tout l'historique (pas seulement le mois affiché) : le Solde DHS/€
+  // de chaque ligne est un cumul depuis le début, comme dans l'Excel — il faut
+  // donc connaître les mouvements des mois précédents pour le calculer juste.
   const fetchEntries = useCallback(async () => {
     setLoading(true)
-    const r = await fetch(`/api/coffre?month=${month}`)
-    setEntries(await r.json())
+    const r = await fetch('/api/coffre')
+    const data = await r.json()
+    setAllEntries(Array.isArray(data) ? data : [])
     setLoading(false)
-  }, [month])
+  }, [])
  
   useEffect(() => { fetchEntries() }, [fetchEntries])
   useEffect(() => {
@@ -1324,9 +1355,33 @@ function CoffreTab() {
     })
   }, [])
  
-  const totalIn  = entries.filter(e => e.direction === 'in').reduce((s, e) => s + Number(e.amount), 0)
-  const totalOut = entries.filter(e => e.direction === 'out').reduce((s, e) => s + Number(e.amount), 0)
-  const solde    = totalIn - totalOut
+  // Cumul Solde DHS / Solde € — dans l'ordre chronologique, comme dans l'Excel
+  const rowsWithSolde = useMemo(() => {
+    const sorted = [...allEntries].sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id)
+    let soldeDhs = 0, soldeEur = 0
+    return sorted.map(e => {
+      const amt = Number(e.amount)
+      const signed = e.direction === 'in' ? amt : -amt
+      if ((e.currency || 'MAD') === 'EUR') soldeEur += signed
+      else soldeDhs += signed
+      return { ...e, soldeDhs, soldeEur }
+    })
+  }, [allEntries])
+ 
+  const entries = useMemo(
+    () => rowsWithSolde.filter(e => e.date.slice(0, 7) === month),
+    [rowsWithSolde, month]
+  )
+ 
+  // Soldes actuels (cumul depuis le début — c'est le vrai solde du coffre, pas remis à zéro chaque mois)
+  const currentSoldeDhs = rowsWithSolde.length > 0 ? rowsWithSolde[rowsWithSolde.length - 1].soldeDhs : 0
+  const currentSoldeEur = rowsWithSolde.length > 0 ? rowsWithSolde[rowsWithSolde.length - 1].soldeEur : 0
+ 
+  // Dépôts / retraits du mois affiché, par devise
+  const totalInDhs  = entries.filter(e => e.direction === 'in'  && (e.currency || 'MAD') === 'MAD').reduce((s, e) => s + Number(e.amount), 0)
+  const totalOutDhs = entries.filter(e => e.direction === 'out' && (e.currency || 'MAD') === 'MAD').reduce((s, e) => s + Number(e.amount), 0)
+  const totalInEur  = entries.filter(e => e.direction === 'in'  && e.currency === 'EUR').reduce((s, e) => s + Number(e.amount), 0)
+  const totalOutEur = entries.filter(e => e.direction === 'out' && e.currency === 'EUR').reduce((s, e) => s + Number(e.amount), 0)
  
   async function toggleStatus(entry: CoffreEntry) {
     await fetch(`/api/coffre/${entry.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: entry.status === 'pending' ? 'validated' : 'pending' }) })
@@ -1469,19 +1524,33 @@ function CoffreTab() {
         <button className="btn-primary" onClick={() => setShowForm(!showForm)} style={{ background: '#374151' }}>{showForm ? 'Annuler' : '+ Ajouter'}</button>
       </div>
  
-      {/* Solde */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1.25rem' }}>
+      {/* Solde — cumul depuis le début (pas remis à zéro chaque mois) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem', marginBottom: '0.75rem' }}>
+        <div className="stat-card" style={{ borderLeftColor: '#B8860B' }}>
+          <div style={{ fontSize: '0.8rem', color: '#888' }}>Solde DHS</div>
+          <div style={{ fontWeight: 700, fontSize: '1.5rem', color: '#B8860B' }}>{fmt(currentSoldeDhs)}</div>
+        </div>
+        <div className="stat-card" style={{ borderLeftColor: '#B8860B' }}>
+          <div style={{ fontSize: '0.8rem', color: '#888' }}>Solde €</div>
+          <div style={{ fontWeight: 700, fontSize: '1.5rem', color: '#B8860B' }}>{fmt(currentSoldeEur)}</div>
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '1.25rem' }}>
         <div className="stat-card" style={{ borderLeftColor: 'var(--green)' }}>
-          <div style={{ fontSize: '0.8rem', color: '#888' }}>Dépôts</div>
-          <div style={{ fontWeight: 700, fontSize: '1.5rem', color: 'var(--green)' }}>+{totalIn.toFixed(2)}</div>
+          <div style={{ fontSize: '0.8rem', color: '#888' }}>Dépôts DHS (mois)</div>
+          <div style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--green)' }}>+{totalInDhs.toFixed(2)}</div>
         </div>
         <div className="stat-card" style={{ borderLeftColor: 'var(--red)' }}>
-          <div style={{ fontSize: '0.8rem', color: '#888' }}>Retraits</div>
-          <div style={{ fontWeight: 700, fontSize: '1.5rem', color: 'var(--red)' }}>-{totalOut.toFixed(2)}</div>
+          <div style={{ fontSize: '0.8rem', color: '#888' }}>Retraits DHS (mois)</div>
+          <div style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--red)' }}>-{totalOutDhs.toFixed(2)}</div>
         </div>
-        <div className="stat-card" style={{ borderLeftColor: solde >= 0 ? '#374151' : 'var(--red)' }}>
-          <div style={{ fontSize: '0.8rem', color: '#888' }}>Solde estimé</div>
-          <div style={{ fontWeight: 700, fontSize: '1.5rem', color: solde >= 0 ? '#374151' : 'var(--red)' }}>{solde >= 0 ? '+' : ''}{solde.toFixed(2)}</div>
+        <div className="stat-card" style={{ borderLeftColor: 'var(--green)' }}>
+          <div style={{ fontSize: '0.8rem', color: '#888' }}>Dépôts € (mois)</div>
+          <div style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--green)' }}>+{totalInEur.toFixed(2)}</div>
+        </div>
+        <div className="stat-card" style={{ borderLeftColor: 'var(--red)' }}>
+          <div style={{ fontSize: '0.8rem', color: '#888' }}>Retraits € (mois)</div>
+          <div style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--red)' }}>-{totalOutEur.toFixed(2)}</div>
         </div>
       </div>
  
@@ -1587,31 +1656,44 @@ function CoffreTab() {
         <div style={{ overflowX: 'auto' }}>
           <table>
             <thead>
-              <tr><th>Date</th><th>Sens</th><th>Catégorie</th><th>Par</th><th>Devise</th><th>Montant</th><th>Description</th><th>Facture</th><th>Statut</th><th>Actions</th></tr>
+              <tr>
+                <th>Date</th><th>Employé</th><th>Catégorie</th><th>Libellé</th>
+                <th>Sortie DHS</th><th>Entrée DHS</th><th>Solde DHS</th><th>AF/SF</th>
+                <th>Sortie €</th><th>Entrée €</th><th>Solde €</th>
+                <th>Statut</th><th>Actions</th>
+              </tr>
             </thead>
             <tbody>
-              {entries.map(e => (
-                <tr key={e.id}>
-                  <td style={{ whiteSpace: 'nowrap' }}>{new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR')}</td>
-                  <td><span style={{ fontWeight: 600, color: e.direction === 'in' ? 'var(--green)' : 'var(--red)', fontSize: '0.85rem' }}>{e.direction === 'in' ? '🔒 Dépôt' : '🔓 Retrait'}</span></td>
-                  <td>{e.category}</td>
-                  <td>{e.employee_name}</td>
-                  <td><span style={{ fontWeight: 600, fontSize: '0.8rem', background: '#F3F4F6', padding: '0.15rem 0.4rem', borderRadius: '0.3rem' }}>{e.currency}</span></td>
-                  <td style={{ fontWeight: 600, color: e.direction === 'in' ? 'var(--green)' : 'var(--red)' }}>{e.direction === 'in' ? '+' : '-'}{Number(e.amount).toFixed(2)}</td>
-                  <td style={{ fontSize: '0.85rem', color: '#666' }}>{e.description || '—'}</td>
-                  <td>
-                    {e.invoice_url
-                      ? <a href={e.invoice_url} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontSize: '0.8rem' }}>📄 Facture</a>
-                      : <button onClick={() => { setPendingUploadEntry(e.id); rowFileRef.current?.click() }} disabled={uploadingEntryId === e.id} style={{ background: 'none', border: '1px dashed #aaa', borderRadius: '0.3rem', color: '#888', cursor: 'pointer', fontSize: '0.75rem', padding: '0.2rem 0.4rem' }}>{uploadingEntryId === e.id ? '⬆️…' : '📎 Ajouter'}</button>
-                    }
-                  </td>
-                  <td><span className={e.status === 'validated' ? 'badge-validated' : 'badge-pending'}>{e.status === 'validated' ? 'Validé' : 'En attente'}</span></td>
-                  <td style={{ display: 'flex', gap: '0.4rem' }}>
-                    <button onClick={() => toggleStatus(e)} style={{ background: e.status === 'pending' ? 'var(--green)' : '#888', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.8rem' }}>{e.status === 'pending' ? '✓' : '↩'}</button>
-                    <button onClick={() => setDeleteModal(e.id)} style={{ background: 'var(--red)', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.8rem' }}>🗑</button>
-                  </td>
-                </tr>
-              ))}
+              {entries.map(e => {
+                const isEur = e.currency === 'EUR'
+                const amt = Number(e.amount)
+                const hasInvoice = !!e.invoice_url
+                return (
+                  <tr key={e.id}>
+                    <td style={{ whiteSpace: 'nowrap' }}>{new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR')}</td>
+                    <td>{e.employee_name}</td>
+                    <td>{e.category}</td>
+                    <td style={{ fontSize: '0.85rem', color: '#666' }}>{e.description || '—'}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--red)' }}>{!isEur && e.direction === 'out' ? amt.toFixed(2) : '—'}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--green)' }}>{!isEur && e.direction === 'in' ? amt.toFixed(2) : '—'}</td>
+                    <td style={{ fontWeight: 600, color: '#B8860B' }}>{!isEur ? fmt(e.soldeDhs) : '—'}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      {hasInvoice
+                        ? <a href={e.invoice_url!} target="_blank" rel="noreferrer" style={{ color: 'var(--green)', fontWeight: 700, fontSize: '0.8rem' }}>AF</a>
+                        : <button onClick={() => { setPendingUploadEntry(e.id); rowFileRef.current?.click() }} disabled={uploadingEntryId === e.id} style={{ background: 'none', border: 'none', color: '#9CA3AF', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}>{uploadingEntryId === e.id ? '⬆️…' : 'SF 📎'}</button>
+                      }
+                    </td>
+                    <td style={{ fontWeight: 600, color: 'var(--red)' }}>{isEur && e.direction === 'out' ? amt.toFixed(2) : '—'}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--green)' }}>{isEur && e.direction === 'in' ? amt.toFixed(2) : '—'}</td>
+                    <td style={{ fontWeight: 600, color: '#B8860B' }}>{isEur ? fmt(e.soldeEur) : '—'}</td>
+                    <td><span className={e.status === 'validated' ? 'badge-validated' : 'badge-pending'}>{e.status === 'validated' ? 'Validé' : 'En attente'}</span></td>
+                    <td style={{ display: 'flex', gap: '0.4rem' }}>
+                      <button onClick={() => toggleStatus(e)} style={{ background: e.status === 'pending' ? 'var(--green)' : '#888', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.8rem' }}>{e.status === 'pending' ? '✓' : '↩'}</button>
+                      <button onClick={() => setDeleteModal(e.id)} style={{ background: 'var(--red)', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.8rem' }}>🗑</button>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
