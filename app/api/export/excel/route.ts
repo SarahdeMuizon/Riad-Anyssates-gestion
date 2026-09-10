@@ -56,6 +56,22 @@ function altRow(row: ExcelJS.Row, idx: number) {
   }
 }
  
+// Comme altRow, mais grise explicitement TOUTES les colonnes de 1 à lastCol —
+// y compris celles jamais "touchées" sur cette ligne (ex : Sortie DHS sur une
+// ligne d'entrée, ou l'inverse), que row.eachCell() ignorerait sinon puisqu'il
+// ne parcourt que les cellules déjà initialisées.
+function altRowFull(row: ExcelJS.Row, idx: number, lastCol: number) {
+  if (idx % 2 === 0) {
+    for (let col = 1; col <= lastCol; col++) {
+      const c = row.getCell(col)
+      const fill = c.fill as { type?: string; fgColor?: { argb?: string } }
+      if (!fill || fill.fgColor?.argb === 'FFFFFFFF') {
+        c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_ALT_ROW } }
+      }
+    }
+  }
+}
+ 
 // Carte indicateur (KPI) : libellé sur 2 colonnes fusionnées, valeur (formule) juste en dessous
 function kpiCard(ws: ExcelJS.Worksheet, startCol: number, labelRow: number, label: string, formula: string, color: string) {
   const endCol = startCol + 1
@@ -522,7 +538,10 @@ export async function GET() {
       // bon mouvement en base lors d'un ré-import du fichier pointé
       cell(row.getCell(14), e.id)
  
-      altRow(row, rowNum)
+      // Grisé alterné sur TOUTE la largeur A→M (colonne 14 = ID technique,
+      // masquée, exclue), y compris Sortie/Entrée dont une seule est
+      // renseignée par ligne
+      altRowFull(row, rowNum, 13)
     })
     wsSoldes.autoFilter = { from: 'A1', to: 'M1' }
  
