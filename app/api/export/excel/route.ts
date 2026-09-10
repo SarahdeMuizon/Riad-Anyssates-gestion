@@ -19,6 +19,13 @@ const TAB_BLUE  = 'FF1F3864'   // banque — bleu foncé
 const TAB_GOLD  = 'FFB8860B'   // coffre — doré/moutarde
 const TAB_BLACK = 'FF000000'   // tableau de bord
  
+// Hauteur de ligne fixe pour toutes les lignes de données : avec le retour à
+// la ligne activé (wrapText) sur les cellules, Excel n'agrandit PAS une ligne
+// dont la hauteur est explicitement figée — un texte trop long est donc
+// simplement tronqué (masqué) après cette hauteur, plutôt que de faire
+// grossir la ligne. C'est le comportement voulu ici.
+const ROW_H = 15
+ 
 const MONTHS_FR = ['JANVIER', 'FÉVRIER', 'MARS', 'AVRIL', 'MAI', 'JUIN', 'JUILLET', 'AOÛT', 'SEPTEMBRE', 'OCTOBRE', 'NOVEMBRE', 'DÉCEMBRE']
  
 // Doit rester synchronisé avec DEPENSES_CATEGORIES dans app/manager/page.tsx
@@ -35,7 +42,7 @@ function hdr(cell: ExcelJS.Cell, text: string, bgColor = C_HEADER_BG, fgColor = 
 function cell(c: ExcelJS.Cell, value: unknown, bold = false, color?: string, align: 'left' | 'center' | 'right' = 'left') {
   c.value = value as ExcelJS.CellValue
   c.font = { name: 'Arial', size: 9, bold, ...(color ? { color: { argb: color } } : {}) }
-  c.alignment = { horizontal: align, vertical: 'middle' }
+  c.alignment = { horizontal: align, vertical: 'middle', wrapText: true }
 }
  
 function altRow(row: ExcelJS.Row, idx: number) {
@@ -202,9 +209,10 @@ export async function GET() {
       const gTot = wsTdb.getCell(row, 7); gTot.value = { formula: `E${row}+F${row}` }
       const hRes = wsTdb.getCell(row, 8); hRes.value = { formula: `D${row}-G${row}` }
       const iMarge = wsTdb.getCell(row, 9); iMarge.value = { formula: `IFERROR(H${row}/D${row},0)` }
-      for (const col of [2, 3, 4, 5, 6, 7, 8]) { const c = wsTdb.getCell(row, col); c.numFmt = '#,##0.00'; c.font = { name: 'Arial', size: 9 }; c.alignment = { horizontal: 'right' } }
-      iMarge.numFmt = '0.0%'; iMarge.font = { name: 'Arial', size: 9 }; iMarge.alignment = { horizontal: 'right' }
+      for (const col of [2, 3, 4, 5, 6, 7, 8]) { const c = wsTdb.getCell(row, col); c.numFmt = '#,##0.00'; c.font = { name: 'Arial', size: 9 }; c.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true } }
+      iMarge.numFmt = '0.0%'; iMarge.font = { name: 'Arial', size: 9 }; iMarge.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true }
       wsTdb.getCell(row, 8).font = { name: 'Arial', size: 9, bold: true }
+      wsTdb.getRow(row).height = ROW_H
       altRow(wsTdb.getRow(row), row)
     })
     const synTotalRow = synFirstRow + 12
@@ -213,14 +221,15 @@ export async function GET() {
       const colLetter = String.fromCharCode(64 + col)
       const c = wsTdb.getCell(synTotalRow, col)
       c.value = { formula: `SUM(${colLetter}${synFirstRow}:${colLetter}${synTotalRow - 1})` }
-      c.numFmt = '#,##0.00'; c.font = { name: 'Arial', size: 9, bold: true }; c.alignment = { horizontal: 'right' }
+      c.numFmt = '#,##0.00'; c.font = { name: 'Arial', size: 9, bold: true }; c.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true }
       c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEDE0D6' } }
     }
     const synTotalMarge = wsTdb.getCell(synTotalRow, 9)
     synTotalMarge.value = { formula: `IFERROR(H${synTotalRow}/D${synTotalRow},0)` }
-    synTotalMarge.numFmt = '0.0%'; synTotalMarge.font = { name: 'Arial', size: 9, bold: true }; synTotalMarge.alignment = { horizontal: 'right' }
+    synTotalMarge.numFmt = '0.0%'; synTotalMarge.font = { name: 'Arial', size: 9, bold: true }; synTotalMarge.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true }
     synTotalMarge.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEDE0D6' } }
     wsTdb.getCell(synTotalRow, 1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEDE0D6' } }
+    wsTdb.getRow(synTotalRow).height = ROW_H
  
     // ── Top dépenses par catégorie (cumul année) ──────────────────────────────
     // Sourcé directement depuis les Dépenses de l'appli (toutes méthodes de
@@ -238,22 +247,27 @@ export async function GET() {
       cell(wsTdb.getCell(row, 1), catName)
       const mCell = wsTdb.getCell(row, 2)
       mCell.value = depByCategoryTotal[catName] || 0
-      mCell.numFmt = '#,##0.00'; mCell.font = { name: 'Arial', size: 9, bold: true }; mCell.alignment = { horizontal: 'right' }
+      mCell.numFmt = '#,##0.00'; mCell.font = { name: 'Arial', size: 9, bold: true }; mCell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true }
       const pCell = wsTdb.getCell(row, 3)
       pCell.value = { formula: `IFERROR(B${row}/SUM($B$${topDepFirstRow}:$B$${topDepFirstRow + sortedDepCats.length - 1}),0)` }
-      pCell.numFmt = '0.0%'; pCell.font = { name: 'Arial', size: 9 }; pCell.alignment = { horizontal: 'right' }
+      pCell.numFmt = '0.0%'; pCell.font = { name: 'Arial', size: 9 }; pCell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true }
+      wsTdb.getRow(row).height = ROW_H
       altRow(wsTdb.getRow(row), row)
     })
     const topDepTotalRow = topDepFirstRow + sortedDepCats.length
     cell(wsTdb.getCell(topDepTotalRow, 1), 'TOTAL', true)
     const topDepTotalCell = wsTdb.getCell(topDepTotalRow, 2)
     topDepTotalCell.value = { formula: `SUM(B${topDepFirstRow}:B${topDepTotalRow - 1})` }
-    topDepTotalCell.numFmt = '#,##0.00'; topDepTotalCell.font = { name: 'Arial', size: 9, bold: true }; topDepTotalCell.alignment = { horizontal: 'right' }
+    topDepTotalCell.numFmt = '#,##0.00'; topDepTotalCell.font = { name: 'Arial', size: 9, bold: true }; topDepTotalCell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true }
     wsTdb.getCell(topDepTotalRow, 3).value = '100%'
+    wsTdb.getCell(topDepTotalRow, 3).alignment = { horizontal: 'right', vertical: 'middle', wrapText: true }
     for (const col of [1, 2, 3]) wsTdb.getCell(topDepTotalRow, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEDE0D6' } }
+    wsTdb.getRow(topDepTotalRow).height = ROW_H
     const topDepNoteRow = wsTdb.getRow(topDepTotalRow + 1)
     topDepNoteRow.getCell(1).value = 'Calculé à partir des dépenses enregistrées dans l\'application, toutes méthodes de paiement confondues (valeurs figées, pas des formules Excel).'
     topDepNoteRow.getCell(1).font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF6B7280' } }
+    topDepNoteRow.getCell(1).alignment = { vertical: 'middle', wrapText: true }
+    topDepNoteRow.height = ROW_H
  
     // ── Dépenses sans facture (SF) — Coffre uniquement ────────────────────────
     const sfRow0 = topDepTotalRow + 3
@@ -270,9 +284,10 @@ export async function GET() {
       const bSf = wsTdb.getCell(row, 2); bSf.value = { formula: `SUMIFS('COFFRE'!F:F,'COFFRE'!I:I,"SF",'COFFRE'!B:B,"${moisLabel}")` }
       const cTot = wsTdb.getCell(row, 3); cTot.value = { formula: `SUMIF('COFFRE'!B:B,"${moisLabel}",'COFFRE'!F:F)` }
       const dPct = wsTdb.getCell(row, 4); dPct.value = { formula: `IFERROR(B${row}/C${row},0)` }
-      bSf.numFmt = '#,##0.00'; bSf.font = { name: 'Arial', size: 9 }; bSf.alignment = { horizontal: 'right' }
-      cTot.numFmt = '#,##0.00'; cTot.font = { name: 'Arial', size: 9 }; cTot.alignment = { horizontal: 'right' }
-      dPct.numFmt = '0.0%'; dPct.font = { name: 'Arial', size: 9 }; dPct.alignment = { horizontal: 'right' }
+      bSf.numFmt = '#,##0.00'; bSf.font = { name: 'Arial', size: 9 }; bSf.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true }
+      cTot.numFmt = '#,##0.00'; cTot.font = { name: 'Arial', size: 9 }; cTot.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true }
+      dPct.numFmt = '0.0%'; dPct.font = { name: 'Arial', size: 9 }; dPct.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true }
+      wsTdb.getRow(row).height = ROW_H
       altRow(wsTdb.getRow(row), row)
     })
     const sfTotalRow = sfFirstRow + 12
@@ -280,10 +295,11 @@ export async function GET() {
     const sfTotB = wsTdb.getCell(sfTotalRow, 2); sfTotB.value = { formula: `SUM(B${sfFirstRow}:B${sfTotalRow - 1})` }
     const sfTotC = wsTdb.getCell(sfTotalRow, 3); sfTotC.value = { formula: `SUM(C${sfFirstRow}:C${sfTotalRow - 1})` }
     const sfTotD = wsTdb.getCell(sfTotalRow, 4); sfTotD.value = { formula: `IFERROR(B${sfTotalRow}/C${sfTotalRow},0)` }
-    sfTotB.numFmt = '#,##0.00'; sfTotB.font = { name: 'Arial', size: 9, bold: true }; sfTotB.alignment = { horizontal: 'right' }
-    sfTotC.numFmt = '#,##0.00'; sfTotC.font = { name: 'Arial', size: 9, bold: true }; sfTotC.alignment = { horizontal: 'right' }
-    sfTotD.numFmt = '0.0%'; sfTotD.font = { name: 'Arial', size: 9, bold: true }; sfTotD.alignment = { horizontal: 'right' }
+    sfTotB.numFmt = '#,##0.00'; sfTotB.font = { name: 'Arial', size: 9, bold: true }; sfTotB.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true }
+    sfTotC.numFmt = '#,##0.00'; sfTotC.font = { name: 'Arial', size: 9, bold: true }; sfTotC.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true }
+    sfTotD.numFmt = '0.0%'; sfTotD.font = { name: 'Arial', size: 9, bold: true }; sfTotD.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true }
     for (const col of [1, 2, 3, 4]) wsTdb.getCell(sfTotalRow, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEDE0D6' } }
+    wsTdb.getRow(sfTotalRow).height = ROW_H
  
     // ── Fond de caisse — suivi des liquidités physiques ───────────────────────
     const fdcRow0 = sfTotalRow + 2
@@ -299,8 +315,10 @@ export async function GET() {
       cell(wsTdb.getCell(row, 1), r.label, true)
       const vC = wsTdb.getCell(row, 2)
       vC.value = r.formula ? { formula: r.formula } : (r.value ?? 0)
-      if (r.label !== 'Alerte') { vC.numFmt = '#,##0.00'; vC.alignment = { horizontal: 'right' } }
+      if (r.label !== 'Alerte') vC.numFmt = '#,##0.00'
+      vC.alignment = { horizontal: r.label === 'Alerte' ? 'left' : 'right', vertical: 'middle', wrapText: true }
       vC.font = { name: 'Arial', size: 9, bold: true, color: { argb: TAB_RED } }
+      wsTdb.getRow(row).height = ROW_H
       altRow(wsTdb.getRow(row), row)
     })
  
@@ -337,11 +355,13 @@ export async function GET() {
     dotSoldeC.value = { formula: 'F2' }
     dotSoldeC.numFmt = '#,##0.00'
     dotSoldeC.font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF4338CA' } }
-    dotSoldeC.alignment = { horizontal: 'right' }
+    dotSoldeC.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true }
+    dotRow.height = ROW_H
  
     fonds.forEach((e, idx) => {
       const row = wsFonds.addRow({})
       const rowNum = row.number
+      row.height = ROW_H
       const dateStr = (e.date as string).slice(0, 10)
       const mois = formatMois(dateStr)
       const amt = Number(e.amount)
@@ -404,6 +424,7 @@ export async function GET() {
     bankMovesDesc.forEach((e, idx) => {
       const row = wsSoldes.addRow({})
       const rowNum = row.number
+      row.height = ROW_H
       const dateStr = (e.date as string).slice(0, 10)
       const mois = formatMois(dateStr)
       const amt = Number(e.amount)
@@ -472,6 +493,7 @@ export async function GET() {
     {
       const row = wsSoldes.addRow({})
       const rowNum = row.number // = bankLastRow
+      row.height = ROW_H
       row.getCell(7).value = 'SOLDE INITIAL'
       row.getCell(7).font = { bold: true, name: 'Arial', size: 9, color: { argb: 'FF3730A3' } }
       const ec = row.getCell(9)
@@ -538,6 +560,7 @@ export async function GET() {
     coffreDesc.forEach((e, idx) => {
       const row = wsCoffre.addRow({})
       const rowNum = row.number
+      row.height = ROW_H
       const isOldest = rowNum === coffreLastRow
       const dateStr = (e.date as string).slice(0, 10)
       const mois = formatMois(dateStr)
