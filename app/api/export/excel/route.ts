@@ -1,3 +1,4 @@
+Route export excel · TS
 import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getManagerSession } from '@/lib/auth'
@@ -29,7 +30,7 @@ const ROW_H = 15
 const MONTHS_FR = ['JANVIER', 'FÉVRIER', 'MARS', 'AVRIL', 'MAI', 'JUIN', 'JUILLET', 'AOÛT', 'SEPTEMBRE', 'OCTOBRE', 'NOVEMBRE', 'DÉCEMBRE']
  
 // Doit rester synchronisé avec DEPENSES_CATEGORIES dans app/manager/page.tsx
-const DEPENSES_CATEGORIES_TDB = ['Client', 'Commission', 'Administratif', 'Nourriture', 'Spa', 'Prestataire', 'Banque', 'Salaire', 'Maroc Telecom', 'Travaux', 'Radeema', 'Divers']
+const DEPENSES_CATEGORIES_TDB = ['Client', 'Commission', 'Administratif', 'Nourriture', 'Spa', 'Prestataire', 'Banque', 'Salaire', 'Maroc Telecom', 'Travaux', 'Radeema', 'Impôts', 'Divers']
  
 function hdr(cell: ExcelJS.Cell, text: string, bgColor = C_HEADER_BG, fgColor = C_HEADER_FG) {
   cell.value = text
