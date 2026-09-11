@@ -161,9 +161,10 @@ table tr:hover td {
 }
  
 /* Tableaux à beaucoup de colonnes (Banque, Coffre-fort) : police et
-   espacement réduits, largeur forcée à 100% et texte qui passe à la
-   ligne plutôt que de déborder, pour que tout tienne sans défilement
-   horizontal, même sur un écran plus petit. */
+   espacement réduits, largeur forcée à 100%. Toutes les colonnes
+   tiennent sur une seule ligne, sauf celle marquée .col-wrap
+   (Libellé) qui peut passer sur 2 lignes — c'est elle qui absorbe
+   l'espace restant, pour que tout tienne sans défilement horizontal. */
 .table-compact {
   font-size: 0.72rem;
   width: 100%;
@@ -171,6 +172,10 @@ table tr:hover td {
 .table-compact th,
 .table-compact td {
   padding: 0.35rem 0.3rem;
+  white-space: nowrap;
+}
+.table-compact th.col-wrap,
+.table-compact td.col-wrap {
   white-space: normal;
   word-break: break-word;
   overflow-wrap: break-word;
