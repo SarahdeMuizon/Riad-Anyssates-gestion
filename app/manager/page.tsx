@@ -1243,6 +1243,12 @@ function BanqueTab() {
         <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', color: '#374151' }}>📋 Mouvements bancaires</h3>
         <div style={{ overflowX: 'auto' }}>
           <table className="table-compact">
+            <colgroup>
+              <col style={{ width: '7%' }} /><col style={{ width: '9%' }} /><col style={{ width: '6%' }} />
+              <col style={{ width: '8%' }} /><col style={{ width: '9%' }} /><col style={{ width: '19%' }} />
+              <col style={{ width: '7%' }} /><col style={{ width: '7%' }} /><col style={{ width: '8%' }} />
+              <col style={{ width: '5%' }} /><col style={{ width: '8%' }} /><col style={{ width: '7%' }} />
+            </colgroup>
             <thead>
               <tr>
                 <th>Date</th><th>Employé</th><th>Mode</th><th>N° Fact.</th><th>Catégorie</th><th className="col-wrap">Libellé</th>
@@ -1256,10 +1262,10 @@ function BanqueTab() {
                 return (
                   <tr key={`${e.type}-${e.id}`}>
                     <td style={{ whiteSpace: 'nowrap' }}>{new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR')}</td>
-                    <td>{e.employee_name}</td>
-                    <td>{e.payment}</td>
-                    <td style={{ fontSize: '0.8rem', color: '#666' }}>{e.reference || '—'}</td>
-                    <td>{e.category}</td>
+                    <td title={e.employee_name}>{e.employee_name}</td>
+                    <td title={e.payment}>{e.payment}</td>
+                    <td style={{ fontSize: '0.8rem', color: '#666' }} title={e.reference || ''}>{e.reference || '—'}</td>
+                    <td title={e.category}>{e.category}</td>
                     <td className="col-wrap" style={{ color: '#666' }}>{e.description || '—'}</td>
                     <td style={{ fontWeight: 600, color: 'var(--red)' }}>{!isIn ? fmt(amt) : '—'}</td>
                     <td style={{ fontWeight: 600, color: 'var(--green)' }}>{isIn ? fmt(amt) : '—'}</td>
@@ -1644,6 +1650,13 @@ function CoffreTab() {
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table className="table-compact">
+            <colgroup>
+              <col style={{ width: '6%' }} /><col style={{ width: '8%' }} /><col style={{ width: '8%' }} />
+              <col style={{ width: '18%' }} /><col style={{ width: '7%' }} /><col style={{ width: '7%' }} />
+              <col style={{ width: '7%' }} /><col style={{ width: '5%' }} /><col style={{ width: '6%' }} />
+              <col style={{ width: '6%' }} /><col style={{ width: '6%' }} /><col style={{ width: '7%' }} />
+              <col style={{ width: '9%' }} />
+            </colgroup>
             <thead>
               <tr>
                 <th>Date</th><th>Employé</th><th>Catégorie</th><th className="col-wrap">Libellé</th>
@@ -1660,8 +1673,8 @@ function CoffreTab() {
                 return (
                   <tr key={e.id}>
                     <td style={{ whiteSpace: 'nowrap' }}>{new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR')}</td>
-                    <td>{e.employee_name}</td>
-                    <td>{e.category}</td>
+                    <td title={e.employee_name}>{e.employee_name}</td>
+                    <td title={e.category}>{e.category}</td>
                     <td className="col-wrap" style={{ color: '#666' }}>{e.description || '—'}</td>
                     <td style={{ fontWeight: 600, color: 'var(--red)' }}>{!isEur && e.direction === 'out' ? amt.toFixed(2) : '—'}</td>
                     <td style={{ fontWeight: 600, color: 'var(--green)' }}>{!isEur && e.direction === 'in' ? amt.toFixed(2) : '—'}</td>
