@@ -1820,6 +1820,10 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
   const [importCoffreLoading, setImportCoffreLoading] = useState(false)
   const [importCoffreMsg, setImportCoffreMsg] = useState('')
   const [importCoffreError, setImportCoffreError] = useState('')
+  const [importCoffreEurModal, setImportCoffreEurModal] = useState(false)
+  const [importCoffreEurLoading, setImportCoffreEurLoading] = useState(false)
+  const [importCoffreEurMsg, setImportCoffreEurMsg] = useState('')
+  const [importCoffreEurError, setImportCoffreEurError] = useState('')
   const [fixCoffreLoading, setFixCoffreLoading] = useState(false)
   const [fixCoffreMsg, setFixCoffreMsg] = useState('')
   const [fixCoffreError, setFixCoffreError] = useState('')
@@ -1906,6 +1910,20 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
       setImportCoffreError(d.error || 'Erreur lors de l\'import.')
     }
     setImportCoffreLoading(false)
+  }
+ 
+  async function importCoffreEur2026() {
+    setImportCoffreEurLoading(true); setImportCoffreEurMsg(''); setImportCoffreEurError('')
+    const r = await fetch('/api/settings/import-coffre-eur-2026', { method: 'POST' })
+    if (r.ok) {
+      const d = await r.json()
+      setImportCoffreEurMsg(`✓ ${d.inserted} lignes en euros importées dans le Coffre-fort.`)
+      setImportCoffreEurModal(false)
+    } else {
+      const d = await r.json().catch(() => ({}))
+      setImportCoffreEurError(d.error || 'Erreur lors de l\'import.')
+    }
+    setImportCoffreEurLoading(false)
   }
  
   async function fixCoffreLocation() {
@@ -2029,6 +2047,26 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
         </div>
       )}
  
+      <div className="card" style={{ maxWidth: 420, marginBottom: '1.5rem', borderLeft: '4px solid #0D9488' }}>
+        <h3 style={{ fontWeight: 700, marginBottom: '0.5rem', color: '#0D9488' }}>Importer les transactions en euros du Coffre-fort</h3>
+        <p style={{ fontSize: '0.875rem', color: '#888', marginBottom: '1rem' }}>Complète l&apos;import précédent (qui ne contenait que les montants en DHS) avec les 123 mouvements en EUR du même cahier &quot;caisse rouge&quot; (janv. 2025 → juin 2026) : pourboires et paiements clients en euros, changes, et sorties Valérie en euros. À ne déclencher qu&apos;une seule fois — relancer dupliquerait toutes les lignes.</p>
+        <button style={{ background: '#0D9488', color: 'white', border: 'none', borderRadius: '0.5rem', padding: '0.5rem 1.25rem', cursor: 'pointer', fontWeight: 600 }} onClick={() => setImportCoffreEurModal(true)}>Importer les 123 lignes en euros</button>
+        {importCoffreEurMsg && <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--green)', fontWeight: 600 }}>{importCoffreEurMsg}</p>}
+        {importCoffreEurError && <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--red)', fontWeight: 600 }}>{importCoffreEurError}</p>}
+      </div>
+      {importCoffreEurModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+          <div className="card" style={{ maxWidth: 380, width: '90%', textAlign: 'center' }}>
+            <p style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem', color: '#0D9488' }}>Importer les transactions en euros</p>
+            <p style={{ fontSize: '0.875rem', color: '#888', marginBottom: '1.5rem' }}>123 mouvements en EUR seront ajoutés au Coffre-fort (16 902,00 € en entrées, 16 902,00 € en sorties). Ne clique qu&apos;une seule fois : relancer l&apos;import dupliquerait toutes les lignes.</p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button className="btn-secondary" onClick={() => setImportCoffreEurModal(false)} disabled={importCoffreEurLoading}>Annuler</button>
+              <button className="btn-primary" style={{ background: '#0D9488' }} onClick={importCoffreEur2026} disabled={importCoffreEurLoading}>{importCoffreEurLoading ? 'Import…' : 'Importer'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+ 
       <div className="card" style={{ maxWidth: 420, marginBottom: '1.5rem', borderLeft: '4px solid var(--red)' }}>
         <h3 style={{ fontWeight: 700, marginBottom: '0.5rem', color: 'var(--red)' }}>Tout déplacer de Fond de caisse vers Coffre-fort</h3>
         <p style={{ fontSize: '0.875rem', color: '#888', marginBottom: '1rem' }}>Déplace TOUTES les lignes actuellement dans Fond de caisse vers le Coffre-fort. Fond de caisse sera vidé. Action définitive.</p>
@@ -2094,6 +2132,8 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
     </div>
   )
 }
+ 
+ 
  
  
 
