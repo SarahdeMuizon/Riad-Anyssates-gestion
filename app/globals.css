@@ -1,7 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
+ 
 :root {
   --terracotta: #C1603A;
   --terracotta-dark: #A04D2C;
@@ -13,13 +13,13 @@
   --red: #C13A3A;
   --blue: #3A6AC1;
 }
-
+ 
 body {
   background-color: var(--bg);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
-
+ 
 .btn-primary {
   background-color: var(--terracotta);
   color: white;
@@ -33,7 +33,7 @@ body {
 .btn-primary:hover {
   background-color: var(--terracotta-dark);
 }
-
+ 
 .btn-secondary {
   background-color: white;
   color: var(--terracotta);
@@ -47,7 +47,7 @@ body {
 .btn-secondary:hover {
   background-color: #FDF0EA;
 }
-
+ 
 .btn-green {
   background-color: var(--green);
   color: white;
@@ -60,7 +60,7 @@ body {
   transition: opacity 0.2s;
 }
 .btn-green:hover { opacity: 0.85; }
-
+ 
 .btn-red {
   background-color: var(--red);
   color: white;
@@ -73,14 +73,14 @@ body {
   transition: opacity 0.2s;
 }
 .btn-red:hover { opacity: 0.85; }
-
+ 
 .card {
   background: white;
   border-radius: 0.75rem;
   padding: 1.25rem;
   box-shadow: 0 1px 4px rgba(44,36,23,0.08);
 }
-
+ 
 .tab-btn {
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
@@ -98,7 +98,7 @@ body {
 .tab-btn:not(.active):hover {
   background-color: #F0E8E0;
 }
-
+ 
 .form-input {
   width: 100%;
   border: 1.5px solid #E0D8CF;
@@ -113,7 +113,7 @@ body {
 .form-input:focus {
   border-color: var(--terracotta);
 }
-
+ 
 .badge-pending {
   background: #FEF3C7;
   color: #92400E;
@@ -122,7 +122,7 @@ body {
   font-size: 0.75rem;
   font-weight: 600;
 }
-
+ 
 .badge-validated {
   background: #D1FAE5;
   color: #065F46;
@@ -131,7 +131,7 @@ body {
   font-size: 0.75rem;
   font-weight: 600;
 }
-
+ 
 .stat-card {
   background: white;
   border-radius: 0.75rem;
@@ -139,7 +139,7 @@ body {
   box-shadow: 0 1px 4px rgba(44,36,23,0.08);
   border-left: 4px solid var(--terracotta);
 }
-
+ 
 table {
   width: 100%;
   border-collapse: collapse;
@@ -159,3 +159,16 @@ table td {
 table tr:hover td {
   background: #FDF8F5;
 }
+ 
+/* Tableaux à beaucoup de colonnes (Banque, Coffre-fort) : police et
+   espacement réduits pour que tout tienne sans défilement horizontal. */
+.table-compact {
+  font-size: 0.74rem;
+}
+.table-compact th,
+.table-compact td {
+  padding: 0.4rem 0.4rem;
+  white-space: nowrap;
+}
+ 
+
