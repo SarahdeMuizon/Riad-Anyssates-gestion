@@ -433,7 +433,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
         if (data.date) setFDate(data.date)
         if (data.supplier) setFSupplier(data.supplier)
         if (data.amount_ttc) {
-          if (type === 'cash' && fPayment === 'CB') {
+          if (type === 'cash' && (fPayment === 'CB' || fPayment === 'Virement')) {
             setFTransactionAmount(String(data.amount_ttc))
             const autoRate = fCardType === 'amex' ? 0.033 : 0.0268
             const autoComm = Math.round(data.amount_ttc * autoRate * 100) / 100
@@ -532,7 +532,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     setSubmitting(true)
     setFormError('')
     setFormSuccess('')
-    if (!fFile && fPayment !== 'Espèces') {
+    if (type === 'cb' && !fFile && fPayment !== 'Espèces') {
       setFormError('Le justificatif est obligatoire (sauf paiement en espèces).')
       setSubmitting(false); return
     }
@@ -545,11 +545,11 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       setFUploading(false)
     }
     const cbRate       = fCardType === 'amex' ? 0.033 : 0.0268
-    const cbCommission = type === 'cash' && fPayment === 'CB' && fTransactionAmount
+    const cbCommission = type === 'cash' && (fPayment === 'CB' || fPayment === 'Virement') && fTransactionAmount
       ? Math.round(parseFloat(fTransactionAmount) * cbRate * 100) / 100
       : 0
     const cbTva        = fCardType === 'amex' ? 0 : Math.round(cbCommission * 0.10 * 100) / 100
-    const finalAmount  = type === 'cash' && fPayment === 'CB' && fTransactionAmount
+    const finalAmount  = type === 'cash' && (fPayment === 'CB' || fPayment === 'Virement') && fTransactionAmount
       ? parseFloat(fTransactionAmount) - cbCommission - cbTva
       : parseFloat(fAmount)
  
@@ -562,7 +562,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     } else {
       body.payment = fPayment
       body.supplier = fClientName || null
-      if (fPayment === 'CB' && fTransactionAmount) {
+      if ((fPayment === 'CB' || fPayment === 'Virement') && fTransactionAmount) {
         body.amount_ht = parseFloat(fTransactionAmount)
         body.tva_rate = fCardType === 'amex' ? 3.3 : 2.68
       }
@@ -570,7 +570,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
  
     const invoiceEntry: InvoiceData = {
       date: fDate, amount: finalAmount,
-      amountTransaction: type === 'cash' && fPayment === 'CB' && fTransactionAmount ? parseFloat(fTransactionAmount) : undefined,
+      amountTransaction: type === 'cash' && (fPayment === 'CB' || fPayment === 'Virement') && fTransactionAmount ? parseFloat(fTransactionAmount) : undefined,
       currency: fCurrency, category: fCategory, description: fDescription || '',
       clientName: fClientName || '', tvaRate: 0,
       nuits: 0, personnes: 0, payment: fPayment,
@@ -622,7 +622,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>
                 {type === 'cb' ? 'Facture' : 'Ticket'}
-                {fPayment !== 'Espèces'
+                {type === 'cb' && fPayment !== 'Espèces'
                   ? <span style={{ color: 'var(--red)', fontWeight: 400 }}> * (obligatoire)</span>
                   : <span style={{ color: '#888', fontWeight: 400 }}> (optionnel)</span>}
               </label>
@@ -717,9 +717,9 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                   </div>
                 </div>
               </div>
-            ) : fPayment === 'CB' ? (
+            ) : (fPayment === 'CB' || fPayment === 'Virement') ? (
               <div style={{ background: '#F0FDF4', border: '1px solid #86efac', borderRadius: '0.5rem', padding: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#16a34a', marginBottom: '0.1rem' }}>Encaissement CB — frais bancaires</p>
+                <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#16a34a', marginBottom: '0.1rem' }}>Encaissement {fPayment === 'CB' ? 'CB' : 'par virement'} — frais bancaires</p>
                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.25rem' }}>
                   <button type="button" onClick={() => { setFCardType('amex'); if (fTransactionAmount) { const a = parseFloat(fTransactionAmount); const c = Math.round(a * 0.033 * 100) / 100; setFAmount(String((a - c).toFixed(2))); } }} style={{ flex: 1, padding: '0.4rem', border: `2px solid ${fCardType === 'amex' ? '#16a34a' : '#ddd'}`, borderRadius: '0.4rem', background: fCardType === 'amex' ? '#F0FDF4' : 'white', fontWeight: fCardType === 'amex' ? 700 : 400, cursor: 'pointer', fontSize: '0.78rem', color: fCardType === 'amex' ? '#16a34a' : '#555', textAlign: 'center' }}>🔵 American Express<br /><span style={{ fontWeight: 400, fontSize: '0.7rem' }}>Taux 3,3 %</span></button>
                   <button type="button" onClick={() => { setFCardType('other'); if (fTransactionAmount) { const a = parseFloat(fTransactionAmount); const c = Math.round(a * 0.0268 * 100) / 100; const t = Math.round(c * 0.10 * 100) / 100; setFAmount(String((a - c - t).toFixed(2))); } }} style={{ flex: 1, padding: '0.4rem', border: `2px solid ${fCardType === 'other' ? '#16a34a' : '#ddd'}`, borderRadius: '0.4rem', background: fCardType === 'other' ? '#F0FDF4' : 'white', fontWeight: fCardType === 'other' ? 700 : 400, cursor: 'pointer', fontSize: '0.78rem', color: fCardType === 'other' ? '#16a34a' : '#555', textAlign: 'center' }}>💳 Autre carte<br /><span style={{ fontWeight: 400, fontSize: '0.7rem' }}>Taux 2,68 %</span></button>
@@ -744,7 +744,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>Mode de paiement</label>
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                 {PAYMENT_MODES.map(p => (
-                  <button key={p} type="button" onClick={() => { setFPayment(p); if (p !== 'CB') setFTransactionAmount(''); if (p !== 'Espèces') setFCurrency('MAD') }} style={{ flex: 1, minWidth: '4rem', padding: '0.5rem', border: `2px solid ${fPayment === p ? color : '#ddd'}`, borderRadius: '0.5rem', background: fPayment === p ? (type === 'cb' ? '#FFF5F0' : '#F0FDF4') : 'white', fontWeight: fPayment === p ? 700 : 400, cursor: 'pointer', color: fPayment === p ? color : 'var(--text)', fontSize: '0.85rem' }}>{p}</button>
+                  <button key={p} type="button" onClick={() => { setFPayment(p); if (p !== 'CB' && p !== 'Virement') setFTransactionAmount(''); if (p !== 'Espèces') setFCurrency('MAD') }} style={{ flex: 1, minWidth: '4rem', padding: '0.5rem', border: `2px solid ${fPayment === p ? color : '#ddd'}`, borderRadius: '0.5rem', background: fPayment === p ? (type === 'cb' ? '#FFF5F0' : '#F0FDF4') : 'white', fontWeight: fPayment === p ? 700 : 400, cursor: 'pointer', color: fPayment === p ? color : 'var(--text)', fontSize: '0.85rem' }}>{p}</button>
                 ))}
               </div>
             </div>
@@ -1242,11 +1242,11 @@ function BanqueTab() {
       <div className="card">
         <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', color: '#374151' }}>📋 Mouvements bancaires</h3>
         <div style={{ overflowX: 'auto' }}>
-          <table>
+          <table className="table-compact">
             <thead>
               <tr>
-                <th>Date</th><th>Employé</th><th>Mode</th><th>N° Facture</th><th>Catégorie</th><th>Libellé</th>
-                <th>Sortie DHS</th><th>Entrée DHS</th><th>Théorique</th><th>Pointé</th><th>Réel</th><th>Écart</th>
+                <th>Date</th><th>Employé</th><th>Mode</th><th>N° Fact.</th><th>Catégorie</th><th>Libellé</th>
+                <th>Sortie</th><th>Entrée</th><th>Théorique</th><th>Pointé</th><th>Réel</th><th>Écart</th>
               </tr>
             </thead>
             <tbody>
@@ -1306,8 +1306,6 @@ interface CoffreEntry {
  
 function CoffreTab() {
   const now = new Date()
-  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  const [month, setMonth] = useState(currentMonth)
   const [allEntries, setAllEntries] = useState<CoffreEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [deleteModal, setDeleteModal] = useState<number | null>(null)
@@ -1368,20 +1366,15 @@ function CoffreTab() {
     })
   }, [allEntries])
  
-  const entries = useMemo(
-    () => rowsWithSolde.filter(e => e.date.slice(0, 7) === month),
-    [rowsWithSolde, month]
-  )
- 
   // Soldes actuels (cumul depuis le début — c'est le vrai solde du coffre, pas remis à zéro chaque mois)
   const currentSoldeDhs = rowsWithSolde.length > 0 ? rowsWithSolde[rowsWithSolde.length - 1].soldeDhs : 0
   const currentSoldeEur = rowsWithSolde.length > 0 ? rowsWithSolde[rowsWithSolde.length - 1].soldeEur : 0
  
-  // Dépôts / retraits du mois affiché, par devise
-  const totalInDhs  = entries.filter(e => e.direction === 'in'  && (e.currency || 'MAD') === 'MAD').reduce((s, e) => s + Number(e.amount), 0)
-  const totalOutDhs = entries.filter(e => e.direction === 'out' && (e.currency || 'MAD') === 'MAD').reduce((s, e) => s + Number(e.amount), 0)
-  const totalInEur  = entries.filter(e => e.direction === 'in'  && e.currency === 'EUR').reduce((s, e) => s + Number(e.amount), 0)
-  const totalOutEur = entries.filter(e => e.direction === 'out' && e.currency === 'EUR').reduce((s, e) => s + Number(e.amount), 0)
+  // Dépôts / retraits — tout l'historique, par devise
+  const totalInDhs  = rowsWithSolde.filter(e => e.direction === 'in'  && (e.currency || 'MAD') === 'MAD').reduce((s, e) => s + Number(e.amount), 0)
+  const totalOutDhs = rowsWithSolde.filter(e => e.direction === 'out' && (e.currency || 'MAD') === 'MAD').reduce((s, e) => s + Number(e.amount), 0)
+  const totalInEur  = rowsWithSolde.filter(e => e.direction === 'in'  && e.currency === 'EUR').reduce((s, e) => s + Number(e.amount), 0)
+  const totalOutEur = rowsWithSolde.filter(e => e.direction === 'out' && e.currency === 'EUR').reduce((s, e) => s + Number(e.amount), 0)
  
   async function toggleStatus(entry: CoffreEntry) {
     await fetch(`/api/coffre/${entry.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: entry.status === 'pending' ? 'validated' : 'pending' }) })
@@ -1516,11 +1509,7 @@ function CoffreTab() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button onClick={() => setMonth(shiftMonth(month, -1))} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: 'pointer', fontWeight: 600 }}>‹</button>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#374151' }}>🔐 Coffre fort — {formatMonth(month)}</h2>
-          <button onClick={() => setMonth(shiftMonth(month, 1))} disabled={month === currentMonth} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: month === currentMonth ? 'default' : 'pointer', opacity: month === currentMonth ? 0.4 : 1, fontWeight: 600 }}>›</button>
-        </div>
+        <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#374151' }}>🔐 Coffre fort</h2>
         <button className="btn-primary" onClick={() => setShowForm(!showForm)} style={{ background: '#374151' }}>{showForm ? 'Annuler' : '+ Ajouter'}</button>
       </div>
  
@@ -1537,19 +1526,19 @@ function CoffreTab() {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '1.25rem' }}>
         <div className="stat-card" style={{ borderLeftColor: 'var(--green)' }}>
-          <div style={{ fontSize: '0.8rem', color: '#888' }}>Dépôts DHS (mois)</div>
+          <div style={{ fontSize: '0.8rem', color: '#888' }}>Dépôts DHS</div>
           <div style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--green)' }}>+{totalInDhs.toFixed(2)}</div>
         </div>
         <div className="stat-card" style={{ borderLeftColor: 'var(--red)' }}>
-          <div style={{ fontSize: '0.8rem', color: '#888' }}>Retraits DHS (mois)</div>
+          <div style={{ fontSize: '0.8rem', color: '#888' }}>Retraits DHS</div>
           <div style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--red)' }}>-{totalOutDhs.toFixed(2)}</div>
         </div>
         <div className="stat-card" style={{ borderLeftColor: 'var(--green)' }}>
-          <div style={{ fontSize: '0.8rem', color: '#888' }}>Dépôts € (mois)</div>
+          <div style={{ fontSize: '0.8rem', color: '#888' }}>Dépôts €</div>
           <div style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--green)' }}>+{totalInEur.toFixed(2)}</div>
         </div>
         <div className="stat-card" style={{ borderLeftColor: 'var(--red)' }}>
-          <div style={{ fontSize: '0.8rem', color: '#888' }}>Retraits € (mois)</div>
+          <div style={{ fontSize: '0.8rem', color: '#888' }}>Retraits €</div>
           <div style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--red)' }}>-{totalOutEur.toFixed(2)}</div>
         </div>
       </div>
@@ -1650,11 +1639,11 @@ function CoffreTab() {
         </div>
       )}
  
-      {loading ? <p>Chargement…</p> : entries.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>Aucun mouvement pour ce mois</div>
+      {loading ? <p>Chargement…</p> : rowsWithSolde.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>Aucun mouvement</div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <table>
+          <table className="table-compact">
             <thead>
               <tr>
                 <th>Date</th><th>Employé</th><th>Catégorie</th><th>Libellé</th>
@@ -1664,7 +1653,7 @@ function CoffreTab() {
               </tr>
             </thead>
             <tbody>
-              {[...entries].reverse().map(e => {
+              {[...rowsWithSolde].reverse().map(e => {
                 const isEur = e.currency === 'EUR'
                 const amt = Number(e.amount)
                 const hasInvoice = !!e.invoice_url
@@ -2093,3 +2082,5 @@ function SettingsTab({ onLogout }: { onLogout: () => void }) {
   )
 }
  
+ 
+
