@@ -1245,7 +1245,7 @@ function BanqueTab() {
           <table className="table-compact">
             <thead>
               <tr>
-                <th>Date</th><th>Employé</th><th>Mode</th><th>N° Fact.</th><th>Catégorie</th><th>Libellé</th>
+                <th>Date</th><th>Employé</th><th>Mode</th><th>N° Fact.</th><th>Catégorie</th><th className="col-wrap">Libellé</th>
                 <th>Sortie</th><th>Entrée</th><th>Théorique</th><th>Pointé</th><th>Réel</th><th>Écart</th>
               </tr>
             </thead>
@@ -1260,7 +1260,7 @@ function BanqueTab() {
                     <td>{e.payment}</td>
                     <td style={{ fontSize: '0.8rem', color: '#666' }}>{e.reference || '—'}</td>
                     <td>{e.category}</td>
-                    <td style={{ fontSize: '0.85rem', color: '#666' }}>{e.description || '—'}</td>
+                    <td className="col-wrap" style={{ color: '#666' }}>{e.description || '—'}</td>
                     <td style={{ fontWeight: 600, color: 'var(--red)' }}>{!isIn ? fmt(amt) : '—'}</td>
                     <td style={{ fontWeight: 600, color: 'var(--green)' }}>{isIn ? fmt(amt) : '—'}</td>
                     <td style={{ fontWeight: 600, color: '#3730A3' }}>{fmt(e.theorique)}</td>
@@ -1646,7 +1646,7 @@ function CoffreTab() {
           <table className="table-compact">
             <thead>
               <tr>
-                <th>Date</th><th>Employé</th><th>Catégorie</th><th>Libellé</th>
+                <th>Date</th><th>Employé</th><th>Catégorie</th><th className="col-wrap">Libellé</th>
                 <th>Sortie DHS</th><th>Entrée DHS</th><th>Solde DHS</th><th>AF/SF</th>
                 <th>Sortie €</th><th>Entrée €</th><th>Solde €</th>
                 <th>Statut</th><th>Actions</th>
@@ -1662,7 +1662,7 @@ function CoffreTab() {
                     <td style={{ whiteSpace: 'nowrap' }}>{new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR')}</td>
                     <td>{e.employee_name}</td>
                     <td>{e.category}</td>
-                    <td style={{ fontSize: '0.85rem', color: '#666' }}>{e.description || '—'}</td>
+                    <td className="col-wrap" style={{ color: '#666' }}>{e.description || '—'}</td>
                     <td style={{ fontWeight: 600, color: 'var(--red)' }}>{!isEur && e.direction === 'out' ? amt.toFixed(2) : '—'}</td>
                     <td style={{ fontWeight: 600, color: 'var(--green)' }}>{!isEur && e.direction === 'in' ? amt.toFixed(2) : '—'}</td>
                     <td style={{ fontWeight: 600, color: '#B8860B' }}>{!isEur ? fmt(e.soldeDhs) : '—'}</td>
