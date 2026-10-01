@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import sql from '@/lib/db'
+import sql, { ensureDb } from '@/lib/db'
 import { getManagerSession } from '@/lib/auth'
  
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -22,6 +22,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json(result[0])
     }
  
+    if (body.to_accountant !== undefined) {
+      await ensureDb()
+      const result = await sql`UPDATE entries SET to_accountant = ${body.to_accountant ? 1 : 0} WHERE id = ${id} RETURNING *`
+      return NextResponse.json(result[0])
+    }
+
     if (body.reference !== undefined) {
       const result = await sql`UPDATE entries SET reference = ${body.reference || null} WHERE id = ${id} RETURNING *`
       return NextResponse.json(result[0])

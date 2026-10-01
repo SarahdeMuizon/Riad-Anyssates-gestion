@@ -31,7 +31,15 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     const isAuth = await getManagerSession()
     if (!isAuth) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
  
-    await sql`DELETE FROM coffre_entries WHERE id = ${parseInt(params.id)}`
+    // Un transfert coffre ↔ caisse est supprimé des deux côtés
+    const row = await sql`SELECT transfer_id FROM coffre_entries WHERE id = ${parseInt(params.id)}`
+    const transferId = row[0]?.transfer_id as string | null | undefined
+    if (transferId) {
+      await sql`DELETE FROM fonds_entries WHERE transfer_id = ${transferId}`
+      await sql`DELETE FROM coffre_entries WHERE transfer_id = ${transferId}`
+    } else {
+      await sql`DELETE FROM coffre_entries WHERE id = ${parseInt(params.id)}`
+    }
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('DELETE coffre error:', error)

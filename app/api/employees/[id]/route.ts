@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import sql from '@/lib/db'
+import sql, { ensureDb } from '@/lib/db'
 import { getManagerSession } from '@/lib/auth'
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -10,7 +10,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 
     const id = parseInt(params.id)
-    const { active, name, poste } = await req.json()
+    const { active, name, poste, is_manager } = await req.json()
+
+    if (typeof is_manager === 'boolean') {
+      await ensureDb()
+      const result = await sql`
+        UPDATE employees SET is_manager = ${is_manager ? 1 : 0} WHERE id = ${id} RETURNING *
+      `
+      const emp = result[0]
+      return NextResponse.json({ ...emp, active: emp.active === 1 || emp.active === true, is_manager: emp.is_manager === 1 })
+    }
 
     if (typeof active === 'boolean') {
       // SQLite stores booleans as 0/1

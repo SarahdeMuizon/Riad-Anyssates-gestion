@@ -32,7 +32,15 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     const isAuth = await getManagerSession()
     if (!isAuth) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
-    await sql`DELETE FROM fonds_entries WHERE id = ${parseInt(params.id)}`
+    // Un transfert coffre ↔ caisse est supprimé des deux côtés
+    const row = await sql`SELECT transfer_id FROM fonds_entries WHERE id = ${parseInt(params.id)}`
+    const transferId = row[0]?.transfer_id as string | null | undefined
+    if (transferId) {
+      await sql`DELETE FROM fonds_entries WHERE transfer_id = ${transferId}`
+      await sql`DELETE FROM coffre_entries WHERE transfer_id = ${transferId}`
+    } else {
+      await sql`DELETE FROM fonds_entries WHERE id = ${parseInt(params.id)}`
+    }
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('DELETE fonds error:', error)

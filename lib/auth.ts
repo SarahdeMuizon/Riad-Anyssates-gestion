@@ -2,6 +2,8 @@ import { cookies } from 'next/headers'
 import { NextRequest } from 'next/server'
 
 const SESSION_COOKIE = 'mgr_session'
+// Nom affiché / enregistré pour la personne connectée à l'interface manager
+const MANAGER_NAME_COOKIE = 'mgr_name'
 const SESSION_SECRET = process.env.SESSION_SECRET || 'riad-anyssates-secret-2026'
 
 function hashPin(pin: string): string {
@@ -36,4 +38,9 @@ export function getSessionFromRequest(req: NextRequest): string | null {
   return req.cookies.get(SESSION_COOKIE)?.value || null
 }
 
-export { SESSION_COOKIE }
+export function getManagerName(): string {
+  const v = cookies().get(MANAGER_NAME_COOKIE)?.value
+  return v ? decodeURIComponent(v) : 'Administrateur'
+}
+
+export { SESSION_COOKIE, MANAGER_NAME_COOKIE }

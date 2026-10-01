@@ -20,6 +20,8 @@ export interface Entry {
   validated_at?: string
   pointed?: boolean | number
   reference?: string
+  cash_location?: 'fonds' | 'coffre' | null
+  to_accountant?: boolean | number
   created_at: string
 }
  
@@ -34,6 +36,7 @@ export interface FondsEntry {
   description?: string
   status: EntryStatus
   validated_at?: string
+  transfer_id?: string | null
   created_at: string
 }
  
@@ -43,6 +46,7 @@ export interface Employee {
   poste: string
   token: string
   active: boolean
+  is_manager?: boolean
   created_at: string
 }
  

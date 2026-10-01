@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import sql from '@/lib/db'
-import { getManagerSession } from '@/lib/auth'
+import sql, { ensureDb } from '@/lib/db'
+import { getManagerSession, getManagerName } from '@/lib/auth'
  
 export const dynamic = 'force-dynamic'
  
 export async function GET(req: NextRequest) {
   try {
+    await ensureDb()
     const { searchParams } = new URL(req.url)
     const type = searchParams.get('type')
     const status = searchParams.get('status')
@@ -61,8 +62,9 @@ export async function GET(req: NextRequest) {
  
 export async function POST(req: NextRequest) {
   try {
+    await ensureDb()
     const body = await req.json()
-    const { type, date, amount, category, supplier, payment, description, currency, invoice_url, token, employee_name, amount_ht, tva_rate, reference } = body
+    const { type, date, amount, category, supplier, payment, description, currency, invoice_url, token, employee_name, amount_ht, tva_rate, reference, cash_location, to_accountant } = body
  
     let empName: string
  
@@ -73,7 +75,8 @@ export async function POST(req: NextRequest) {
     } else {
       const isAuth = await getManagerSession()
       if (!isAuth) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-      empName = employee_name
+      // Plus de choix d'employé côté manager : on enregistre la personne connectée
+      empName = employee_name || getManagerName()
     }
  
     if (!type || !date || !amount || !category || !empName) {
@@ -81,8 +84,8 @@ export async function POST(req: NextRequest) {
     }
  
     const result = await sql`
-      INSERT INTO entries (employee_name, type, date, amount, category, supplier, payment, description, currency, invoice_url, amount_ht, tva_rate, reference)
-      VALUES (${empName}, ${type}, ${date}, ${amount}, ${category}, ${supplier || null}, ${payment || null}, ${description || null}, ${currency || 'MAD'}, ${invoice_url || null}, ${amount_ht || null}, ${tva_rate || null}, ${reference || null})
+      INSERT INTO entries (employee_name, type, date, amount, category, supplier, payment, description, currency, invoice_url, amount_ht, tva_rate, reference, cash_location, to_accountant)
+      VALUES (${empName}, ${type}, ${date}, ${amount}, ${category}, ${supplier || null}, ${payment || null}, ${description || null}, ${currency || 'MAD'}, ${invoice_url || null}, ${amount_ht || null}, ${tva_rate || null}, ${reference || null}, ${payment === 'Espèces' ? (cash_location === 'coffre' ? 'coffre' : 'fonds') : null}, ${to_accountant ? 1 : 0})
       RETURNING *
     `
  

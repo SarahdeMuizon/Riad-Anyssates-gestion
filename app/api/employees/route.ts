@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import sql from '@/lib/db'
+import sql, { ensureDb } from '@/lib/db'
 import { getManagerSession } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
@@ -20,11 +20,12 @@ export async function GET() {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
+    await ensureDb()
     const employees = await sql`
       SELECT * FROM employees ORDER BY active DESC, name ASC
     `
     // SQLite stores booleans as 0/1 — convert for the frontend
-    return NextResponse.json(employees.map(e => ({ ...e, active: e.active === 1 || e.active === true })))
+    return NextResponse.json(employees.map(e => ({ ...e, active: e.active === 1 || e.active === true, is_manager: e.is_manager === 1 || e.is_manager === true })))
   } catch (error) {
     console.error('GET employees error:', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

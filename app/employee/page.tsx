@@ -6,7 +6,7 @@ import { Suspense } from 'react'
  
 const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
  
-const DEPENSES_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Radeema','Impôts','Divers']
+const DEPENSES_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Aménagement/Déco','Entretien','Radeema','Impôts','Divers']
 const ENCAISSEMENTS_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Radeema','Impôts','Divers']
 const FONDS_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Salaire','Maroc Telecom','Travaux','Impôts','Divers']
 const PAYMENT_MODES = ['CB', 'Virement', 'Chèque', 'Espèces']
@@ -77,7 +77,7 @@ function generateInvoice(entry: InvoiceData) {
  
 type Tab = 'cb' | 'cash' | 'fonds' | 'history'
  
-interface EmployeeInfo { id: number; name: string; poste: string }
+interface EmployeeInfo { id: number; name: string; poste: string; is_manager?: number | boolean }
  
 function EmployeeApp() {
   const searchParams = useSearchParams()
@@ -90,7 +90,15 @@ function EmployeeApp() {
     if (!token) { setAuthError('Lien invalide.'); return }
     fetch(`/api/employees/verify?token=${token}`)
       .then(r => r.json())
-      .then(data => { if (data.error) setAuthError(data.error); else setEmployee(data) })
+      .then(async data => {
+        if (data.error) { setAuthError(data.error); return }
+        // Employé avec accès manager (ex : Nicolas) : son lien ouvre l'interface manager
+        if (data.is_manager) {
+          const r = await fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) })
+          if (r.ok) { window.location.replace('/manager'); return }
+        }
+        setEmployee(data)
+      })
       .catch(() => setAuthError('Erreur de connexion.'))
   }, [token])
  
@@ -796,8 +804,6 @@ function FondsCaisse({ token }: { token: string }) {
   const [loading, setLoading] = useState(true)
   const [compteMAD, setCompteMAD] = useState('')
   const [compteEUR, setCompteEUR] = useState('')
-  const [remiseLoading, setRemiseLoading] = useState(false)
-  const [msg, setMsg] = useState('')
  
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -813,13 +819,11 @@ function FondsCaisse({ token }: { token: string }) {
  
   useEffect(() => { fetchData() }, [fetchData])
  
-  const TARGET_MAD = 3000, TARGET_EUR = 100
- 
-  // Balance = dotation journalière (3000 MAD / 100 EUR) + encaissements Espèces - dépenses Espèces + ajustements fonds
+  // Balance = encaissements Espèces - dépenses Espèces (passés par le fond de caisse) + mouvements du fond de caisse
   const balanceMAD = useMemo(() => {
-    let b = TARGET_MAD
+    let b = 0
     entries.forEach(e => {
-      if (e.payment !== 'Espèces') return
+      if (e.payment !== 'Espèces' || e.cash_location === 'coffre') return
       const cur = (e.currency as string) || 'MAD'
       if (cur !== 'MAD') return
       if (e.type === 'cash') b += Number(e.amount)
@@ -833,9 +837,9 @@ function FondsCaisse({ token }: { token: string }) {
   }, [entries, fondsEntries])
  
   const balanceEUR = useMemo(() => {
-    let b = TARGET_EUR
+    let b = 0
     entries.forEach(e => {
-      if (e.payment !== 'Espèces') return
+      if (e.payment !== 'Espèces' || e.cash_location === 'coffre') return
       if ((e.currency as string) !== 'EUR') return
       if (e.type === 'cash') b += Number(e.amount)
       else if (e.type === 'cb') b -= Number(e.amount)
@@ -851,24 +855,6 @@ function FondsCaisse({ token }: { token: string }) {
   const diffMAD = compteMAD !== '' ? parseFloat(compteMAD) - balanceMAD : null
   const diffEUR = compteEUR !== '' ? parseFloat(compteEUR) - balanceEUR : null
  
-  // Remise au fond
-  const excessMAD = Math.max(0, balanceMAD - TARGET_MAD)
-  const excessEUR = Math.max(0, balanceEUR - TARGET_EUR)
- 
-  async function handleRemise() {
-    setRemiseLoading(true); setMsg('')
-    const today = new Date().toISOString().split('T')[0]
-    try {
-      const ops = []
-      if (excessMAD > 0) ops.push(fetch('/api/fonds', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ direction: 'out', date: today, amount: excessMAD, currency: 'MAD', category: 'Remise en coffre', description: `Fond de caisse → ${TARGET_MAD} MAD`, token }) }))
-      if (excessEUR > 0) ops.push(fetch('/api/fonds', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ direction: 'out', date: today, amount: excessEUR, currency: 'EUR', category: 'Remise en coffre', description: `Fond de caisse → ${TARGET_EUR} EUR`, token }) }))
-      await Promise.all(ops)
-      setMsg(`✓ Remise effectuée — Fond de caisse : ${TARGET_MAD} MAD / ${TARGET_EUR} EUR`)
-      await fetchData()
-    } catch { setMsg('Erreur lors de la remise.') }
-    setRemiseLoading(false)
-  }
- 
   if (loading) return <div className="card" style={{ textAlign: 'center', color: '#888' }}>Chargement…</div>
  
   return (
@@ -878,9 +864,9 @@ function FondsCaisse({ token }: { token: string }) {
         <h2 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.875rem', color: '#6366F1' }}>💰 Solde fond de caisse</h2>
         <p style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.75rem' }}>Calculé automatiquement depuis les encaissements et dépenses en espèces.</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-          {[{ cur: 'MAD', bal: balanceMAD, target: TARGET_MAD }, { cur: 'EUR', bal: balanceEUR, target: TARGET_EUR }].map(({ cur, bal, target }) => (
+          {[{ cur: 'MAD', bal: balanceMAD }, { cur: 'EUR', bal: balanceEUR }].map(({ cur, bal }) => (
             <div key={cur} style={{ background: bal >= 0 ? '#F0FDF4' : '#FEF2F2', border: `2px solid ${bal >= 0 ? 'var(--green)' : 'var(--red)'}`, borderRadius: '0.5rem', padding: '0.875rem', textAlign: 'center' }}>
-              <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#888', marginBottom: '0.2rem' }}>{cur} (cible : {target})</div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#888', marginBottom: '0.2rem' }}>{cur}</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 700, color: bal >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmt(bal)}</div>
             </div>
           ))}
@@ -919,23 +905,6 @@ function FondsCaisse({ token }: { token: string }) {
         )}
       </div>
  
-      {/* Remise en coffre (Nicolas) */}
-      <div className="card">
-        <h2 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.5rem', color: '#6366F1' }}>🔒 Remise en coffre</h2>
-        <p style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.75rem' }}>Remet le fond de caisse à {fmt(TARGET_MAD)} MAD / {fmt(TARGET_EUR)} EUR et place l&apos;excédent en coffre.</p>
-        <div style={{ background: '#F8F8F8', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: '0.75rem' }}>
-          {[{ label: 'Excédent MAD', val: excessMAD }, { label: 'Excédent EUR', val: excessEUR }].map(({ label, val }) => (
-            <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
-              <span>{label}</span>
-              <span style={{ fontWeight: 700, color: val > 0 ? '#6366F1' : '#aaa' }}>{val > 0 ? fmt(val) : '—'}</span>
-            </div>
-          ))}
-        </div>
-        {msg && <p style={{ color: msg.startsWith('✓') ? 'var(--green)' : 'var(--red)', fontSize: '0.875rem', marginBottom: '0.5rem', fontWeight: 600 }}>{msg}</p>}
-        <button type="button" onClick={handleRemise} disabled={remiseLoading || (excessMAD <= 0 && excessEUR <= 0)} className="btn-primary" style={{ background: '#6366F1' }}>
-          {remiseLoading ? 'Traitement…' : '🔒 Remettre au fond de caisse'}
-        </button>
-      </div>
     </div>
   )
 }

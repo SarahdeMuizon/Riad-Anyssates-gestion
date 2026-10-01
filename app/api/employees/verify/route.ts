@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import sql from '@/lib/db'
+import sql, { ensureDb } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   try {
+    await ensureDb()
     const { searchParams } = new URL(req.url)
     const token = searchParams.get('token')
     if (!token) {
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest) {
     }
 
     const emp = await sql`
-      SELECT id, name, poste FROM employees WHERE token = ${token} AND active = 1
+      SELECT id, name, poste, is_manager FROM employees WHERE token = ${token} AND active = 1
     `
     if (!emp[0]) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 })

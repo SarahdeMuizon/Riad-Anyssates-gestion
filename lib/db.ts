@@ -226,6 +226,15 @@ export async function initDb() {
     `ALTER TABLE coffre_entries ADD COLUMN invoice_url TEXT`,
     `ALTER TABLE entries ADD COLUMN pointed INTEGER DEFAULT 0`,
     `ALTER TABLE entries ADD COLUMN reference TEXT`,
+    // Espèces : 'fonds' (fond de caisse, par défaut) ou 'coffre' (coffre fort)
+    `ALTER TABLE entries ADD COLUMN cash_location TEXT`,
+    // Facture à envoyer au comptable
+    `ALTER TABLE entries ADD COLUMN to_accountant INTEGER DEFAULT 0`,
+    // Employé ayant accès à l'interface manager via son lien personnel
+    `ALTER TABLE employees ADD COLUMN is_manager INTEGER DEFAULT 0`,
+    // Transferts coffre ↔ fond de caisse : relie les deux mouvements d'un même transfert
+    `ALTER TABLE fonds_entries ADD COLUMN transfer_id TEXT`,
+    `ALTER TABLE coffre_entries ADD COLUMN transfer_id TEXT`,
   ]) {
     const mResults = await tursoRequest([{ sql: migSql }])
     const r = mResults[0]
@@ -239,3 +248,16 @@ export async function initDb() {
   }
 }
  
+
+// Applique automatiquement les migrations une fois par instance serveur,
+// pour que les nouvelles colonnes existent sans passer par « Mettre à jour ».
+let ensurePromise: Promise<void> | null = null
+export function ensureDb(): Promise<void> {
+  if (!ensurePromise) {
+    ensurePromise = initDb().catch(err => {
+      ensurePromise = null
+      console.error('ensureDb error:', err)
+    })
+  }
+  return ensurePromise
+}
