@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation'
 import type { Entry, FondsEntry } from '@/types'
 import { Suspense } from 'react'
 import { openAttachment } from '@/lib/attachments'
+import EmployeeGuide from './guide'
  
 const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
  
@@ -86,6 +87,7 @@ function EmployeeApp() {
   const [employee, setEmployee] = useState<EmployeeInfo | null>(null)
   const [authError, setAuthError] = useState('')
   const [tab, setTab] = useState<Tab>('cb')
+  const [showGuide, setShowGuide] = useState(false)
  
   useEffect(() => {
     if (!token) { setAuthError('Lien invalide.'); return }
@@ -130,8 +132,12 @@ function EmployeeApp() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <header style={{ background: 'var(--terracotta)', color: 'white', padding: '0 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 56 }}>
         <div style={{ fontWeight: 700 }}>🏨 Riad Anyssates</div>
-        <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>{employee.name}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <button onClick={() => setShowGuide(true)} style={{ background: 'rgba(255,255,255,0.18)', color: 'white', border: '1px solid rgba(255,255,255,0.45)', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>📖 Mode d&apos;emploi</button>
+          <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>{employee.name}</div>
+        </div>
       </header>
+      {showGuide && <EmployeeGuide onClose={() => setShowGuide(false)} />}
       <div style={{ background: 'white', borderBottom: '1px solid #EDE0D6', padding: '0 1rem', display: 'flex', gap: '0.25rem', overflowX: 'auto' }}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '0.75rem 0.875rem', border: 'none', borderBottom: tab === t.id ? '2px solid var(--terracotta)' : '2px solid transparent', background: 'transparent', color: tab === t.id ? 'var(--terracotta)' : 'var(--text)', fontWeight: tab === t.id ? 700 : 500, cursor: 'pointer', whiteSpace: 'nowrap' }}>
