@@ -355,6 +355,48 @@ function DepenseForm({ token }: { token: string }) {
     <div className="card">
       <h2 style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '1.25rem', color: 'var(--terracotta)' }}>💳 Nouvelle dépense</h2>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+        {/* Mandatory invoice upload */}
+        <div>
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+            Facture {payment !== 'Espèces' && '* '}<span style={{ color: payment === 'Espèces' ? '#888' : 'var(--red)', fontWeight: 400 }}>({payment === 'Espèces' ? 'optionnel' : 'obligatoire'})</span>
+          </label>
+          <div
+            ref={dropZoneRef}
+            style={{ position: 'relative', border: `2px dashed ${dragCounter > 0 ? 'var(--terracotta)' : invoiceFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', background: dragCounter > 0 ? '#FFF5F0' : invoiceFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
+          >
+            {invoiceFile && !extracting && (
+              <button type="button" onClick={e => { e.stopPropagation(); setInvoiceFile(null); setInvoicePreview(null); if (fileRef.current) fileRef.current.value = '' }} style={{ position: 'absolute', top: '0.35rem', left: '0.35rem', background: 'rgba(239,68,68,0.9)', border: 'none', borderRadius: '50%', width: '1.3rem', height: '1.3rem', color: 'white', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, lineHeight: 1, padding: 0 }}>×</button>
+            )}
+            {invoiceFile ? (
+              <div onClick={() => fileRef.current?.click()} style={{ cursor: 'pointer' }}>
+                {invoicePreview && <img src={invoicePreview} alt="Aperçu" style={{ maxHeight: 120, maxWidth: '100%', marginBottom: '0.5rem', borderRadius: '0.3rem' }} />}
+                <div style={{ fontSize: '0.85rem', color: 'var(--green)', fontWeight: 600 }}>✓ {invoiceFile.name}</div>
+                {extracting
+                  ? <div style={{ fontSize: '0.75rem', color: 'var(--terracotta)', marginTop: '0.2rem' }}>⏳ Analyse en cours…</div>
+                  : <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.2rem' }}>Cliquer ou glisser pour changer</div>
+                }
+              </div>
+            ) : (
+              <div>
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>{dragCounter > 0 ? '⬇️' : '📄'}</div>
+                <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '0.75rem' }}>Glisser votre facture ici</div>
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                  <label style={{ padding: '0.5rem 0.875rem', background: '#FFF5F0', border: '1px solid var(--terracotta)', borderRadius: '0.5rem', color: 'var(--terracotta)', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem' }}>
+                    📷 Photo
+                    <input type="file" accept="image/*" capture="environment" onChange={handleFile} style={{ display: 'none' }} />
+                  </label>
+                  <label style={{ padding: '0.5rem 0.875rem', background: '#F8F8F8', border: '1px solid #ddd', borderRadius: '0.5rem', color: '#555', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem' }}>
+                    📁 Fichier
+                    <input type="file" accept="image/*,application/pdf" onChange={handleFile} style={{ display: 'none' }} />
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+          <input ref={fileRef} type="file" accept="image/*,application/pdf" onChange={handleFile} style={{ display: 'none' }} />
+        </div>
+ 
+
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Date *</label>
           <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
@@ -450,47 +492,6 @@ function DepenseForm({ token }: { token: string }) {
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Description</label>
           <textarea className="form-input" rows={2} value={description} onChange={e => setDescription(e.target.value)} placeholder="Notes optionnelles…" />
-        </div>
- 
-        {/* Mandatory invoice upload */}
-        <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-            Facture {payment !== 'Espèces' && '* '}<span style={{ color: payment === 'Espèces' ? '#888' : 'var(--red)', fontWeight: 400 }}>({payment === 'Espèces' ? 'optionnel' : 'obligatoire'})</span>
-          </label>
-          <div
-            ref={dropZoneRef}
-            style={{ position: 'relative', border: `2px dashed ${dragCounter > 0 ? 'var(--terracotta)' : invoiceFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', background: dragCounter > 0 ? '#FFF5F0' : invoiceFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
-          >
-            {invoiceFile && !extracting && (
-              <button type="button" onClick={e => { e.stopPropagation(); setInvoiceFile(null); setInvoicePreview(null); if (fileRef.current) fileRef.current.value = '' }} style={{ position: 'absolute', top: '0.35rem', left: '0.35rem', background: 'rgba(239,68,68,0.9)', border: 'none', borderRadius: '50%', width: '1.3rem', height: '1.3rem', color: 'white', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, lineHeight: 1, padding: 0 }}>×</button>
-            )}
-            {invoiceFile ? (
-              <div onClick={() => fileRef.current?.click()} style={{ cursor: 'pointer' }}>
-                {invoicePreview && <img src={invoicePreview} alt="Aperçu" style={{ maxHeight: 120, maxWidth: '100%', marginBottom: '0.5rem', borderRadius: '0.3rem' }} />}
-                <div style={{ fontSize: '0.85rem', color: 'var(--green)', fontWeight: 600 }}>✓ {invoiceFile.name}</div>
-                {extracting
-                  ? <div style={{ fontSize: '0.75rem', color: 'var(--terracotta)', marginTop: '0.2rem' }}>⏳ Analyse en cours…</div>
-                  : <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.2rem' }}>Cliquer ou glisser pour changer</div>
-                }
-              </div>
-            ) : (
-              <div>
-                <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>{dragCounter > 0 ? '⬇️' : '📄'}</div>
-                <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '0.75rem' }}>Glisser votre facture ici</div>
-                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                  <label style={{ padding: '0.5rem 0.875rem', background: '#FFF5F0', border: '1px solid var(--terracotta)', borderRadius: '0.5rem', color: 'var(--terracotta)', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem' }}>
-                    📷 Photo
-                    <input type="file" accept="image/*" capture="environment" onChange={handleFile} style={{ display: 'none' }} />
-                  </label>
-                  <label style={{ padding: '0.5rem 0.875rem', background: '#F8F8F8', border: '1px solid #ddd', borderRadius: '0.5rem', color: '#555', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem' }}>
-                    📁 Fichier
-                    <input type="file" accept="image/*,application/pdf" onChange={handleFile} style={{ display: 'none' }} />
-                  </label>
-                </div>
-              </div>
-            )}
-          </div>
-          <input ref={fileRef} type="file" accept="image/*,application/pdf" onChange={handleFile} style={{ display: 'none' }} />
         </div>
  
         {extracting && <p style={{ color: '#888', fontSize: '0.8rem', textAlign: 'center' }}>🤖 Extraction IA en cours…</p>}
@@ -672,6 +673,48 @@ function EncaissementForm({ token }: { token: string }) {
     <div className="card">
       <h2 style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '1.25rem', color: 'var(--green)' }}>💵 Nouvel encaissement</h2>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+        {/* Ticket upload */}
+        <div>
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+            Ticket {payment !== 'Espèces' && '* '}<span style={{ color: payment === 'Espèces' ? '#888' : 'var(--red)', fontWeight: 400 }}>({payment === 'Espèces' ? 'optionnel' : 'obligatoire'})</span>
+          </label>
+          <div
+            ref={ticketDropZoneRef}
+            style={{ position: 'relative', border: `2px dashed ${dragCounter > 0 ? 'var(--green)' : ticketFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', background: dragCounter > 0 ? '#F0FDF4' : ticketFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
+          >
+            {ticketFile && !extracting && (
+              <button type="button" onClick={e => { e.stopPropagation(); setTicketFile(null); setTicketPreview(null); if (ticketRef.current) ticketRef.current.value = '' }} style={{ position: 'absolute', top: '0.35rem', left: '0.35rem', background: 'rgba(239,68,68,0.9)', border: 'none', borderRadius: '50%', width: '1.3rem', height: '1.3rem', color: 'white', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, lineHeight: 1, padding: 0 }}>×</button>
+            )}
+            {ticketFile ? (
+              <div onClick={() => ticketRef.current?.click()} style={{ cursor: 'pointer' }}>
+                {ticketPreview && <img src={ticketPreview} alt="Aperçu" style={{ maxHeight: 100, maxWidth: '100%', marginBottom: '0.5rem', borderRadius: '0.3rem' }} />}
+                <div style={{ fontSize: '0.85rem', color: 'var(--green)', fontWeight: 600 }}>✓ {ticketFile.name}</div>
+                {extracting
+                  ? <div style={{ fontSize: '0.75rem', color: 'var(--terracotta)', marginTop: '0.2rem' }}>⏳ Analyse en cours…</div>
+                  : <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.2rem' }}>Cliquer ou glisser pour changer</div>
+                }
+              </div>
+            ) : (
+              <div>
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>{dragCounter > 0 ? '⬇️' : '🧾'}</div>
+                <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '0.75rem' }}>Glisser votre ticket ici</div>
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                  <label style={{ padding: '0.5rem 0.875rem', background: '#F0FDF4', border: '1px solid var(--green)', borderRadius: '0.5rem', color: 'var(--green)', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem' }}>
+                    📷 Photo
+                    <input type="file" accept="image/*" capture="environment" onChange={handleTicket} style={{ display: 'none' }} />
+                  </label>
+                  <label style={{ padding: '0.5rem 0.875rem', background: '#F8F8F8', border: '1px solid #ddd', borderRadius: '0.5rem', color: '#555', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem' }}>
+                    📁 Fichier
+                    <input type="file" accept="image/*,application/pdf" onChange={handleTicket} style={{ display: 'none' }} />
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+          <input ref={ticketRef} type="file" accept="image/*,application/pdf" onChange={handleTicket} style={{ display: 'none' }} />
+        </div>
+ 
+
  
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Date *</label>
@@ -741,47 +784,6 @@ function EncaissementForm({ token }: { token: string }) {
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Description</label>
           <textarea className="form-input" rows={2} value={description} onChange={e => setDescription(e.target.value)} placeholder="Notes optionnelles…" />
-        </div>
- 
-        {/* Ticket upload */}
-        <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-            Ticket {payment !== 'Espèces' && '* '}<span style={{ color: payment === 'Espèces' ? '#888' : 'var(--red)', fontWeight: 400 }}>({payment === 'Espèces' ? 'optionnel' : 'obligatoire'})</span>
-          </label>
-          <div
-            ref={ticketDropZoneRef}
-            style={{ position: 'relative', border: `2px dashed ${dragCounter > 0 ? 'var(--green)' : ticketFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', background: dragCounter > 0 ? '#F0FDF4' : ticketFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
-          >
-            {ticketFile && !extracting && (
-              <button type="button" onClick={e => { e.stopPropagation(); setTicketFile(null); setTicketPreview(null); if (ticketRef.current) ticketRef.current.value = '' }} style={{ position: 'absolute', top: '0.35rem', left: '0.35rem', background: 'rgba(239,68,68,0.9)', border: 'none', borderRadius: '50%', width: '1.3rem', height: '1.3rem', color: 'white', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, lineHeight: 1, padding: 0 }}>×</button>
-            )}
-            {ticketFile ? (
-              <div onClick={() => ticketRef.current?.click()} style={{ cursor: 'pointer' }}>
-                {ticketPreview && <img src={ticketPreview} alt="Aperçu" style={{ maxHeight: 100, maxWidth: '100%', marginBottom: '0.5rem', borderRadius: '0.3rem' }} />}
-                <div style={{ fontSize: '0.85rem', color: 'var(--green)', fontWeight: 600 }}>✓ {ticketFile.name}</div>
-                {extracting
-                  ? <div style={{ fontSize: '0.75rem', color: 'var(--terracotta)', marginTop: '0.2rem' }}>⏳ Analyse en cours…</div>
-                  : <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.2rem' }}>Cliquer ou glisser pour changer</div>
-                }
-              </div>
-            ) : (
-              <div>
-                <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>{dragCounter > 0 ? '⬇️' : '🧾'}</div>
-                <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '0.75rem' }}>Glisser votre ticket ici</div>
-                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                  <label style={{ padding: '0.5rem 0.875rem', background: '#F0FDF4', border: '1px solid var(--green)', borderRadius: '0.5rem', color: 'var(--green)', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem' }}>
-                    📷 Photo
-                    <input type="file" accept="image/*" capture="environment" onChange={handleTicket} style={{ display: 'none' }} />
-                  </label>
-                  <label style={{ padding: '0.5rem 0.875rem', background: '#F8F8F8', border: '1px solid #ddd', borderRadius: '0.5rem', color: '#555', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem' }}>
-                    📁 Fichier
-                    <input type="file" accept="image/*,application/pdf" onChange={handleTicket} style={{ display: 'none' }} />
-                  </label>
-                </div>
-              </div>
-            )}
-          </div>
-          <input ref={ticketRef} type="file" accept="image/*,application/pdf" onChange={handleTicket} style={{ display: 'none' }} />
         </div>
  
         {error && <p style={{ color: 'var(--red)', fontSize: '0.875rem' }}>{error}</p>}
