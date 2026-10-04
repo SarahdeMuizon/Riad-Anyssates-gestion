@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import type { Entry, FondsEntry } from '@/types'
 import { Suspense } from 'react'
+import { openAttachment } from '@/lib/attachments'
  
 const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
  
@@ -352,7 +353,7 @@ function DepenseForm({ token }: { token: string }) {
           <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
         </div>
  
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '0.5rem' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Montant HT</label>
             <input className="form-input" type="number" step="0.01" min="0" value={amountHT} onChange={e => {
@@ -921,7 +922,7 @@ function EmployeeHistory({ token }: { token: string }) {
                     {e.supplier && <div style={{ fontSize: '0.8rem', color: '#888' }}>{e.supplier}</div>}
                     {e.payment && <div style={{ fontSize: '0.8rem', color: '#888' }}>{e.payment}</div>}
                     {e.description && <div style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.15rem' }}>{e.description}</div>}
-                    {e.invoice_url && <a href={e.invoice_url as string} target="_blank" rel="noreferrer" style={{ fontSize: '0.78rem', color: 'var(--blue)', display: 'inline-block', marginTop: '0.2rem' }}>📄 Voir facture</a>}
+                    {e.invoice_url && <a href={e.invoice_url as string} onClick={ev => { ev.preventDefault(); openAttachment(e.invoice_url as string) }} style={{ fontSize: '0.78rem', color: 'var(--blue)', display: 'inline-block', marginTop: '0.2rem', cursor: 'pointer' }}>📄 Voir facture</a>}
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '1rem' }}>
                     <div style={{ fontWeight: 700, fontSize: '1.05rem', color: e.type === 'cb' ? 'var(--terracotta)' : 'var(--green)' }}>{fmt(Number(e.amount))} <span style={{ fontSize: '0.8rem' }}>{(e.currency as string) || 'MAD'}</span></div>

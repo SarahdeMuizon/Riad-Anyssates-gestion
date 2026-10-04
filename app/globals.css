@@ -188,4 +188,25 @@ table tr:hover td {
   text-overflow: clip;
 }
  
-
+ 
+/* ─── Téléphone (portrait) ─────────────────────────────────────────────
+   Rien ne doit dépasser de l'écran : les tableaux se font défiler
+   horizontalement dans leur cadre, le reste s'empile. */
+html, body { max-width: 100%; overflow-x: hidden; }
+img { max-width: 100%; }
+[style*="overflow-x: auto"], [style*="overflowX"] { -webkit-overflow-scrolling: touch; }
+ 
+@media (max-width: 700px) {
+  .mgr-main { padding: 1rem 0.75rem !important; }
+  .mgr-header { height: auto !important; min-height: 52px; padding: 0.4rem 0.75rem !important; flex-wrap: wrap; gap: 0.4rem; }
+  .mgr-header > div:first-child { font-size: 1rem !important; }
+  .card, .stat-card { padding: 0.9rem; }
+  .stat-card div[style*="1.75rem"] { font-size: 1.35rem !important; }
+  /* Tableaux larges (Banque, Coffre) : largeur minimale + défilement horizontal */
+  .table-compact { min-width: 860px; font-size: 0.75rem; }
+  table { font-size: 0.8rem; }
+  table th, table td { padding: 0.45rem 0.5rem; white-space: nowrap; }
+  table td.col-wrap, table th.col-wrap { white-space: normal; min-width: 160px; }
+  .form-input { font-size: 16px; } /* évite le zoom automatique de l'iPhone sur les champs */
+  h2 { font-size: 1rem !important; }
+}

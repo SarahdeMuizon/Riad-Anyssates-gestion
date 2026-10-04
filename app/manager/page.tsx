@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Entry, Employee, DashboardStats, FondsEntry } from '@/types'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
+import { openAttachment } from '@/lib/attachments'
  
 type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'banque' | 'coffre' | 'comptable' | 'employees' | 'settings'
  
@@ -60,7 +61,7 @@ export default function ManagerPage() {
  
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      <header style={{ background: 'var(--terracotta)', color: 'white', padding: '0 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 56, boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+      <header className="mgr-header" style={{ background: 'var(--terracotta)', color: 'white', padding: '0 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 56, boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
         <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>🏨 Riad Anyssates</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <button onClick={() => window.location.href = '/api/export/excel'} style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', color: 'white', padding: '0.3rem 0.75rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>📊 Excel</button>
@@ -77,7 +78,7 @@ export default function ManagerPage() {
         ))}
       </div>
  
-      <main style={{ padding: '1.5rem', maxWidth: 1100, margin: '0 auto' }}>
+      <main className="mgr-main" style={{ padding: '1.5rem', maxWidth: 1100, margin: '0 auto' }}>
         {tab === 'dashboard' && <DashboardTab />}
         {tab === 'depenses' && <EntriesTab type="cb" label="Dépenses" color="var(--terracotta)" />}
         {tab === 'encaissements' && <EntriesTab type="cash" label="Encaissements" color="var(--green)" />}
@@ -191,7 +192,7 @@ function DashboardTab() {
           </div>
  
           {/* Pie charts + tables side by side */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
             <div className="card">
               <h3 style={{ fontWeight: 700, marginBottom: '0.75rem', color: 'var(--terracotta)' }}>💳 Dépenses par catégorie</h3>
               {mounted && stats.depenses_by_category.length > 0 ? (
@@ -725,7 +726,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
             {type === 'cb' ? (
               <div style={{ background: '#F8F8F8', border: '1px solid #EEE', borderRadius: '0.5rem', padding: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                 <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#666', marginBottom: '0.1rem' }}>Montants</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.625rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '0.625rem' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '0.2rem' }}>Montant HT</label>
                     <input className="form-input" type="number" step="0.01" min="0" value={fAmountHT} onChange={e => {
@@ -806,7 +807,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
             )}
  
             {/* Catégorie + Description */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Catégorie *</label>
                 <select className="form-input" value={fCategory} onChange={e => setFCategory(e.target.value)}>
@@ -903,7 +904,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                   <td style={{ fontWeight: 600, color }}>{fmt(Number(e.amount))}</td>
                   <td>
                     {e.invoice_url
-                      ? <a href={e.invoice_url as string} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontSize: '0.8rem' }}>{type === 'cash' ? '🧾 Ticket' : '📄 Facture'}</a>
+                      ? <a href={e.invoice_url as string} onClick={ev => { ev.preventDefault(); openAttachment(e.invoice_url as string) }} style={{ color: 'var(--blue)', fontSize: '0.8rem', cursor: 'pointer' }}>{type === 'cash' ? '🧾 Ticket' : '📄 Facture'}</a>
                       : <button onClick={() => { setPendingUploadEntry(e.id); rowFileRef.current?.click() }} disabled={uploadingEntryId === e.id} style={{ background: 'none', border: '1px dashed #aaa', borderRadius: '0.3rem', color: '#888', cursor: 'pointer', fontSize: '0.75rem', padding: '0.2rem 0.4rem' }}>{uploadingEntryId === e.id ? '⬆️…' : '📎 Ajouter'}</button>
                     }
                   </td>
@@ -1014,7 +1015,7 @@ function FondsTab() {
       <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#6366F1', marginBottom: '1rem' }}>💰 Fond de caisse</h2>
  
       {/* Soldes auto-calculés */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.25rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
         {[{ cur: 'MAD', bal: balanceMAD }, { cur: 'EUR', bal: balanceEUR }].map(({ cur, bal }) => (
           <div key={cur} className="stat-card" style={{ borderLeftColor: '#6366F1' }}>
             <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6366F1', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Solde {cur}</div>
@@ -1026,7 +1027,7 @@ function FondsTab() {
       {/* Rapprochement */}
       <div className="card" style={{ marginBottom: '1.25rem' }}>
         <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', color: '#374151' }}>🔍 Rapprochement caisse</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem' }}>
           {[{ cur: 'MAD', bal: balanceMAD, val: compteMAD, set: setCompteMAD }, { cur: 'EUR', bal: balanceEUR, val: compteEUR, set: setCompteEUR }].map(({ cur, bal, val, set }) => {
             const diff = parseFloat(val || '0') - bal
             return (
@@ -1568,7 +1569,7 @@ function CoffreTab() {
       </div>
  
       {/* Solde — cumul depuis le début (pas remis à zéro chaque mois) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem', marginBottom: '0.75rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
         <div className="stat-card" style={{ borderLeftColor: '#B8860B' }}>
           <div style={{ fontSize: '0.8rem', color: '#888' }}>Solde DHS</div>
           <div style={{ fontWeight: 700, fontSize: '1.5rem', color: '#B8860B' }}>{fmt(currentSoldeDhs)}</div>
@@ -1578,7 +1579,7 @@ function CoffreTab() {
           <div style={{ fontWeight: 700, fontSize: '1.5rem', color: '#B8860B' }}>{fmt(currentSoldeEur)}</div>
         </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '1.25rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
         <div className="stat-card" style={{ borderLeftColor: 'var(--green)' }}>
           <div style={{ fontSize: '0.8rem', color: '#888' }}>Dépôts DHS</div>
           <div style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--green)' }}>+{totalInDhs.toFixed(2)}</div>
@@ -1728,7 +1729,7 @@ function CoffreTab() {
                     <td style={{ fontWeight: 600, color: '#B8860B' }}>{!isEur ? fmt(e.soldeDhs) : '—'}</td>
                     <td style={{ textAlign: 'center' }}>
                       {hasInvoice
-                        ? <a href={e.invoice_url!} target="_blank" rel="noreferrer" style={{ color: 'var(--green)', fontWeight: 700, fontSize: '0.8rem' }}>AF</a>
+                        ? <a href={e.invoice_url!} onClick={ev => { ev.preventDefault(); openAttachment(e.invoice_url) }} style={{ color: 'var(--green)', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>AF</a>
                         : e.source === 'entry' ? <span style={{ color: '#9CA3AF', fontWeight: 700, fontSize: '0.8rem' }}>SF</span>
                         : <button onClick={() => { setPendingUploadEntry(e.id); rowFileRef.current?.click() }} disabled={uploadingEntryId === e.id} style={{ background: 'none', border: 'none', color: '#9CA3AF', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}>{uploadingEntryId === e.id ? '⬆️…' : 'SF 📎'}</button>
                       }
@@ -1812,6 +1813,29 @@ function ComptableTab() {
     return t
   }, [rows])
  
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState('')
+  const exportTitle = allMonths ? 'Tous les mois' : formatMonth(month)
+ 
+  async function exportPdf() {
+    if (rows.length === 0) return
+    setExporting(true); setExportError('')
+    try {
+      const { buildAccountantPdf } = await import('@/lib/pdf-export')
+      const blob = await buildAccountantPdf(rows, exportTitle)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `Comptable - ${exportTitle}.pdf`
+      document.body.appendChild(a); a.click(); a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    } catch (err) {
+      console.error(err)
+      setExportError("Erreur lors de la création du PDF — réessayez.")
+    }
+    setExporting(false)
+  }
+ 
   async function removeFromList(entry: Entry) {
     setAllEntries(prev => prev.map(e => e.id === entry.id ? { ...e, to_accountant: false } : e))
     const r = await fetch(`/api/entries/${entry.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to_accountant: false }) }).catch(() => null)
@@ -1840,6 +1864,10 @@ function ComptableTab() {
           <option value="cash">Encaissements uniquement</option>
         </select>
         <span style={{ fontSize: '0.85rem', color: '#666' }}>{rows.length} facture{rows.length > 1 ? 's' : ''}</span>
+        <button className="btn-primary" onClick={exportPdf} disabled={exporting || rows.length === 0} style={{ background: '#0F766E', fontSize: '0.85rem', padding: '0.4rem 0.9rem', opacity: rows.length === 0 ? 0.5 : 1 }}>
+          {exporting ? 'Création du PDF…' : `📄 Exporter le PDF — ${exportTitle}`}
+        </button>
+        {exportError && <span style={{ color: 'var(--red)', fontSize: '0.8rem' }}>{exportError}</span>}
         <span style={{ marginLeft: 'auto', display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.85rem' }}>
           {Object.entries(totals).map(([cur, t]) => (
             <span key={cur}>
@@ -1883,7 +1911,7 @@ function ComptableTab() {
                     <td style={{ fontWeight: 600, color, whiteSpace: 'nowrap' }}>{fmt(Number(e.amount))}</td>
                     <td>
                       {e.invoice_url
-                        ? <a href={e.invoice_url as string} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontSize: '0.8rem' }}>📄 Voir</a>
+                        ? <a href={e.invoice_url as string} onClick={ev => { ev.preventDefault(); openAttachment(e.invoice_url as string) }} style={{ color: 'var(--blue)', fontSize: '0.8rem', cursor: 'pointer' }}>📄 Voir</a>
                         : <span style={{ color: 'var(--red)', fontSize: '0.75rem', fontWeight: 600 }}>Manquant</span>}
                     </td>
                     <td style={{ textAlign: 'center' }}>
