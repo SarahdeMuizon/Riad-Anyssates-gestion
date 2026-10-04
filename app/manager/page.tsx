@@ -415,6 +415,16 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     }
   }, [showForm, type])
  
+  async function changePayment(entry: Entry, value: string) {
+    const [payment, loc] = value.split('|')
+    const r = await fetch(`/api/entries/${entry.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ payment, cash_location: loc || null }) }).catch(() => null)
+    if (r && r.ok) fetchEntries()
+    else {
+      setFormError('Impossible de modifier le mode de paiement — réessayez.')
+      setTimeout(() => setFormError(''), 5000)
+    }
+  }
+
   async function changeDate(entry: Entry, newDate: string) {
     if (!newDate || newDate === entry.date) return
     const r = await fetch(`/api/entries/${entry.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: newDate }) }).catch(() => null)
@@ -897,7 +907,20 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                   <td>{e.employee_name}</td>
                   <td>{e.category}</td>
                   {type === 'cb' && <td>{e.supplier || '—'}</td>}
-                  <td style={{ whiteSpace: 'nowrap' }}>{e.payment || '—'}{e.payment === 'Espèces' && <span style={{ fontSize: '0.72rem', color: '#888' }}> · {e.cash_location === 'coffre' ? 'coffre' : 'caisse'}</span>}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <select
+                      value={e.payment === 'Espèces' ? `Espèces|${e.cash_location === 'coffre' ? 'coffre' : 'fonds'}` : (e.payment || '')}
+                      onChange={ev => changePayment(e, ev.target.value)}
+                      title="Modifier le mode de paiement"
+                      style={{ border: '1px solid transparent', background: 'transparent', borderRadius: '0.3rem', padding: '0.15rem 0.1rem', font: 'inherit', fontSize: '0.85rem', cursor: 'pointer', color: 'inherit' }}
+                      onMouseEnter={ev => { ev.currentTarget.style.borderColor = '#ddd' }}
+                      onMouseLeave={ev => { ev.currentTarget.style.borderColor = 'transparent' }}>
+                      {!e.payment && <option value="">—</option>}
+                      {(type === 'cb' ? PAYMENT_MODES_DEPENSES : PAYMENT_MODES_ENCAISSEMENTS).filter(p => p !== 'Espèces').map(p => <option key={p} value={p}>{p}</option>)}
+                      <option value="Espèces|fonds">Espèces · caisse</option>
+                      <option value="Espèces|coffre">Espèces · coffre</option>
+                    </select>
+                  </td>
                   <td style={{ fontSize: '0.8rem', color: '#666', whiteSpace: 'nowrap' }}>{e.reference || '—'}</td>
                   <td style={{ fontSize: '0.8rem', color: '#666' }}>{e.description || '—'}</td>
                   <td><span style={{ fontWeight: 600, fontSize: '0.8rem', background: '#F3F4F6', padding: '0.15rem 0.4rem', borderRadius: '0.3rem' }}>{(e.currency as string) || 'MAD'}</span></td>

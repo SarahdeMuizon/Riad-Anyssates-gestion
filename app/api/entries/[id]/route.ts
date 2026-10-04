@@ -40,6 +40,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json(result[0])
     }
 
+    if (body.payment !== undefined) {
+      const MODES = ['CB', 'Virement', 'Chèque', 'Prélèvement', 'Espèces']
+      const payment = String(body.payment)
+      if (!MODES.includes(payment)) return NextResponse.json({ error: 'Mode de paiement invalide' }, { status: 400 })
+      const loc = payment === 'Espèces' ? (body.cash_location === 'coffre' ? 'coffre' : 'fonds') : null
+      const result = await sql`UPDATE entries SET payment = ${payment}, cash_location = ${loc} WHERE id = ${id} RETURNING *`
+      if (!result[0]) return NextResponse.json({ error: 'Entrée introuvable' }, { status: 404 })
+      return NextResponse.json(result[0])
+    }
+
     if (body.reference !== undefined) {
       const result = await sql`UPDATE entries SET reference = ${body.reference || null} WHERE id = ${id} RETURNING *`
       return NextResponse.json(result[0])
