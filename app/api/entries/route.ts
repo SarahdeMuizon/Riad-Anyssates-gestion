@@ -20,8 +20,8 @@ export async function GET(req: NextRequest) {
       if (!emp[0]) return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
       const name = emp[0].name as string
       const entries = type
-        ? await sql`SELECT * FROM entries WHERE employee_name = ${name} AND type = ${type} ORDER BY created_at DESC`
-        : await sql`SELECT * FROM entries WHERE employee_name = ${name} ORDER BY created_at DESC`
+        ? await sql`SELECT * FROM entries WHERE employee_name = ${name} AND type = ${type} ORDER BY date DESC, created_at DESC`
+        : await sql`SELECT * FROM entries WHERE employee_name = ${name} ORDER BY date DESC, created_at DESC`
       return NextResponse.json(entries)
     }
  

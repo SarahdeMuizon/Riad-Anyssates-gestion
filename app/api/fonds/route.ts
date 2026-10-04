@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
       const emp = await sql`SELECT name FROM employees WHERE token = ${token} AND active = 1`
       if (!emp[0]) return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
       const name = emp[0].name as string
-      const entries = await sql`SELECT * FROM fonds_entries WHERE employee_name = ${name} ORDER BY created_at DESC`
+      const entries = await sql`SELECT * FROM fonds_entries WHERE employee_name = ${name} ORDER BY date DESC, created_at DESC`
       return NextResponse.json(entries)
     }
 
