@@ -324,7 +324,7 @@ function generateInvoice(entry: InvoiceData) {
   if (w) { w.document.write(html); w.document.close() }
 }
 const ENCAISSEMENTS_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Radeema','Impôts','Divers']
-const PAYMENT_MODES_DEPENSES = ['CB', 'Virement', 'Chèque', 'Espèces']
+const PAYMENT_MODES_DEPENSES = ['CB', 'Virement', 'Chèque', 'Prélèvement', 'Espèces']
 const PAYMENT_MODES_ENCAISSEMENTS = ['CB', 'Virement', 'Chèque', 'Prélèvement', 'Espèces']
 const CURRENCIES = ['MAD', 'EUR']
  
@@ -335,7 +335,9 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [entries, setEntries] = useState<Entry[]>([])
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState('')
+  const [filterEmployee, setFilterEmployee] = useState('')
   const [deleteModal, setDeleteModal] = useState<number | null>(null)
+  const [employees, setEmployees] = useState<string[]>([])
   const [showForm, setShowForm] = useState(false)
   const paymentModes = type === 'cb' ? PAYMENT_MODES_DEPENSES : PAYMENT_MODES_ENCAISSEMENTS
  
@@ -350,6 +352,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [fPayment, setFPayment] = useState('CB')
   const [fDescription, setFDescription] = useState('')
   const [fReference, setFReference] = useState('')
+  const [fEmployee, setFEmployee] = useState('')
   const [fCashLocation, setFCashLocation] = useState<'fonds' | 'coffre'>('fonds')
   const [fToAccountant, setFToAccountant] = useState(false)
   const [fFile, setFFile] = useState<File | null>(null)
@@ -378,12 +381,18 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     setLoading(true)
     const params = new URLSearchParams({ type, month })
     if (filterStatus) params.set('status', filterStatus)
+    if (filterEmployee) params.set('employee', filterEmployee)
     const r = await fetch(`/api/entries?${params}`)
     setEntries(await r.json())
     setLoading(false)
-  }, [type, month, filterStatus])
+  }, [type, month, filterStatus, filterEmployee])
  
   useEffect(() => { fetchEntries() }, [fetchEntries])
+  useEffect(() => {
+    fetch('/api/employees').then(r => r.json()).then((emps: Employee[]) => {
+      setEmployees(Array.isArray(emps) ? emps.filter(e => e.active).map(e => e.name) : [])
+    }).catch(() => {})
+  }, [])
  
   // Reset defaults every time form opens
   useEffect(() => {
@@ -572,7 +581,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       ? parseFloat(fTransactionAmount) - cbCommission - cbTva
       : parseFloat(fAmount)
  
-    const body: Record<string, unknown> = { type, date: fDate, category: fCategory, amount: finalAmount, currency: fCurrency, description: fDescription || null, invoice_url, reference: fReference || null, to_accountant: fToAccountant, cash_location: fPayment === 'Espèces' ? fCashLocation : null }
+    const body: Record<string, unknown> = { type, date: fDate, employee_name: fEmployee || undefined, category: fCategory, amount: finalAmount, currency: fCurrency, description: fDescription || null, invoice_url, reference: fReference || null, to_accountant: fToAccountant, cash_location: fPayment === 'Espèces' ? fCashLocation : null }
     if (type === 'cb') {
       body.supplier = fSupplier || null
       body.payment = fPayment
@@ -602,7 +611,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
         setFAmount(''); setFAmountHT(''); setFTvaRate(''); setFSupplier(''); setFDescription('')
         setFFile(null); setFFilePreview(null); setFExtracted(false); setShowForm(false)
         setFTransactionAmount(''); setFClientName(''); setFReference(''); setFToAccountant(false)
-        setFilterStatus('')
+        setFilterStatus(''); setFilterEmployee('')
         setFormSuccess('✓ Entrée ajoutée avec succès !')
         setTimeout(() => setFormSuccess(''), 4000)
         setMonth(fDate.substring(0, 7))
@@ -692,6 +701,13 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Date *</label>
                 <input className="form-input" type="date" value={fDate} onChange={e => setFDate(e.target.value)} required />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Employé</label>
+                <select className="form-input" value={fEmployee} onChange={e => setFEmployee(e.target.value)}>
+                  <option value="">Moi (personne connectée)</option>
+                  {employees.map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
               </div>
               {type === 'cb' && (
                 <div style={{ gridColumn: '1 / -1' }}>
@@ -838,6 +854,10 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
           <option value="pending">En attente</option>
           <option value="validated">Validés</option>
         </select>
+        <select className="form-input" style={{ width: 'auto' }} value={filterEmployee} onChange={e => setFilterEmployee(e.target.value)}>
+          <option value="">Tous les employés</option>
+          {employees.map(n => <option key={n} value={n}>{n}</option>)}
+        </select>
         <span style={{ marginLeft: 'auto', fontWeight: 600, color }}>Total : {fmt(total)}</span>
       </div>
  
@@ -848,7 +868,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
           <table>
             <thead>
               <tr>
-                <th>Date</th><th>Catégorie</th>
+                <th>Date</th><th>Employé</th><th>Catégorie</th>
                 {type === 'cb' && <th>Fournisseur</th>}
                 <th>Paiement</th>
                 <th>N° facture/chèque</th>
@@ -869,6 +889,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                       style={{ border: '1px solid transparent', borderRadius: '0.3rem', background: 'transparent', font: 'inherit', fontSize: '0.85rem', padding: '0.1rem 0.2rem', cursor: 'pointer', width: '8.2rem' }}
                       onFocus={ev => { ev.target.style.borderColor = '#ddd'; ev.target.style.background = 'white' }} />
                   </td>
+                  <td>{e.employee_name}</td>
                   <td>{e.category}</td>
                   {type === 'cb' && <td>{e.supplier || '—'}</td>}
                   <td style={{ whiteSpace: 'nowrap' }}>{e.payment || '—'}{e.payment === 'Espèces' && <span style={{ fontSize: '0.72rem', color: '#888' }}> · {e.cash_location === 'coffre' ? 'coffre' : 'caisse'}</span>}</td>
@@ -1295,7 +1316,7 @@ function BanqueTab() {
  
 // ─── Coffre Fort Tab ──────────────────────────────────────────────────────────
  
-const COFFRE_CATEGORIES = ['Client', 'Commission', 'Administratif', 'Nourriture', 'Spa', 'Prestataire', 'Salaire', 'Maroc Telecom', 'Travaux', 'Impôts', 'Change', 'Caisse rouge', 'Entretien', 'Livraison mob', 'Alcool', 'Divers']
+const COFFRE_CATEGORIES = ['Client', 'Commission', 'Administratif', 'Nourriture', 'Spa', 'Prestataire', 'Banque', 'Salaire', 'Maroc Telecom', 'Travaux', 'Impôts', 'Change', 'Caisse rouge', 'Entretien', 'Livraison mob', 'Alcool', 'Divers']
  
 interface CoffreEntry {
   id: number
