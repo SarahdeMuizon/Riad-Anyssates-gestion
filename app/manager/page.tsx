@@ -30,7 +30,7 @@ export default function ManagerPage() {
     fetch('/api/auth/check').then(async r => {
       if (!r.ok) { router.replace('/'); return }
       const d = await r.json().catch(() => ({}))
-      if (d?.name && d.name !== 'Administrateur') setManagerName(d.name)
+      if (d?.name) setManagerName(d.name)
       setAuthChecked(true)
     })
   }, [router])
@@ -390,11 +390,14 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   }, [type, month, filterStatus, filterEmployee])
  
   useEffect(() => { fetchEntries() }, [fetchEntries])
+  const [me, setMe] = useState('Valérie')
   useEffect(() => {
     fetch('/api/employees').then(r => r.json()).then((emps: Employee[]) => {
       setEmployees(Array.isArray(emps) ? emps.filter(e => e.active).map(e => e.name) : [])
     }).catch(() => {})
+    fetch('/api/auth/check').then(r => r.json()).then(d => { if (d?.name) { setMe(d.name); setFEmployee(prev => prev || d.name) } }).catch(() => {})
   }, [])
+  const employeeChoices = useMemo(() => Array.from(new Set([me, 'Valérie', ...employees])), [me, employees])
  
   // Reset defaults every time form opens
   useEffect(() => {
@@ -583,7 +586,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       ? parseFloat(fTransactionAmount) - cbCommission - cbTva
       : parseFloat(fAmount)
  
-    const body: Record<string, unknown> = { type, date: fDate, employee_name: fEmployee || undefined, category: fCategory, amount: finalAmount, currency: fCurrency, description: fDescription || null, invoice_url, reference: fReference || null, to_accountant: fToAccountant, cash_location: fPayment === 'Espèces' ? fCashLocation : null }
+    const body: Record<string, unknown> = { type, date: fDate, employee_name: fEmployee || me, category: fCategory, amount: finalAmount, currency: fCurrency, description: fDescription || null, invoice_url, reference: fReference || null, to_accountant: fToAccountant, cash_location: fPayment === 'Espèces' ? fCashLocation : null }
     if (type === 'cb') {
       body.supplier = fSupplier || null
       body.payment = fPayment
@@ -706,9 +709,8 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Employé</label>
-                <select className="form-input" value={fEmployee} onChange={e => setFEmployee(e.target.value)}>
-                  <option value="">Moi (personne connectée)</option>
-                  {employees.map(n => <option key={n} value={n}>{n}</option>)}
+                <select className="form-input" value={fEmployee || me} onChange={e => setFEmployee(e.target.value)}>
+                  {employeeChoices.map(n => <option key={n} value={n}>{n}</option>)}
                 </select>
               </div>
               {type === 'cb' && (
@@ -1269,10 +1271,10 @@ function BanqueTab() {
         <div style={{ overflowX: 'auto' }}>
           <table className="table-compact">
             <colgroup>
-              <col style={{ width: '7%' }} /><col style={{ width: '9%' }} /><col style={{ width: '7%' }} />
-              <col style={{ width: '10%' }} /><col style={{ width: '25%' }} />
-              <col style={{ width: '7%' }} /><col style={{ width: '7%' }} /><col style={{ width: '8%' }} />
-              <col style={{ width: '5%' }} /><col style={{ width: '8%' }} /><col style={{ width: '7%' }} />
+              <col style={{ width: '9%' }} /><col style={{ width: '8%' }} /><col style={{ width: '7%' }} />
+              <col style={{ width: '9%' }} /><col style={{ width: '18%' }} />
+              <col style={{ width: '8%' }} /><col style={{ width: '8%' }} /><col style={{ width: '9%' }} />
+              <col style={{ width: '5%' }} /><col style={{ width: '9%' }} /><col style={{ width: '10%' }} />
             </colgroup>
             <thead>
               <tr>
@@ -1304,7 +1306,7 @@ function BanqueTab() {
                       />
                     </td>
                     <td style={{ fontWeight: 600, color: '#3730A3' }}>{fmt(e.reel)}</td>
-                    <td style={{ fontWeight: 600, color: Math.abs(e.ecart) > 0.005 ? 'var(--red)' : '#aaa' }}>{fmt(e.ecart)}</td>
+                    <td style={{ fontWeight: 600, color: Math.abs(e.ecart) > 0.005 ? 'var(--red)' : '#aaa', overflow: 'visible' }} title={fmt(e.ecart)}>{fmt(e.ecart)}</td>
                   </tr>
                 )
               })}
@@ -1351,7 +1353,7 @@ function CoffreTab() {
   const [currency, setCurrency] = useState('MAD')
   const [category, setCategory] = useState(COFFRE_CATEGORIES[0])
   const [description, setDescription] = useState('')
-  const [employeeName, setEmployeeName] = useState('Administrateur')
+  const [employeeName, setEmployeeName] = useState('Valérie')
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
  
@@ -1676,8 +1678,7 @@ function CoffreTab() {
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Par</label>
                 <select className="form-input" value={employeeName} onChange={e => setEmployeeName(e.target.value)}>
-                  <option value="Administrateur">Administrateur</option>
-                  {coffreEmployees.map(n => <option key={n} value={n}>{n}</option>)}
+                  {Array.from(new Set(['Valérie', ...coffreEmployees])).map(n => <option key={n} value={n}>{n}</option>)}
                 </select>
               </div>
               <div>

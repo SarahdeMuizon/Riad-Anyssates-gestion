@@ -246,6 +246,13 @@ export async function initDb() {
       }
     }
   }
+ 
+  // L'ancien libellé « Administrateur » (connexion par code PIN) devient Valérie
+  await tursoRequest([
+    { sql: `UPDATE entries SET employee_name = 'Valérie' WHERE employee_name = 'Administrateur'` },
+    { sql: `UPDATE fonds_entries SET employee_name = 'Valérie' WHERE employee_name = 'Administrateur'` },
+    { sql: `UPDATE coffre_entries SET employee_name = 'Valérie' WHERE employee_name = 'Administrateur'` },
+  ])
 }
  
 

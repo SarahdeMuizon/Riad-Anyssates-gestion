@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'PIN incorrect' }, { status: 401 })
       }
       sessionSeed = pin
-      displayName = 'Administrateur'
+      displayName = 'Valérie'
     }
 
     const token = createSessionToken(sessionSeed)

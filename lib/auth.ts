@@ -40,7 +40,9 @@ export function getSessionFromRequest(req: NextRequest): string | null {
 
 export function getManagerName(): string {
   const v = cookies().get(MANAGER_NAME_COOKIE)?.value
-  return v ? decodeURIComponent(v) : 'Administrateur'
+  const name = v ? decodeURIComponent(v) : ''
+  // Connexion par code PIN = Valérie (ancien libellé « Administrateur »)
+  return !name || name === 'Administrateur' ? 'Valérie' : name
 }
 
 export { SESSION_COOKIE, MANAGER_NAME_COOKIE }
