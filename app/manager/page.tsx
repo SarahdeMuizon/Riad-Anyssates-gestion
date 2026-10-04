@@ -656,7 +656,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     (!supplierQuery || `${e.supplier || ''} ${e.description || ''}`.toLowerCase().includes(supplierQuery)))
   const categoryOptions = Array.from(new Set([...categories, ...entries.map(e => e.category).filter(Boolean)]))
   const supplierOptions = Array.from(new Set(entries.map(e => (e.supplier || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'fr'))
-  const hasExtraFilter = !!(filterCategory || filterPayment || filterSupplier)
+  const hasExtraFilter = !!(filterStatus || filterEmployee || filterCategory || filterPayment || filterSupplier)
   const total = shown.reduce((s, e) => s + Number(e.amount), 0)
  
   return (
@@ -670,6 +670,39 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
         <button className="btn-primary" onClick={() => setShowForm(!showForm)}>{showForm ? 'Annuler' : '+ Ajouter'}</button>
       </div>
  
+      <div className="card filters-bar" style={{ marginBottom: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <select className="form-input" style={{ width: 'auto' }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+          <option value="">Statut</option>
+          <option value="pending">En attente</option>
+          <option value="validated">Validés</option>
+        </select>
+        <select className="form-input" style={{ width: 'auto' }} value={filterEmployee} onChange={e => setFilterEmployee(e.target.value)}>
+          <option value="">Employé</option>
+          {employees.map(n => <option key={n} value={n}>{n}</option>)}
+        </select>
+        <select className="form-input" style={{ width: 'auto' }} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+          <option value="">Catégorie</option>
+          {categoryOptions.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select className="form-input" style={{ width: 'auto' }} value={filterPayment} onChange={e => setFilterPayment(e.target.value)}>
+          <option value="">Paiement</option>
+          {paymentModes.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
+        <input className="form-input" style={{ width: 'auto', minWidth: '9rem' }} list={`suppliers-${type}`} value={filterSupplier} onChange={e => setFilterSupplier(e.target.value)}
+          placeholder={type === 'cb' ? '🔍 Fournisseur' : '🔍 Client'} />
+        <datalist id={`suppliers-${type}`}>
+          {supplierOptions.map(n => <option key={n} value={n} />)}
+        </datalist>
+        {hasExtraFilter && (
+          <button type="button" onClick={() => { setFilterStatus(''); setFilterEmployee(''); setFilterCategory(''); setFilterPayment(''); setFilterSupplier('') }}
+            style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}>Effacer les filtres</button>
+        )}
+        <span style={{ marginLeft: 'auto', fontWeight: 600, color }}>
+          {hasExtraFilter && <span style={{ fontWeight: 400, fontSize: '0.8rem', color: '#888', marginRight: '0.5rem' }}>{shown.length} ligne{shown.length > 1 ? 's' : ''}</span>}
+          Total : {fmt(total)}
+        </span>
+      </div>
+
       {formSuccess && <p style={{ color: 'var(--green)', fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: '#F0FDF4', borderRadius: '0.4rem', border: '1px solid #86efac' }}>{formSuccess}</p>}
       {!showForm && formError && <p style={{ color: 'var(--red)', fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: '#FEF2F2', borderRadius: '0.4rem', border: '1px solid #fca5a5' }}>{formError}</p>}
  
@@ -875,38 +908,6 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
         </div>
       )}
  
-      <div className="card" style={{ marginBottom: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <select className="form-input" style={{ width: 'auto' }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-          <option value="">Tous les statuts</option>
-          <option value="pending">En attente</option>
-          <option value="validated">Validés</option>
-        </select>
-        <select className="form-input" style={{ width: 'auto' }} value={filterEmployee} onChange={e => setFilterEmployee(e.target.value)}>
-          <option value="">Tous les employés</option>
-          {employees.map(n => <option key={n} value={n}>{n}</option>)}
-        </select>
-        <select className="form-input" style={{ width: 'auto' }} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-          <option value="">Toutes les catégories</option>
-          {categoryOptions.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <select className="form-input" style={{ width: 'auto' }} value={filterPayment} onChange={e => setFilterPayment(e.target.value)}>
-          <option value="">Tous les paiements</option>
-          {paymentModes.map(p => <option key={p} value={p}>{p}</option>)}
-        </select>
-        <input className="form-input" style={{ width: 'auto', minWidth: '11rem' }} list={`suppliers-${type}`} value={filterSupplier} onChange={e => setFilterSupplier(e.target.value)}
-          placeholder={type === 'cb' ? '🔍 Fournisseur…' : '🔍 Client / description…'} />
-        <datalist id={`suppliers-${type}`}>
-          {supplierOptions.map(n => <option key={n} value={n} />)}
-        </datalist>
-        {hasExtraFilter && (
-          <button type="button" onClick={() => { setFilterCategory(''); setFilterPayment(''); setFilterSupplier('') }}
-            style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}>Effacer les filtres</button>
-        )}
-        <span style={{ marginLeft: 'auto', fontWeight: 600, color }}>
-          {hasExtraFilter && <span style={{ fontWeight: 400, fontSize: '0.8rem', color: '#888', marginRight: '0.5rem' }}>{shown.length} ligne{shown.length > 1 ? 's' : ''}</span>}
-          Total : {fmt(total)}
-        </span>
-      </div>
  
       {loading ? <p>Chargement…</p> : shown.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>{entries.length === 0 ? 'Aucune entrée pour ce mois' : 'Aucune entrée ne correspond aux filtres'}</div>

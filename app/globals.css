@@ -216,6 +216,10 @@ img { max-width: 100%; }
      On les laisse rétrécir à la largeur de leur colonne. */
   [style*="grid-template-columns"] > * { min-width: 0; }
   .form-input { min-width: 0; max-width: 100%; }
+  /* Barre de filtres (Dépenses / Encaissements) : 2 colonnes compactes, total sur sa propre ligne */
+  .filters-bar { display: grid !important; grid-template-columns: 1fr 1fr; gap: 0.5rem !important; }
+  .filters-bar .form-input { width: 100% !important; min-width: 0 !important; padding: 0.45rem 0.5rem; }
+  .filters-bar > span, .filters-bar > button { grid-column: 1 / -1; margin-left: 0 !important; }
   input[type="date"] { -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; }
   input[type="date"].form-input { display: block; width: 100%; min-height: 2.6rem; text-align: left; }
   input[type="date"]::-webkit-date-and-time-value { text-align: left; }
