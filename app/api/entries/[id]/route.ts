@@ -28,6 +28,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         return NextResponse.json({ error: 'Date invalide' }, { status: 400 })
       }
       const result = await sql`UPDATE entries SET date = ${d} WHERE id = ${id} RETURNING *`
+      if (!result[0]) return NextResponse.json({ error: 'Entrée introuvable' }, { status: 404 })
       return NextResponse.json(result[0])
     }
 

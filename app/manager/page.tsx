@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import type { Entry, Employee, DashboardStats, FondsEntry } from '@/types'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
  
-type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'banque' | 'coffre' | 'employees' | 'settings'
+type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'banque' | 'coffre' | 'comptable' | 'employees' | 'settings'
  
 const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
  
@@ -53,6 +53,7 @@ export default function ManagerPage() {
     { id: 'fonds', label: '💰 Fond de caisse' },
     { id: 'banque', label: '🏦 Banque' },
     { id: 'coffre', label: '🔐 Coffre fort' },
+    { id: 'comptable', label: '📨 Comptable' },
     { id: 'employees', label: '👥 Employés' },
     { id: 'settings', label: '⚙️ Paramètres' },
   ]
@@ -83,6 +84,7 @@ export default function ManagerPage() {
         {tab === 'fonds' && <FondsTab />}
         {tab === 'banque' && <BanqueTab />}
         {tab === 'coffre' && <CoffreTab />}
+        {tab === 'comptable' && <ComptableTab />}
         {tab === 'employees' && <EmployeesTab />}
         {tab === 'settings' && <SettingsTab onLogout={logout} />}
       </main>
@@ -1764,6 +1766,133 @@ function CoffreTab() {
               <button className="btn-red" onClick={() => deleteEntry(deleteModal)}>Supprimer</button>
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  )
+}
+ 
+// ─── Comptable Tab ─────────────────────────────────────────────────────────────
+// Toutes les factures (dépenses et encaissements) cochées « à envoyer au comptable »
+ 
+function ComptableTab() {
+  const now = new Date()
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const [allEntries, setAllEntries] = useState<Entry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [month, setMonth] = useState(currentMonth)
+  const [allMonths, setAllMonths] = useState(false)
+  const [filterType, setFilterType] = useState<'' | 'cb' | 'cash'>('')
+ 
+  const reload = useCallback(async () => {
+    setLoading(true)
+    const r = await fetch('/api/entries', { cache: 'no-store' })
+    const d = await r.json().catch(() => [])
+    setAllEntries(Array.isArray(d) ? d : [])
+    setLoading(false)
+  }, [])
+ 
+  useEffect(() => { reload() }, [reload])
+ 
+  const rows = useMemo(() => allEntries
+    .filter(e => !!e.to_accountant)
+    .filter(e => allMonths || e.date.substring(0, 7) === month)
+    .filter(e => !filterType || e.type === filterType)
+    .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id), [allEntries, allMonths, month, filterType])
+ 
+  const totals = useMemo(() => {
+    const t: Record<string, { dep: number; enc: number }> = {}
+    for (const e of rows) {
+      const cur = (e.currency as string) || 'MAD'
+      if (!t[cur]) t[cur] = { dep: 0, enc: 0 }
+      if (e.type === 'cb') t[cur].dep += Number(e.amount)
+      else t[cur].enc += Number(e.amount)
+    }
+    return t
+  }, [rows])
+ 
+  async function removeFromList(entry: Entry) {
+    setAllEntries(prev => prev.map(e => e.id === entry.id ? { ...e, to_accountant: false } : e))
+    const r = await fetch(`/api/entries/${entry.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to_accountant: false }) }).catch(() => null)
+    if (!r || !r.ok) setAllEntries(prev => prev.map(e => e.id === entry.id ? { ...e, to_accountant: entry.to_accountant } : e))
+  }
+ 
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
+        <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0F766E' }}>📨 Factures à envoyer au comptable</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <button onClick={() => { setAllMonths(false); setMonth(shiftMonth(month, -1)) }} disabled={allMonths} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: allMonths ? 'default' : 'pointer', opacity: allMonths ? 0.4 : 1, fontWeight: 600 }}>‹</button>
+          <span style={{ fontWeight: 700, minWidth: 140, textAlign: 'center', color: allMonths ? '#aaa' : 'var(--text)' }}>{formatMonth(month)}</span>
+          <button onClick={() => setMonth(shiftMonth(month, 1))} disabled={allMonths || month === currentMonth} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: (allMonths || month === currentMonth) ? 'default' : 'pointer', opacity: (allMonths || month === currentMonth) ? 0.4 : 1, fontWeight: 600 }}>›</button>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', marginLeft: '0.5rem', cursor: 'pointer' }}>
+            <input type="checkbox" checked={allMonths} onChange={e => setAllMonths(e.target.checked)} style={{ accentColor: '#0F766E' }} />
+            Tous les mois
+          </label>
+        </div>
+      </div>
+ 
+      <div className="card" style={{ marginBottom: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <select className="form-input" style={{ width: 'auto' }} value={filterType} onChange={e => setFilterType(e.target.value as '' | 'cb' | 'cash')}>
+          <option value="">Dépenses et encaissements</option>
+          <option value="cb">Dépenses uniquement</option>
+          <option value="cash">Encaissements uniquement</option>
+        </select>
+        <span style={{ fontSize: '0.85rem', color: '#666' }}>{rows.length} facture{rows.length > 1 ? 's' : ''}</span>
+        <span style={{ marginLeft: 'auto', display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.85rem' }}>
+          {Object.entries(totals).map(([cur, t]) => (
+            <span key={cur}>
+              {t.dep > 0 && <span style={{ color: 'var(--terracotta)', fontWeight: 600 }}>Dépenses {fmt(t.dep)} {cur}</span>}
+              {t.dep > 0 && t.enc > 0 && ' · '}
+              {t.enc > 0 && <span style={{ color: 'var(--green)', fontWeight: 600 }}>Encaissements {fmt(t.enc)} {cur}</span>}
+            </span>
+          ))}
+        </span>
+      </div>
+ 
+      {loading ? <p>Chargement…</p> : rows.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>
+          Aucune facture à envoyer {allMonths ? '' : 'pour ce mois'}.<br />
+          <span style={{ fontSize: '0.8rem' }}>Cochez « Facture à envoyer au comptable » dans Dépenses ou Encaissements pour qu&apos;elle apparaisse ici.</span>
+        </div>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th><th>Type</th><th>Employé</th><th>Catégorie</th><th>Fournisseur / client</th>
+                <th>Paiement</th><th>N° facture/chèque</th><th>Description</th>
+                <th>Devise</th><th>Montant</th><th>Justificatif</th><th title="Retirer de la liste du comptable">Retirer</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(e => {
+                const color = e.type === 'cb' ? 'var(--terracotta)' : 'var(--green)'
+                return (
+                  <tr key={e.id}>
+                    <td style={{ whiteSpace: 'nowrap' }}>{new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR')}</td>
+                    <td style={{ color, fontWeight: 600, fontSize: '0.8rem' }}>{e.type === 'cb' ? 'Dépense' : 'Encaissement'}</td>
+                    <td>{e.employee_name}</td>
+                    <td>{e.category}</td>
+                    <td>{e.supplier || '—'}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{e.payment || '—'}</td>
+                    <td style={{ fontSize: '0.8rem', color: '#666', whiteSpace: 'nowrap' }}>{e.reference || '—'}</td>
+                    <td style={{ fontSize: '0.8rem', color: '#666' }}>{e.description || '—'}</td>
+                    <td><span style={{ fontWeight: 600, fontSize: '0.8rem', background: '#F3F4F6', padding: '0.15rem 0.4rem', borderRadius: '0.3rem' }}>{(e.currency as string) || 'MAD'}</span></td>
+                    <td style={{ fontWeight: 600, color, whiteSpace: 'nowrap' }}>{fmt(Number(e.amount))}</td>
+                    <td>
+                      {e.invoice_url
+                        ? <a href={e.invoice_url as string} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontSize: '0.8rem' }}>📄 Voir</a>
+                        : <span style={{ color: 'var(--red)', fontSize: '0.75rem', fontWeight: 600 }}>Manquant</span>}
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button onClick={() => removeFromList(e)} title="Retirer de la liste du comptable" style={{ background: 'none', border: '1px solid #ddd', borderRadius: '0.3rem', cursor: 'pointer', fontSize: '0.75rem', padding: '0.2rem 0.45rem', color: '#666' }}>✕</button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
