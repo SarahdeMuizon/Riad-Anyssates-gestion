@@ -212,5 +212,12 @@ img { max-width: 100%; }
   table th, table td { padding: 0.45rem 0.5rem; white-space: nowrap; }
   table td.col-wrap, table th.col-wrap { white-space: normal; min-width: 160px; }
   .form-input { font-size: 16px; } /* évite le zoom automatique de l'iPhone sur les champs */
+  /* Champs date sur iPhone : Safari leur impose une largeur minimale qui débordait sur le champ voisin (Employé).
+     On les laisse rétrécir à la largeur de leur colonne. */
+  [style*="grid-template-columns"] > * { min-width: 0; }
+  .form-input { min-width: 0; max-width: 100%; }
+  input[type="date"] { -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; }
+  input[type="date"].form-input { display: block; width: 100%; min-height: 2.6rem; text-align: left; }
+  input[type="date"]::-webkit-date-and-time-value { text-align: left; }
   h2 { font-size: 1rem !important; }
 }
