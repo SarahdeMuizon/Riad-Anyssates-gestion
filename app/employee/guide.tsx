@@ -56,10 +56,10 @@ export default function EmployeeGuide({ onClose }: { onClose: () => void }) {
           <li style={li}>Vérifiez et corrigez si besoin :
             <ul style={{ ...list, margin: '0.3rem 0 0' }}>
               <li style={li}><b>Date</b> : la date de la facture.</li>
-              <li style={li}><b>Montant TTC</b> (obligatoire). Le montant HT et la TVA sont facultatifs.</li>
-              <li style={li}><b>Devise</b> : MAD ou EUR.</li>
-              <li style={li}><b>Fournisseur / Lieu</b> : le nom du magasin ou de l&apos;artisan.</li>
               <li style={li}><b>Mode de paiement</b> : CB ou Espèces.</li>
+              <li style={li}><b>Devise</b> : MAD ou EUR.</li>
+              <li style={li}><b>Montant TTC</b> (obligatoire). Le montant HT et la TVA sont facultatifs.</li>
+              <li style={li}><b>Fournisseur / Lieu</b> : le nom du magasin ou de l&apos;artisan.</li>
               <li style={li}><b>Catégorie</b> : Nourriture, Entretien, Travaux, Salaire, etc.</li>
               <li style={li}><b>Description</b> : une précision utile, par exemple « acompte 1/2 » ou « produits ménage ».</li>
             </ul>

@@ -359,7 +359,25 @@ function DepenseForm({ token }: { token: string }) {
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Date *</label>
           <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
         </div>
- 
+
+        <div>
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Mode de paiement</label>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {PAYMENT_MODES.map(p => (
+              <button key={p} type="button" onClick={() => setPayment(p)} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${payment === p ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: payment === p ? '#FFF5F0' : 'white', fontWeight: payment === p ? 700 : 400, cursor: 'pointer', color: payment === p ? 'var(--terracotta)' : 'var(--text)', fontSize: '0.85rem' }}>{p === 'CB' ? '💳 CB' : p === 'Espèces' ? '💵 Espèces' : p}</button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Devise</label>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {(['MAD', 'EUR'] as const).map(c => (
+              <button key={c} type="button" onClick={() => setCurrency(c)} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${currency === c ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: currency === c ? '#FFF5F0' : 'white', fontWeight: currency === c ? 700 : 400, cursor: 'pointer', color: currency === c ? 'var(--terracotta)' : 'var(--text)' }}>{c}</button>
+            ))}
+          </div>
+        </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '0.5rem' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Montant HT</label>
@@ -384,35 +402,21 @@ function DepenseForm({ token }: { token: string }) {
             <input className="form-input" type="number" step="0.01" min="0" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" required />
           </div>
         </div>
- 
-        <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Devise</label>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            {(['MAD', 'EUR'] as const).map(c => (
-              <button key={c} type="button" onClick={() => setCurrency(c)} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${currency === c ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: currency === c ? '#FFF5F0' : 'white', fontWeight: currency === c ? 700 : 400, cursor: 'pointer', color: currency === c ? 'var(--terracotta)' : 'var(--text)' }}>{c}</button>
-            ))}
-          </div>
-        </div>
- 
+
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Fournisseur / Lieu</label>
           <input className="form-input" value={supplier} onChange={e => setSupplier(e.target.value)} placeholder="Nom du fournisseur" />
         </div>
- 
-        <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Mode de paiement</label>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            {PAYMENT_MODES.map(p => (
-              <button key={p} type="button" onClick={() => setPayment(p)} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${payment === p ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: payment === p ? '#FFF5F0' : 'white', fontWeight: payment === p ? 700 : 400, cursor: 'pointer', color: payment === p ? 'var(--terracotta)' : 'var(--text)', fontSize: '0.85rem' }}>{p}</button>
-            ))}
+
+        {!splitMode && (
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Catégorie *</label>
+            <select className="form-input" value={category} onChange={e => setCategory(e.target.value)}>
+              {DEPENSES_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
           </div>
-        </div>
- 
-        <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Description</label>
-          <textarea className="form-input" rows={2} value={description} onChange={e => setDescription(e.target.value)} placeholder="Notes optionnelles…" />
-        </div>
- 
+        )}
+
         {/* Split ticket toggle */}
         <div style={{ background: '#FFF5F0', border: '1px solid #FDDCCA', borderRadius: '0.5rem', padding: '0.75rem' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', userSelect: 'none' }}>
@@ -442,15 +446,11 @@ function DepenseForm({ token }: { token: string }) {
             </div>
           )}
         </div>
- 
-        {!splitMode && (
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Catégorie *</label>
-            <select className="form-input" value={category} onChange={e => setCategory(e.target.value)}>
-              {DEPENSES_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-        )}
+
+        <div>
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Description</label>
+          <textarea className="form-input" rows={2} value={description} onChange={e => setDescription(e.target.value)} placeholder="Notes optionnelles…" />
+        </div>
  
         {/* Mandatory invoice upload */}
         <div>
@@ -674,6 +674,11 @@ function EncaissementForm({ token }: { token: string }) {
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
  
         <div>
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Date *</label>
+          <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
+        </div>
+
+        <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Mode de paiement *</label>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             {(['CB', 'Espèces'] as const).map(p => (
@@ -683,12 +688,16 @@ function EncaissementForm({ token }: { token: string }) {
             ))}
           </div>
         </div>
- 
+
         <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Date *</label>
-          <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Devise</label>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {(['MAD', 'EUR'] as const).map(c => (
+              <button key={c} type="button" onClick={() => setCurrency(c)} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${currency === c ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', background: currency === c ? '#F0FDF4' : 'white', fontWeight: currency === c ? 700 : 400, cursor: 'pointer', color: currency === c ? 'var(--green)' : 'var(--text)' }}>{c}</button>
+            ))}
+          </div>
         </div>
- 
+
         {payment === 'CB' ? (
           <div style={{ background: '#F0FDF4', border: '1px solid #86efac', borderRadius: '0.5rem', padding: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
             <div>
@@ -716,28 +725,19 @@ function EncaissementForm({ token }: { token: string }) {
             <input className="form-input" type="number" step="0.01" min="0" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" required />
           </div>
         )}
- 
+
         <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Devise</label>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            {(['MAD', 'EUR'] as const).map(c => (
-              <button key={c} type="button" onClick={() => setCurrency(c)} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${currency === c ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', background: currency === c ? '#F0FDF4' : 'white', fontWeight: currency === c ? 700 : 400, cursor: 'pointer', color: currency === c ? 'var(--green)' : 'var(--text)' }}>{c}</button>
-            ))}
-          </div>
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Nom du client</label>
+          <input className="form-input" type="text" value={clientName} onChange={e => setClientName(e.target.value)} placeholder="(optionnel)" />
         </div>
- 
+
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Catégorie *</label>
           <select className="form-input" value={category} onChange={e => setCategory(e.target.value)}>
             {ENCAISSEMENTS_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
- 
-        <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Nom du client</label>
-          <input className="form-input" type="text" value={clientName} onChange={e => setClientName(e.target.value)} placeholder="(optionnel)" />
-        </div>
- 
+
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Description</label>
           <textarea className="form-input" rows={2} value={description} onChange={e => setDescription(e.target.value)} placeholder="Notes optionnelles…" />
