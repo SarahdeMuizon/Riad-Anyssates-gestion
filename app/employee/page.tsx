@@ -806,18 +806,31 @@ function FondsCaisse({ token }: { token: string }) {
   const [compteMAD, setCompteMAD] = useState('')
   const [compteEUR, setCompteEUR] = useState('')
  
+  const [updatedAt, setUpdatedAt] = useState<string>('')
+ 
   // Solde commun du fond de caisse : le même pour tous les employés (et le manager)
-  const fetchData = useCallback(async () => {
-    setLoading(true)
+  const fetchData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
     try {
-      const r = await fetch(`/api/fonds/balance?token=${token}`, { cache: 'no-store' })
+      const r = await fetch(`/api/fonds/balance?token=${token}&t=${Date.now()}`, { cache: 'no-store' })
       const d = await r.json()
-      if (r.ok) { setBalanceMAD(Number(d.mad) || 0); setBalanceEUR(Number(d.eur) || 0) }
+      if (r.ok) {
+        setBalanceMAD(Number(d.mad) || 0); setBalanceEUR(Number(d.eur) || 0)
+        setUpdatedAt(new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
+      }
     } catch { /* ignore */ }
     setLoading(false)
   }, [token])
  
-  useEffect(() => { fetchData() }, [fetchData])
+  // Mise à jour automatique : toutes les 15 s, et dès que l'appli revient au premier plan
+  useEffect(() => {
+    fetchData()
+    const id = setInterval(() => { if (document.visibilityState === 'visible') fetchData(true) }, 15000)
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchData(true) }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVisible); window.removeEventListener('focus', onVisible) }
+  }, [fetchData])
  
   // Rapprochement
   const diffMAD = compteMAD !== '' ? parseFloat(compteMAD) - balanceMAD : null
@@ -831,6 +844,10 @@ function FondsCaisse({ token }: { token: string }) {
       <div className="card">
         <h2 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.875rem', color: '#6366F1' }}>💰 Solde fond de caisse</h2>
         <p style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.75rem' }}>Solde commun à toute l&apos;équipe, calculé automatiquement depuis les encaissements et dépenses en espèces de tous les employés et les transferts coffre ↔ caisse.</p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.75rem', fontSize: '0.75rem', color: '#888' }}>
+          <span>{updatedAt ? `Mis à jour à ${updatedAt}` : ''}</span>
+          <button type="button" onClick={() => fetchData(true)} style={{ background: '#EEF2FF', color: '#4338CA', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.7rem', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>🔄 Actualiser</button>
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
           {[{ cur: 'MAD', bal: balanceMAD }, { cur: 'EUR', bal: balanceEUR }].map(({ cur, bal }) => (
             <div key={cur} style={{ background: bal >= 0 ? '#F0FDF4' : '#FEF2F2', border: `2px solid ${bal >= 0 ? 'var(--green)' : 'var(--red)'}`, borderRadius: '0.5rem', padding: '0.875rem', textAlign: 'center' }}>
