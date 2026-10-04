@@ -799,57 +799,24 @@ function EncaissementForm({ token }: { token: string }) {
 // ─── Fond de caisse (automatique) ─────────────────────────────────────────────
  
 function FondsCaisse({ token }: { token: string }) {
-  const [entries, setEntries] = useState<Entry[]>([])
-  const [fondsEntries, setFondsEntries] = useState<FondsEntry[]>([])
+  const [balanceMAD, setBalanceMAD] = useState(0)
+  const [balanceEUR, setBalanceEUR] = useState(0)
   const [loading, setLoading] = useState(true)
   const [compteMAD, setCompteMAD] = useState('')
   const [compteEUR, setCompteEUR] = useState('')
  
+  // Solde commun du fond de caisse : le même pour tous les employés (et le manager)
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const [r1, r2] = await Promise.all([
-      fetch(`/api/entries?token=${token}`),
-      fetch(`/api/fonds?token=${token}`)
-    ])
-    const e = await r1.json(); const f = await r2.json()
-    setEntries(Array.isArray(e) ? e : [])
-    setFondsEntries(Array.isArray(f) ? f : [])
+    try {
+      const r = await fetch(`/api/fonds/balance?token=${token}`, { cache: 'no-store' })
+      const d = await r.json()
+      if (r.ok) { setBalanceMAD(Number(d.mad) || 0); setBalanceEUR(Number(d.eur) || 0) }
+    } catch { /* ignore */ }
     setLoading(false)
   }, [token])
  
   useEffect(() => { fetchData() }, [fetchData])
- 
-  // Balance = encaissements Espèces - dépenses Espèces (passés par le fond de caisse) + mouvements du fond de caisse
-  const balanceMAD = useMemo(() => {
-    let b = 0
-    entries.forEach(e => {
-      if (e.payment !== 'Espèces' || e.cash_location === 'coffre') return
-      const cur = (e.currency as string) || 'MAD'
-      if (cur !== 'MAD') return
-      if (e.type === 'cash') b += Number(e.amount)
-      else if (e.type === 'cb') b -= Number(e.amount)
-    })
-    fondsEntries.forEach(f => {
-      if (((f.currency as string) || 'MAD') !== 'MAD') return
-      b += f.direction === 'in' ? Number(f.amount) : -Number(f.amount)
-    })
-    return b
-  }, [entries, fondsEntries])
- 
-  const balanceEUR = useMemo(() => {
-    let b = 0
-    entries.forEach(e => {
-      if (e.payment !== 'Espèces' || e.cash_location === 'coffre') return
-      if ((e.currency as string) !== 'EUR') return
-      if (e.type === 'cash') b += Number(e.amount)
-      else if (e.type === 'cb') b -= Number(e.amount)
-    })
-    fondsEntries.forEach(f => {
-      if ((f.currency as string) !== 'EUR') return
-      b += f.direction === 'in' ? Number(f.amount) : -Number(f.amount)
-    })
-    return b
-  }, [entries, fondsEntries])
  
   // Rapprochement
   const diffMAD = compteMAD !== '' ? parseFloat(compteMAD) - balanceMAD : null
@@ -862,7 +829,7 @@ function FondsCaisse({ token }: { token: string }) {
       {/* Solde actuel */}
       <div className="card">
         <h2 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.875rem', color: '#6366F1' }}>💰 Solde fond de caisse</h2>
-        <p style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.75rem' }}>Calculé automatiquement depuis les encaissements et dépenses en espèces.</p>
+        <p style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.75rem' }}>Solde commun à toute l&apos;équipe, calculé automatiquement depuis les encaissements et dépenses en espèces de tous les employés et les transferts coffre ↔ caisse.</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
           {[{ cur: 'MAD', bal: balanceMAD }, { cur: 'EUR', bal: balanceEUR }].map(({ cur, bal }) => (
             <div key={cur} style={{ background: bal >= 0 ? '#F0FDF4' : '#FEF2F2', border: `2px solid ${bal >= 0 ? 'var(--green)' : 'var(--red)'}`, borderRadius: '0.5rem', padding: '0.875rem', textAlign: 'center' }}>
