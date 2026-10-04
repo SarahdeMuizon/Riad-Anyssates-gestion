@@ -583,10 +583,8 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     setSubmitting(true)
     setFormError('')
     setFormSuccess('')
-    if (type === 'cb' && !fFile && fPayment !== 'Espèces') {
-      setFormError('Le justificatif est obligatoire (sauf paiement en espèces).')
-      setSubmitting(false); return
-    }
+    // Côté administrateurs, le justificatif est facultatif : il peut être ajouté plus tard
+    // (colonne Justificatif ou onglet Comptable).
     let invoice_url: string | undefined
     if (fFile) {
       setFUploading(true)
@@ -683,9 +681,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>
                 {type === 'cb' ? 'Facture' : 'Ticket'}
-                {type === 'cb' && fPayment !== 'Espèces'
-                  ? <span style={{ color: 'var(--red)', fontWeight: 400 }}> * (obligatoire)</span>
-                  : <span style={{ color: '#888', fontWeight: 400 }}> (optionnel)</span>}
+                <span style={{ color: '#888', fontWeight: 400 }}> (optionnel — peut être ajouté plus tard)</span>
               </label>
               <div
                 ref={fDropZoneRef}
