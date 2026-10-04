@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Entry, Employee, DashboardStats, FondsEntry } from '@/types'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
-import { openAttachment } from '@/lib/attachments'
+import { openAttachment, fileToDataUrl } from '@/lib/attachments'
  
 type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'banque' | 'coffre' | 'comptable' | 'employees' | 'settings'
  
@@ -1836,6 +1836,37 @@ function ComptableTab() {
     setExporting(false)
   }
  
+  // Ajout / remplacement d'un justificatif directement depuis l'onglet Comptable
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploadFor, setUploadFor] = useState<number | null>(null)
+  const [uploadingId, setUploadingId] = useState<number | null>(null)
+  const [uploadError, setUploadError] = useState('')
+
+  function pickFile(id: number) {
+    setUploadFor(id); setUploadError('')
+    fileRef.current?.click()
+  }
+
+  async function handleFile(ev: React.ChangeEvent<HTMLInputElement>) {
+    const file = ev.target.files?.[0]
+    const id = uploadFor
+    if (fileRef.current) fileRef.current.value = ''
+    if (!file || id === null) return
+    setUploadingId(id)
+    try {
+      const url = await fileToDataUrl(file)
+      const r = await fetch(`/api/entries/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ invoice_url: url }) })
+      if (!r.ok) throw new Error(String(r.status))
+      setAllEntries(prev => prev.map(e => e.id === id ? { ...e, invoice_url: url } : e))
+    } catch (err) {
+      console.error(err)
+      setUploadError("La facture n'a pas pu être ajoutée — réessayez (fichier trop lourd ?).")
+    }
+    setUploadingId(null); setUploadFor(null)
+  }
+
+  const missingCount = rows.filter(e => !e.invoice_url).length
+
   async function removeFromList(entry: Entry) {
     setAllEntries(prev => prev.map(e => e.id === entry.id ? { ...e, to_accountant: false } : e))
     const r = await fetch(`/api/entries/${entry.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to_accountant: false }) }).catch(() => null)
@@ -1863,11 +1894,16 @@ function ComptableTab() {
           <option value="cb">Dépenses uniquement</option>
           <option value="cash">Encaissements uniquement</option>
         </select>
-        <span style={{ fontSize: '0.85rem', color: '#666' }}>{rows.length} facture{rows.length > 1 ? 's' : ''}</span>
+        <span style={{ fontSize: '0.85rem', color: '#666' }}>
+          {rows.length} facture{rows.length > 1 ? 's' : ''}
+          {missingCount > 0 && <span style={{ color: 'var(--red)', fontWeight: 600 }}> · {missingCount} justificatif{missingCount > 1 ? 's' : ''} manquant{missingCount > 1 ? 's' : ''}</span>}
+        </span>
         <button className="btn-primary" onClick={exportPdf} disabled={exporting || rows.length === 0} style={{ background: '#0F766E', fontSize: '0.85rem', padding: '0.4rem 0.9rem', opacity: rows.length === 0 ? 0.5 : 1 }}>
           {exporting ? 'Création du PDF…' : `📄 Exporter le PDF — ${exportTitle}`}
         </button>
         {exportError && <span style={{ color: 'var(--red)', fontSize: '0.8rem' }}>{exportError}</span>}
+        {uploadError && <span style={{ color: 'var(--red)', fontSize: '0.8rem' }}>{uploadError}</span>}
+        <input ref={fileRef} type="file" accept="image/*,application/pdf" onChange={handleFile} style={{ display: 'none' }} />
         <span style={{ marginLeft: 'auto', display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.85rem' }}>
           {Object.entries(totals).map(([cur, t]) => (
             <span key={cur}>
@@ -1909,10 +1945,17 @@ function ComptableTab() {
                     <td style={{ fontSize: '0.8rem', color: '#666' }}>{e.description || '—'}</td>
                     <td><span style={{ fontWeight: 600, fontSize: '0.8rem', background: '#F3F4F6', padding: '0.15rem 0.4rem', borderRadius: '0.3rem' }}>{(e.currency as string) || 'MAD'}</span></td>
                     <td style={{ fontWeight: 600, color, whiteSpace: 'nowrap' }}>{fmt(Number(e.amount))}</td>
-                    <td>
-                      {e.invoice_url
-                        ? <a href={e.invoice_url as string} onClick={ev => { ev.preventDefault(); openAttachment(e.invoice_url as string) }} style={{ color: 'var(--blue)', fontSize: '0.8rem', cursor: 'pointer' }}>📄 Voir</a>
-                        : <span style={{ color: 'var(--red)', fontSize: '0.75rem', fontWeight: 600 }}>Manquant</span>}
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {uploadingId === e.id ? (
+                        <span style={{ fontSize: '0.75rem', color: '#666' }}>Envoi…</span>
+                      ) : e.invoice_url ? (
+                        <>
+                          <a href={e.invoice_url as string} onClick={ev => { ev.preventDefault(); openAttachment(e.invoice_url as string) }} style={{ color: 'var(--blue)', fontSize: '0.8rem', cursor: 'pointer' }}>📄 Voir</a>
+                          <button onClick={() => pickFile(e.id)} title="Remplacer le justificatif" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: '#999', marginLeft: '0.35rem', padding: 0 }}>↻</button>
+                        </>
+                      ) : (
+                        <button onClick={() => pickFile(e.id)} title="Ajouter la facture (photo ou PDF)" style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', color: 'var(--red)', borderRadius: '0.3rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.5rem' }}>+ Ajouter</button>
+                      )}
                     </td>
                     <td style={{ textAlign: 'center' }}>
                       <button onClick={() => removeFromList(e)} title="Retirer de la liste du comptable" style={{ background: 'none', border: '1px solid #ddd', borderRadius: '0.3rem', cursor: 'pointer', fontSize: '0.75rem', padding: '0.2rem 0.45rem', color: '#666' }}>✕</button>

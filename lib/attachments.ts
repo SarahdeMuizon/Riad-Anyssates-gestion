@@ -24,3 +24,31 @@ export function openAttachment(url: string | null | undefined) {
   if (!w) window.location.href = blobUrl
   setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
 }
+
+// Convertit un fichier choisi par l'utilisateur en data URL.
+// Les photos sont réduites (1200 px de large, JPEG 75 %) pour rester légères.
+export function fileToDataUrl(file: File): Promise<string> {
+  if (file.type.startsWith('image/')) {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        const scale = Math.min(1, 1200 / img.width)
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(img.width * scale)
+        canvas.height = Math.round(img.height * scale)
+        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+        URL.revokeObjectURL(url)
+        resolve(canvas.toDataURL('image/jpeg', 0.75))
+      }
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Erreur image')) }
+      img.src = url
+    })
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(new Error('Erreur lecture fichier'))
+    reader.readAsDataURL(file)
+  })
+}
