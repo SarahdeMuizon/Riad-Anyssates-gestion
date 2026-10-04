@@ -1,0 +1,273 @@
+// Direct Turso HTTP API via native fetch — no @libsql/client needed.
+// Avoids the "@libsql/client migration jobs 400" issue in Vercel serverless.
+ 
+type HranaValue =
+  | { type: 'null' }
+  | { type: 'integer'; value: string }
+  | { type: 'float'; value: number }
+  | { type: 'text'; value: string }
+  | { type: 'blob'; base64: string }
+ 
+function toHranaValue(v: unknown): HranaValue {
+  if (v === null || v === undefined) return { type: 'null' }
+  if (typeof v === 'boolean') return { type: 'integer', value: v ? '1' : '0' }
+  if (typeof v === 'number') {
+    if (Number.isInteger(v)) return { type: 'integer', value: String(v) }
+    return { type: 'float', value: v }
+  }
+  if (typeof v === 'string') return { type: 'text', value: v }
+  return { type: 'text', value: String(v) }
+}
+ 
+function fromHranaValue(v: HranaValue): unknown {
+  if (v.type === 'null') return null
+  if (v.type === 'integer') return parseInt(v.value, 10)
+  if (v.type === 'float') return v.value
+  if (v.type === 'text') return v.value
+  return v.base64 // blob
+}
+ 
+async function tursoRequest(statements: Array<{ sql: string; args?: unknown[] }>) {
+  const rawUrl = process.env.TURSO_DATABASE_URL!
+  const url = rawUrl.replace(/^libsql:\/\//, 'https://')
+  const token = process.env.TURSO_AUTH_TOKEN!
+ 
+  const requests = statements.map(stmt => ({
+    type: 'execute' as const,
+    stmt: {
+      sql: stmt.sql,
+      args: (stmt.args ?? []).map(toHranaValue),
+    },
+  }))
+ 
+  const res = await fetch(`${url}/v2/pipeline`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ requests }),
+    // Jamais de cache : chaque lecture doit refléter la base à l'instant T
+    // (sinon Next.js peut resservir un ancien résultat, ex : solde du fond de caisse).
+    cache: 'no-store',
+  })
+ 
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`Turso HTTP ${res.status}: ${body}`)
+  }
+ 
+  const data = await res.json() as {
+    results: Array<{
+      type: 'ok' | 'error'
+      response?: { type: string; result: { cols: { name: string }[]; rows: HranaValue[][] } }
+      error?: { message: string }
+    }>
+  }
+  return data.results
+}
+ 
+// Tagged template literal helper — same API as before, all routes unchanged
+export async function sql(strings: TemplateStringsArray, ...values: unknown[]) {
+  let query = ''
+  strings.forEach((str, i) => {
+    query += str
+    if (i < values.length) query += '?'
+  })
+ 
+  const results = await tursoRequest([{ sql: query, args: values }])
+  const result = results[0]
+ 
+  if (result.type === 'error') {
+    throw new Error(result.error?.message ?? 'Query error')
+  }
+ 
+  const { cols, rows } = result.response!.result
+  return rows.map(row => {
+    const obj: Record<string, unknown> = {}
+    cols.forEach((col, i) => {
+      obj[col.name] = fromHranaValue(row[i])
+    })
+    return obj
+  })
+}
+ 
+export default sql
+ 
+// Envoie plusieurs requêtes en un seul aller-retour HTTP vers Turso (au lieu
+// d'un await sql`...` par ligne). Utile pour les imports en masse — chaque
+// statement est exécuté séquentiellement côté Turso mais un seul round-trip
+// réseau suffit pour tout le lot, ce qui évite les timeouts de fonction
+// serverless sur de gros volumes.
+export async function sqlBatch(statements: Array<{ sql: string; args?: unknown[] }>) {
+  const results = await tursoRequest(statements)
+  results.forEach((result, i) => {
+    if (result.type === 'error') {
+      throw new Error(`Batch statement #${i} failed: ${result.error?.message ?? 'Query error'}`)
+    }
+  })
+  return results.map(result => {
+    const { cols, rows } = result.response!.result
+    return rows.map(row => {
+      const obj: Record<string, unknown> = {}
+      cols.forEach((col, i) => {
+        obj[col.name] = fromHranaValue(row[i])
+      })
+      return obj
+    })
+  })
+}
+ 
+export async function initDb() {
+  // Create core tables (idempotent)
+  const results = await tursoRequest([
+    {
+      sql: `CREATE TABLE IF NOT EXISTS employees (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        poste TEXT DEFAULT 'Employé',
+        token TEXT UNIQUE NOT NULL,
+        active INTEGER DEFAULT 1,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`,
+    },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS entries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        employee_name TEXT NOT NULL,
+        type TEXT NOT NULL CHECK (type IN ('cb', 'cash')),
+        date TEXT NOT NULL,
+        amount REAL NOT NULL,
+        category TEXT NOT NULL,
+        supplier TEXT,
+        payment TEXT,
+        description TEXT,
+        currency TEXT DEFAULT 'EUR',
+        invoice_url TEXT,
+        status TEXT DEFAULT 'pending',
+        validated_at TEXT,
+        pointed INTEGER DEFAULT 0,
+        reference TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`,
+    },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS excel_pointage_imports (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        filename TEXT,
+        file_base64 TEXT NOT NULL,
+        imported_count INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`,
+    },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS fonds_entries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        employee_name TEXT NOT NULL,
+        direction TEXT NOT NULL,
+        date TEXT NOT NULL,
+        amount REAL NOT NULL,
+        currency TEXT DEFAULT 'MAD',
+        category TEXT NOT NULL,
+        description TEXT,
+        status TEXT DEFAULT 'pending',
+        validated_at TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`,
+    },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )`,
+    },
+    {
+      sql: `INSERT OR IGNORE INTO settings (key, value) VALUES ('pin', 'gestion2026')`,
+    },
+    {
+      sql: `INSERT OR IGNORE INTO settings (key, value) VALUES ('fond_caisse_mad', '2000')`,
+    },
+    {
+      sql: `INSERT OR IGNORE INTO settings (key, value) VALUES ('fond_caisse_eur', '200')`,
+    },
+    {
+      sql: `INSERT OR IGNORE INTO settings (key, value) VALUES ('solde_bancaire_mad', '0')`,
+    },
+    {
+      sql: `INSERT OR IGNORE INTO settings (key, value) VALUES ('solde_bancaire_eur', '0')`,
+    },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS coffre_entries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        employee_name TEXT NOT NULL,
+        direction TEXT NOT NULL CHECK (direction IN ('in', 'out')),
+        date TEXT NOT NULL,
+        amount REAL NOT NULL,
+        currency TEXT DEFAULT 'MAD',
+        category TEXT NOT NULL,
+        description TEXT,
+        invoice_url TEXT,
+        status TEXT DEFAULT 'pending',
+        created_at TEXT DEFAULT (datetime('now'))
+      )`,
+    },
+  ])
+ 
+  for (const r of results) {
+    if (r.type === 'error') {
+      throw new Error(r.error?.message ?? 'Init error')
+    }
+  }
+ 
+  // Migrations: add new columns to existing entries table
+  // Errors are ignored when the column already exists
+  for (const migSql of [
+    `ALTER TABLE entries ADD COLUMN currency TEXT DEFAULT 'EUR'`,
+    `ALTER TABLE entries ADD COLUMN invoice_url TEXT`,
+    `ALTER TABLE entries ADD COLUMN amount_ht REAL`,
+    `ALTER TABLE entries ADD COLUMN tva_rate REAL`,
+    `ALTER TABLE coffre_entries ADD COLUMN invoice_url TEXT`,
+    `ALTER TABLE entries ADD COLUMN pointed INTEGER DEFAULT 0`,
+    `ALTER TABLE entries ADD COLUMN reference TEXT`,
+    // Espèces : 'fonds' (fond de caisse, par défaut) ou 'coffre' (coffre fort)
+    `ALTER TABLE entries ADD COLUMN cash_location TEXT`,
+    // Facture à envoyer au comptable
+    `ALTER TABLE entries ADD COLUMN to_accountant INTEGER DEFAULT 0`,
+    // Employé ayant accès à l'interface manager via son lien personnel
+    `ALTER TABLE employees ADD COLUMN is_manager INTEGER DEFAULT 0`,
+    // Transferts coffre ↔ fond de caisse : relie les deux mouvements d'un même transfert
+    `ALTER TABLE fonds_entries ADD COLUMN transfer_id TEXT`,
+    `ALTER TABLE coffre_entries ADD COLUMN transfer_id TEXT`,
+  ]) {
+    const mResults = await tursoRequest([{ sql: migSql }])
+    const r = mResults[0]
+    if (r.type === 'error') {
+      const msg = r.error?.message ?? ''
+      // Ignore "duplicate column name" (column already exists)
+      if (!msg.toLowerCase().includes('duplicate column')) {
+        throw new Error(msg)
+      }
+    }
+  }
+ 
+  // L'ancien libellé « Administrateur » (connexion par code PIN) devient Valérie
+  await tursoRequest([
+    { sql: `UPDATE entries SET employee_name = 'Valérie' WHERE employee_name = 'Administrateur'` },
+    { sql: `UPDATE fonds_entries SET employee_name = 'Valérie' WHERE employee_name = 'Administrateur'` },
+    { sql: `UPDATE coffre_entries SET employee_name = 'Valérie' WHERE employee_name = 'Administrateur'` },
+  ])
+}
+ 
+
+// Applique automatiquement les migrations une fois par instance serveur,
+// pour que les nouvelles colonnes existent sans passer par « Mettre à jour ».
+let ensurePromise: Promise<void> | null = null
+export function ensureDb(): Promise<void> {
+  if (!ensurePromise) {
+    ensurePromise = initDb().catch(err => {
+      ensurePromise = null
+      console.error('ensureDb error:', err)
+    })
+  }
+  return ensurePromise
+}
