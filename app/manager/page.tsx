@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import type { Entry, Employee, DashboardStats, FondsEntry } from '@/types'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import { openAttachment, fileToDataUrl } from '@/lib/attachments'
+import ManagerGuide from './guide'
  
 type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'banque' | 'coffre' | 'comptable' | 'employees' | 'settings'
  
@@ -26,6 +27,7 @@ export default function ManagerPage() {
   const [tab, setTab] = useState<Tab>('dashboard')
   const [authChecked, setAuthChecked] = useState(false)
   const [managerName, setManagerName] = useState('Manager')
+  const [showGuide, setShowGuide] = useState(false)
  
   useEffect(() => {
     fetch('/api/auth/check').then(async r => {
@@ -65,10 +67,12 @@ export default function ManagerPage() {
         <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>🏨 Riad Anyssates</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <button onClick={() => window.location.href = '/api/export/excel'} style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', color: 'white', padding: '0.3rem 0.75rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>📊 Excel</button>
+          <button onClick={() => setShowGuide(true)} style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', color: 'white', padding: '0.3rem 0.75rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, whiteSpace: 'nowrap' }}>📖 Mode d&apos;emploi</button>
           <span style={{ fontSize: '0.8rem', opacity: 0.85 }}>{managerName}</span>
           <button onClick={logout} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '0.3rem 0.75rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.8rem' }}>Déconnexion</button>
         </div>
       </header>
+      {showGuide && <ManagerGuide onClose={() => setShowGuide(false)} />}
  
       <div style={{ background: 'white', borderBottom: '1px solid #EDE0D6', padding: '0 1rem', display: 'flex', gap: '0.25rem', overflowX: 'auto' }}>
         {tabs.map(t => (
