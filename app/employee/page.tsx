@@ -130,7 +130,7 @@ function EmployeeApp() {
  
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      <header style={{ background: 'var(--terracotta)', color: 'white', padding: '0 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 56 }}>
+      <header className="emp-header" style={{ background: 'var(--terracotta)', color: 'white', padding: '0 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 56 }}>
         <div style={{ fontWeight: 700 }}>🏨 Riad Anyssates</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
           <button onClick={() => setShowGuide(true)} style={{ background: 'rgba(255,255,255,0.18)', color: 'white', border: '1px solid rgba(255,255,255,0.45)', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>📖 Mode d&apos;emploi</button>

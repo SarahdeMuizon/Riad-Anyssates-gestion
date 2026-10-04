@@ -200,6 +200,10 @@ img { max-width: 100%; }
   .mgr-main { padding: 1rem 0.75rem !important; }
   .mgr-header { height: auto !important; min-height: 52px; padding: 0.4rem 0.75rem !important; flex-wrap: wrap; gap: 0.4rem; }
   .mgr-header > div:first-child { font-size: 1rem !important; }
+  /* Boutons du haut (Excel, Mode d'emploi, nom, Déconnexion) : passent à la ligne au lieu de sortir de l'écran */
+  .mgr-actions { flex-wrap: wrap; width: 100%; gap: 0.35rem !important; }
+  .mgr-actions button { padding: 0.3rem 0.55rem !important; }
+  .emp-header { height: auto !important; min-height: 52px; padding: 0.4rem 0.75rem !important; flex-wrap: wrap; gap: 0.4rem; }
   .card, .stat-card { padding: 0.9rem; }
   .stat-card div[style*="1.75rem"] { font-size: 1.35rem !important; }
   /* Tableaux larges (Banque, Coffre) : largeur minimale + défilement horizontal */
