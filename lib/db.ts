@@ -47,6 +47,9 @@ async function tursoRequest(statements: Array<{ sql: string; args?: unknown[] }>
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ requests }),
+    // Jamais de cache : chaque lecture doit refléter la base à l'instant T
+    // (sinon Next.js peut resservir un ancien résultat, ex : solde du fond de caisse).
+    cache: 'no-store',
   })
  
   if (!res.ok) {
