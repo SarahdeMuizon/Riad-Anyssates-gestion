@@ -400,6 +400,21 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     }
   }, [showForm, type])
  
+  async function changeDate(entry: Entry, newDate: string) {
+    if (!newDate || newDate === entry.date) return
+    const r = await fetch(`/api/entries/${entry.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: newDate }) }).catch(() => null)
+    if (r && r.ok) {
+      if (newDate.substring(0, 7) !== month) {
+        setFormSuccess(`✓ Date modifiée — l'entrée est maintenant en ${formatMonth(newDate.substring(0, 7))}`)
+        setTimeout(() => setFormSuccess(''), 5000)
+      }
+      fetchEntries()
+    } else {
+      setFormError('Impossible de modifier la date — réessayez.')
+      setTimeout(() => setFormError(''), 5000)
+    }
+  }
+ 
   async function toggleAccountant(entry: Entry) {
     const next = !entry.to_accountant
     setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, to_accountant: next } : e))
@@ -617,6 +632,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       </div>
  
       {formSuccess && <p style={{ color: 'var(--green)', fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: '#F0FDF4', borderRadius: '0.4rem', border: '1px solid #86efac' }}>{formSuccess}</p>}
+      {!showForm && formError && <p style={{ color: 'var(--red)', fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: '#FEF2F2', borderRadius: '0.4rem', border: '1px solid #fca5a5' }}>{formError}</p>}
  
       {showForm && (
         <div className="card" style={{ marginBottom: '1.25rem' }}>
@@ -846,7 +862,13 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
             <tbody>
               {entries.map(e => (
                 <tr key={e.id}>
-                  <td style={{ whiteSpace: 'nowrap' }}>{new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR')}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <input type="date" defaultValue={e.date} key={`${e.id}-${e.date}`} title="Modifier la date"
+                      onBlur={ev => changeDate(e, ev.target.value)}
+                      onKeyDown={ev => { if (ev.key === 'Enter') (ev.target as HTMLInputElement).blur() }}
+                      style={{ border: '1px solid transparent', borderRadius: '0.3rem', background: 'transparent', font: 'inherit', fontSize: '0.85rem', padding: '0.1rem 0.2rem', cursor: 'pointer', width: '8.2rem' }}
+                      onFocus={ev => { ev.target.style.borderColor = '#ddd'; ev.target.style.background = 'white' }} />
+                  </td>
                   <td>{e.category}</td>
                   {type === 'cb' && <td>{e.supplier || '—'}</td>}
                   <td style={{ whiteSpace: 'nowrap' }}>{e.payment || '—'}{e.payment === 'Espèces' && <span style={{ fontSize: '0.72rem', color: '#888' }}> · {e.cash_location === 'coffre' ? 'coffre' : 'caisse'}</span>}</td>

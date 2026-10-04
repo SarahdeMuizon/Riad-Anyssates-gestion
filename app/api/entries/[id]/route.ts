@@ -22,6 +22,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json(result[0])
     }
  
+    if (body.date !== undefined) {
+      const d = String(body.date)
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || isNaN(Date.parse(d + 'T00:00:00Z'))) {
+        return NextResponse.json({ error: 'Date invalide' }, { status: 400 })
+      }
+      const result = await sql`UPDATE entries SET date = ${d} WHERE id = ${id} RETURNING *`
+      return NextResponse.json(result[0])
+    }
+
     if (body.to_accountant !== undefined) {
       await ensureDb()
       const result = await sql`UPDATE entries SET to_accountant = ${body.to_accountant ? 1 : 0} WHERE id = ${id} RETURNING *`

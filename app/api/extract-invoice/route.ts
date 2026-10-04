@@ -41,10 +41,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Format non supporté (image ou PDF uniquement)' }, { status: 400 })
   }
  
-  const DEPENSES_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Radeema','Impôts','Divers']
+  const DEPENSES_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Aménagement/Déco','Entretien','Radeema','Impôts','Divers']
+ 
+  // Date du jour (heure du Maroc = UTC) : sert à dater correctement un document sans année
+  const today = new Date().toISOString().slice(0, 10)
+  const currentYear = today.slice(0, 4)
+  const dateRule = `Nous sommes aujourd'hui le ${today}. Pour "date" : si l'année n'apparaît pas sur le document (ex : "29/09"), utilise l'année en cours (${currentYear}).`
  
   const prompt = entryType === 'cb'
     ? `Analyse cette facture/reçu. Réponds UNIQUEMENT avec un JSON strict (aucun texte autour).
+${dateRule}
  
 Si c'est un ticket de supermarché/épicerie/grande surface avec plusieurs produits, détecte les catégories présentes et utilise ce format :
 {
@@ -70,7 +76,8 @@ Sinon (facture normale), utilise ce format :
 Catégories disponibles : ${DEPENSES_CATEGORIES.join(', ')}.
 Pour les supermarché : regroupe les produits par catégorie (ex: légumes/viande/épicerie → "Nourriture", produits d'entretien/fournitures → "Administratif").
 Si une information n'est pas visible, mets null. Réponds UNIQUEMENT avec le JSON.`
-    : `Analyse ce ticket CB/reçu et extrait en JSON strict :
+    : `Analyse ce ticket CB/reçu et extrait en JSON strict.
+${dateRule}
 {
   "date": "YYYY-MM-DD ou null",
   "supplier": "nom établissement ou null",
@@ -112,6 +119,7 @@ Réponds UNIQUEMENT avec le JSON.`
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) return NextResponse.json({})
     const extracted = JSON.parse(jsonMatch[0])
+    extracted.date = sanitizeDate(extracted.date, today)
     return NextResponse.json(extracted)
   } catch (err) {
     console.error('Extract invoice error:', err)
@@ -119,3 +127,17 @@ Réponds UNIQUEMENT avec le JSON.`
   }
 }
  
+ 
+// Garde-fou sur la date lue : une date à plus de 6 mois d'aujourd'hui est très probablement
+// une erreur de lecture de l'année. On essaie alors la même date dans l'année en cours ;
+// si elle reste trop éloignée, on n'impose pas de date (le formulaire garde la date du jour).
+function sanitizeDate(value: unknown, today: string): string | null {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null
+  const MAX_DAYS = 183
+  const daysFromToday = (d: string) => Math.abs(Date.parse(d + 'T00:00:00Z') - Date.parse(today + 'T00:00:00Z')) / 86400000
+  const isReal = (d: string) => !isNaN(Date.parse(d + 'T00:00:00Z')) && new Date(d + 'T00:00:00Z').toISOString().slice(0, 10) === d
+  if (isReal(value) && daysFromToday(value) <= MAX_DAYS) return value
+  const sameDayThisYear = today.slice(0, 4) + value.slice(4)
+  if (isReal(sameDayThisYear) && daysFromToday(sameDayThisYear) <= MAX_DAYS) return sameDayThisYear
+  return null
+}
