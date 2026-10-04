@@ -11,7 +11,8 @@ const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2,
 const DEPENSES_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Aménagement/Déco','Entretien','Radeema','Impôts','Divers']
 const ENCAISSEMENTS_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Radeema','Impôts','Divers']
 const FONDS_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Salaire','Maroc Telecom','Travaux','Impôts','Divers']
-const PAYMENT_MODES = ['CB', 'Virement', 'Chèque', 'Espèces']
+// Employés : seulement CB ou espèces (virements et chèques sont saisis par les administrateurs)
+const PAYMENT_MODES = ['CB', 'Espèces']
 const CURRENCIES = ['MAD', 'EUR']
  
 interface InvoiceData {
