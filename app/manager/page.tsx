@@ -835,6 +835,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                 <th>Date</th><th>Catégorie</th>
                 {type === 'cb' && <th>Fournisseur</th>}
                 <th>Paiement</th>
+                <th>N° facture/chèque</th>
                 <th>Description</th>
                 <th>Devise</th><th>Montant</th>
                 <th>Justificatif</th>
@@ -849,6 +850,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                   <td>{e.category}</td>
                   {type === 'cb' && <td>{e.supplier || '—'}</td>}
                   <td style={{ whiteSpace: 'nowrap' }}>{e.payment || '—'}{e.payment === 'Espèces' && <span style={{ fontSize: '0.72rem', color: '#888' }}> · {e.cash_location === 'coffre' ? 'coffre' : 'caisse'}</span>}</td>
+                  <td style={{ fontSize: '0.8rem', color: '#666', whiteSpace: 'nowrap' }}>{e.reference || '—'}</td>
                   <td style={{ fontSize: '0.8rem', color: '#666' }}>{e.description || '—'}</td>
                   <td><span style={{ fontWeight: 600, fontSize: '0.8rem', background: '#F3F4F6', padding: '0.15rem 0.4rem', borderRadius: '0.3rem' }}>{(e.currency as string) || 'MAD'}</span></td>
                   <td style={{ fontWeight: 600, color }}>{fmt(Number(e.amount))}</td>
