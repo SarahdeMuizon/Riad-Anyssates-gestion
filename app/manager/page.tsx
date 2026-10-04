@@ -339,6 +339,9 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState('')
   const [filterEmployee, setFilterEmployee] = useState('')
+  const [filterCategory, setFilterCategory] = useState('')
+  const [filterPayment, setFilterPayment] = useState('')
+  const [filterSupplier, setFilterSupplier] = useState('')
   const [deleteModal, setDeleteModal] = useState<number | null>(null)
   const [employees, setEmployees] = useState<string[]>([])
   const [showForm, setShowForm] = useState(false)
@@ -627,7 +630,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
         setFAmount(''); setFAmountHT(''); setFTvaRate(''); setFSupplier(''); setFDescription('')
         setFFile(null); setFFilePreview(null); setFExtracted(false); setShowForm(false)
         setFTransactionAmount(''); setFClientName(''); setFReference(''); setFToAccountant(false)
-        setFilterStatus(''); setFilterEmployee('')
+        setFilterStatus(''); setFilterEmployee(''); setFilterCategory(''); setFilterPayment(''); setFilterSupplier('')
         setFormSuccess('✓ Entrée ajoutée avec succès !')
         setTimeout(() => setFormSuccess(''), 4000)
         setMonth(fDate.substring(0, 7))
@@ -643,7 +646,16 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
  
   function exportCSV() { window.location.href = `/api/export/${type}?month=${month}` }
  
-  const total = entries.reduce((s, e) => s + Number(e.amount), 0)
+  // Filtres catégorie / paiement / fournisseur (appliqués sur le mois affiché)
+  const supplierQuery = filterSupplier.trim().toLowerCase()
+  const shown = entries.filter(e =>
+    (!filterCategory || e.category === filterCategory) &&
+    (!filterPayment || e.payment === filterPayment) &&
+    (!supplierQuery || `${e.supplier || ''} ${e.description || ''}`.toLowerCase().includes(supplierQuery)))
+  const categoryOptions = Array.from(new Set([...categories, ...entries.map(e => e.category).filter(Boolean)]))
+  const supplierOptions = Array.from(new Set(entries.map(e => (e.supplier || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'fr'))
+  const hasExtraFilter = !!(filterCategory || filterPayment || filterSupplier)
+  const total = shown.reduce((s, e) => s + Number(e.amount), 0)
  
   return (
     <div>
@@ -873,11 +885,31 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
           <option value="">Tous les employés</option>
           {employees.map(n => <option key={n} value={n}>{n}</option>)}
         </select>
-        <span style={{ marginLeft: 'auto', fontWeight: 600, color }}>Total : {fmt(total)}</span>
+        <select className="form-input" style={{ width: 'auto' }} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+          <option value="">Toutes les catégories</option>
+          {categoryOptions.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select className="form-input" style={{ width: 'auto' }} value={filterPayment} onChange={e => setFilterPayment(e.target.value)}>
+          <option value="">Tous les paiements</option>
+          {paymentModes.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
+        <input className="form-input" style={{ width: 'auto', minWidth: '11rem' }} list={`suppliers-${type}`} value={filterSupplier} onChange={e => setFilterSupplier(e.target.value)}
+          placeholder={type === 'cb' ? '🔍 Fournisseur…' : '🔍 Client / description…'} />
+        <datalist id={`suppliers-${type}`}>
+          {supplierOptions.map(n => <option key={n} value={n} />)}
+        </datalist>
+        {hasExtraFilter && (
+          <button type="button" onClick={() => { setFilterCategory(''); setFilterPayment(''); setFilterSupplier('') }}
+            style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}>Effacer les filtres</button>
+        )}
+        <span style={{ marginLeft: 'auto', fontWeight: 600, color }}>
+          {hasExtraFilter && <span style={{ fontWeight: 400, fontSize: '0.8rem', color: '#888', marginRight: '0.5rem' }}>{shown.length} ligne{shown.length > 1 ? 's' : ''}</span>}
+          Total : {fmt(total)}
+        </span>
       </div>
  
-      {loading ? <p>Chargement…</p> : entries.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>Aucune entrée pour ce mois</div>
+      {loading ? <p>Chargement…</p> : shown.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>{entries.length === 0 ? 'Aucune entrée pour ce mois' : 'Aucune entrée ne correspond aux filtres'}</div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table>
@@ -895,7 +927,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
               </tr>
             </thead>
             <tbody>
-              {entries.map(e => (
+              {shown.map(e => (
                 <tr key={e.id}>
                   <td style={{ whiteSpace: 'nowrap' }}>
                     <input type="date" defaultValue={e.date} key={`${e.id}-${e.date}`} title="Modifier la date"
