@@ -1041,6 +1041,44 @@ function FondsTab() {
  
   const balanceMAD = useMemo(() => balanceOf('MAD'), [balanceOf])
   const balanceEUR = useMemo(() => balanceOf('EUR'), [balanceOf])
+
+  // Historique complet de la caisse : dépenses et encaissements en espèces passés par la caisse
+  // + mouvements propres à la caisse (transferts coffre ↔ caisse, ajustements), avec le solde après chaque ligne.
+  type CaisseRow = {
+    key: string; date: string; created: string; employee: string; kind: string; category: string
+    label: string; currency: 'MAD' | 'EUR'; signed: number; invoice?: string | null; transferId?: string | null; solde: number
+  }
+  const [histMonth, setHistMonth] = useState('')
+  const [histCurrency, setHistCurrency] = useState<'MAD' | 'EUR'>('MAD')
+  const caisseRows = useMemo(() => {
+    const rows: Omit<CaisseRow, 'solde'>[] = []
+    for (const e of cashEntries) {
+      if (e.payment !== 'Espèces' || e.cash_location === 'coffre') continue
+      rows.push({
+        key: `e${e.id}`, date: e.date, created: (e.created_at as string) || '', employee: e.employee_name,
+        kind: e.type === 'cash' ? 'Encaissement' : 'Dépense', category: e.category,
+        label: [e.supplier, e.description].filter(Boolean).join(' — '),
+        currency: e.currency === 'EUR' ? 'EUR' : 'MAD',
+        signed: (e.type === 'cash' ? 1 : -1) * Number(e.amount), invoice: (e.invoice_url as string) || null,
+      })
+    }
+    for (const f of fondsEntries) {
+      rows.push({
+        key: `f${f.id}`, date: f.date, created: f.created_at || '', employee: f.employee_name,
+        kind: f.transfer_id ? 'Transfert coffre' : 'Mouvement caisse', category: f.category,
+        label: f.description || '', currency: f.currency === 'EUR' ? 'EUR' : 'MAD',
+        signed: (f.direction === 'in' ? 1 : -1) * Number(f.amount), transferId: f.transfer_id || null,
+      })
+    }
+    rows.sort((a, b) => a.date.localeCompare(b.date) || a.created.localeCompare(b.created))
+    const run = { MAD: 0, EUR: 0 }
+    const withSolde: CaisseRow[] = rows.map(r => { run[r.currency] += r.signed; return { ...r, solde: run[r.currency] } })
+    return withSolde.reverse() // plus récent en premier
+  }, [cashEntries, fondsEntries])
+  const histMonths = useMemo(() => Array.from(new Set(caisseRows.map(r => r.date.substring(0, 7)))).sort().reverse(), [caisseRows])
+  const shownCaisse = caisseRows.filter(r => r.currency === histCurrency && (!histMonth || r.date.startsWith(histMonth)))
+  const histIn = shownCaisse.filter(r => r.signed > 0).reduce((s, r) => s + r.signed, 0)
+  const histOut = shownCaisse.filter(r => r.signed < 0).reduce((s, r) => s - r.signed, 0)
  
   async function submitTransfer(e: React.FormEvent) {
     e.preventDefault()
@@ -1139,26 +1177,49 @@ function FondsTab() {
         </form>
       </div>
  
-      {/* Mouvements du fond de caisse (transferts, ajustements) */}
-      {fondsEntries.length > 0 && (
-        <div className="card">
-          <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', color: '#374151' }}>📋 Mouvements du fond de caisse</h3>
+      {/* Historique complet de la caisse */}
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
+          <h3 style={{ fontWeight: 700, fontSize: '0.95rem', color: '#374151' }}>📋 Historique de la caisse</h3>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <select className="form-input" style={{ width: 'auto' }} value={histMonth} onChange={e => setHistMonth(e.target.value)}>
+              <option value="">Tous les mois</option>
+              {histMonths.map(m => <option key={m} value={m}>{formatMonth(m)}</option>)}
+            </select>
+            <select className="form-input" style={{ width: 'auto' }} value={histCurrency} onChange={e => setHistCurrency(e.target.value as 'MAD' | 'EUR')}>
+              <option value="MAD">MAD</option>
+              <option value="EUR">EUR</option>
+            </select>
+          </div>
+        </div>
+        <p style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.75rem' }}>
+          Toutes les dépenses et encaissements en espèces passés par la caisse, et les transferts avec le coffre.
+          {' '}<span style={{ color: 'var(--green)', fontWeight: 600 }}>Entrées {fmt(histIn)}</span>
+          {' · '}<span style={{ color: 'var(--red)', fontWeight: 600 }}>Sorties {fmt(histOut)}</span>
+        </p>
+        {shownCaisse.length === 0 ? (
+          <div style={{ textAlign: 'center', color: '#aaa', padding: '1.5rem' }}>Aucun mouvement</div>
+        ) : (
           <div style={{ overflowX: 'auto' }}>
             <table>
               <thead>
-                <tr><th>Date</th><th>Catégorie</th><th>Description</th><th>Devise</th><th>Montant</th><th></th></tr>
+                <tr><th>Date</th><th>Employé</th><th>Type</th><th>Catégorie</th><th className="col-wrap">Description</th><th>Entrée</th><th>Sortie</th><th>Solde</th><th>Justif.</th><th></th></tr>
               </thead>
               <tbody>
-                {fondsEntries.map(e => (
-                  <tr key={e.id}>
-                    <td style={{ whiteSpace: 'nowrap' }}>{new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR')}</td>
-                    <td>{e.category}</td>
-                    <td style={{ fontSize: '0.85rem', color: '#666' }}>{e.description || '—'}</td>
-                    <td>{(e.currency as string) || 'MAD'}</td>
-                    <td style={{ fontWeight: 600, color: e.direction === 'in' ? 'var(--green)' : 'var(--red)' }}>{e.direction === 'in' ? '+' : '-'}{fmt(Number(e.amount))}</td>
+                {shownCaisse.map(r => (
+                  <tr key={r.key}>
+                    <td style={{ whiteSpace: 'nowrap' }}>{new Date(r.date + 'T00:00:00').toLocaleDateString('fr-FR')}</td>
+                    <td>{r.employee}</td>
+                    <td style={{ fontSize: '0.8rem', fontWeight: 600, color: r.kind === 'Dépense' ? 'var(--terracotta)' : r.kind === 'Encaissement' ? 'var(--green)' : '#6366F1' }}>{r.kind}</td>
+                    <td>{r.category}</td>
+                    <td className="col-wrap" style={{ fontSize: '0.85rem', color: '#666' }}>{r.label || '—'}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--green)', whiteSpace: 'nowrap' }}>{r.signed > 0 ? fmt(r.signed) : ''}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--red)', whiteSpace: 'nowrap' }}>{r.signed < 0 ? fmt(-r.signed) : ''}</td>
+                    <td style={{ fontWeight: 700, color: '#4338CA', whiteSpace: 'nowrap' }}>{fmt(r.solde)}</td>
+                    <td>{r.invoice ? <a href={r.invoice} onClick={ev => { ev.preventDefault(); openAttachment(r.invoice) }} style={{ color: 'var(--blue)', fontSize: '0.8rem', cursor: 'pointer' }}>📄 Voir</a> : <span style={{ color: '#bbb', fontSize: '0.8rem' }}>—</span>}</td>
                     <td>
-                      {e.transfer_id && (
-                        <button onClick={() => setDeleteTransfer(e.transfer_id!)} title="Supprimer le transfert (des deux côtés)" style={{ background: 'var(--red)', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.8rem' }}>🗑</button>
+                      {r.transferId && (
+                        <button onClick={() => setDeleteTransfer(r.transferId!)} title="Supprimer le transfert (des deux côtés)" style={{ background: 'var(--red)', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.8rem' }}>🗑</button>
                       )}
                     </td>
                   </tr>
@@ -1166,9 +1227,9 @@ function FondsTab() {
               </tbody>
             </table>
           </div>
-        </div>
-      )}
- 
+        )}
+      </div>
+
       {deleteTransfer !== null && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
           <div className="card" style={{ maxWidth: 360, width: '90%', textAlign: 'center' }}>
