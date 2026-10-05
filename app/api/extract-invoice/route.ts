@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Format non supporté (image ou PDF uniquement)' }, { status: 400 })
   }
  
-  const DEPENSES_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Aménagement/Déco','Entretien','Radeema','Impôts','Divers']
+  const DEPENSES_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Aménagement/Déco','Entretien','Livraison/Carrossa','Radeema','Impôts','Divers']
  
   // Date du jour (heure du Maroc = UTC) : sert à dater correctement un document sans année
   const today = new Date().toISOString().slice(0, 10)

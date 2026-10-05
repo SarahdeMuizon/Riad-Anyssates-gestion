@@ -270,7 +270,7 @@ function DashboardTab() {
  
 // ─── Entries Tab ───────────────────────────────────────────────────────────────
  
-const DEPENSES_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Aménagement/Déco','Entretien','Radeema','Impôts','Divers']
+const DEPENSES_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Aménagement/Déco','Entretien','Livraison/Carrossa','Radeema','Impôts','Divers']
  
 interface InvoiceData {
   date: string; amount: number; amountTransaction?: number

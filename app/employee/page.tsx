@@ -8,7 +8,7 @@ import EmployeeGuide from './guide'
  
 const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
  
-const DEPENSES_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Aménagement/Déco','Entretien','Radeema','Impôts','Divers']
+const DEPENSES_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Aménagement/Déco','Entretien','Livraison/Carrossa','Radeema','Impôts','Divers']
 const ENCAISSEMENTS_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Radeema','Impôts','Divers']
 const FONDS_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Salaire','Maroc Telecom','Travaux','Impôts','Divers']
 // Employés : seulement CB ou espèces (virements et chèques sont saisis par les administrateurs)
