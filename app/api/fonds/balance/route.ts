@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import sql, { ensureDb } from '@/lib/db'
 import { getManagerSession } from '@/lib/auth'
+import { getCashBalance } from '@/lib/cash'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,25 +20,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    const entries = await sql`
-      SELECT COALESCE(currency, 'MAD') AS cur,
-             SUM(CASE WHEN type = 'cash' THEN amount ELSE -amount END) AS total
-      FROM entries
-      WHERE payment = 'Espèces' AND COALESCE(cash_location, 'fonds') <> 'coffre'
-      GROUP BY COALESCE(currency, 'MAD')
-    `
-    const fonds = await sql`
-      SELECT COALESCE(currency, 'MAD') AS cur,
-             SUM(CASE WHEN direction = 'in' THEN amount ELSE -amount END) AS total
-      FROM fonds_entries
-      GROUP BY COALESCE(currency, 'MAD')
-    `
-    const bal: Record<string, number> = { MAD: 0, EUR: 0 }
-    for (const r of [...entries, ...fonds]) {
-      const cur = r.cur === 'EUR' ? 'EUR' : 'MAD'
-      bal[cur] += Number(r.total) || 0
-    }
-    return NextResponse.json({ mad: Math.round(bal.MAD * 100) / 100, eur: Math.round(bal.EUR * 100) / 100 })
+    return NextResponse.json(await getCashBalance())
   } catch (error) {
     console.error('GET fonds balance error:', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

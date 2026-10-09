@@ -56,6 +56,10 @@ export default function ManagerGuide({ onClose }: { onClose: () => void }) {
         <p style={p}>Toutes les saisies faites depuis l&apos;interface sont enregistrées au nom de la personne connectée. Le PIN se change dans Paramètres ; l&apos;accès manager d&apos;un employé se donne ou se retire dans Employés.</p>
         <p style={p}>Les tableaux sont larges : sur téléphone, faites-les défiler de gauche à droite avec le doigt.</p>
 
+        <h3 style={h3}>Notifications 🔔</h3>
+        <p style={p}>La cloche en haut de l&apos;écran affiche le nombre de nouveautés : chaque dépense, encaissement, mouvement de caisse ou du coffre saisi par un membre de l&apos;équipe, et chaque rapprochement de caisse enregistré (avec l&apos;écart éventuel). Vos propres saisies ne vous sont pas notifiées.</p>
+        <p style={p}>Pour être prévenu(e) même appli fermée, ouvrez la cloche et touchez <b>📱 Recevoir les notifications sur cet appareil</b>, puis acceptez. Sur iPhone, ajoutez d&apos;abord l&apos;appli à l&apos;écran d&apos;accueil (Partager → « Sur l&apos;écran d&apos;accueil ») et ouvrez-la depuis l&apos;icône. À faire une fois sur chaque appareil.</p>
+
         <h2 style={h2}>2. Dashboard (📊)</h2>
         <p style={p}>Le Dashboard résume un mois. Changez de mois avec les flèches ‹ ›, ou revenez au mois en cours avec « Mois actuel ».</p>
         <ul style={list}>
@@ -94,7 +98,7 @@ export default function ManagerGuide({ onClose }: { onClose: () => void }) {
         <h3 style={h3}>Fond de caisse</h3>
         <ul style={list}>
           <li style={li}>Le <b>solde</b> (MAD et EUR) se calcule tout seul : espèces encaissées moins espèces dépensées via la caisse, plus les transferts. C&apos;est le même chiffre pour toute l&apos;équipe.</li>
-          <li style={li}><b>Rapprochement caisse</b> : saisissez ce que vous avez compté dans la caisse, l&apos;application affiche l&apos;écart.</li>
+          <li style={li}><b>Rapprochement caisse</b> : saisissez ce que vous avez compté dans la caisse, l&apos;application affiche l&apos;écart. <b>✓ Enregistrer le rapprochement</b> le garde dans la liste « Derniers rapprochements » (les rapprochements des employés y apparaissent aussi).</li>
           <li style={li}><b>Transfert coffre fort ↔ fond de caisse</b> : pour remettre de l&apos;argent en caisse ou en ranger au coffre. Choisissez le sens, le montant et la devise ; le mouvement s&apos;inscrit des deux côtés en une fois.</li>
           <li style={li}>Pour annuler un transfert, utilisez le bouton de suppression dans la liste des mouvements : il disparaît des deux côtés.</li>
         </ul>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import sql, { ensureDb } from '@/lib/db'
 import { getManagerSession, getManagerName } from '@/lib/auth'
+import { notify, fmtAmount } from '@/lib/notify'
  
 export const dynamic = 'force-dynamic'
  
@@ -89,6 +90,17 @@ export async function POST(req: NextRequest) {
       RETURNING *
     `
  
+    // Notification aux administrateurs (sauf l'auteur de la saisie)
+    const actor = token ? empName : getManagerName()
+    const kindLabel = type === 'cb' ? 'dépense' : 'encaissement'
+    await notify({
+      kind: 'entry',
+      actor,
+      title: `${actor} : nouvelle ${kindLabel}${actor !== empName ? ` (pour ${empName})` : ''}`,
+      body: [fmtAmount(amount, currency), category, supplier, payment].filter(Boolean).join(' · '),
+      url: '/manager',
+    })
+
     return NextResponse.json(result[0], { status: 201 })
   } catch (error) {
     console.error('POST entry error:', error)

@@ -98,6 +98,7 @@ export default function EmployeeGuide({ onClose }: { onClose: () => void }) {
           <li style={li}>Comptez les billets et les pièces dans la caisse.</li>
           <li style={li}>Saisissez le total dans <b>MAD compté</b>, et dans <b>EUR compté</b> s&apos;il y a des euros.</li>
           <li style={li}>Lisez l&apos;<b>écart</b> : vert avec ✓, la caisse est juste ; rouge, il y a une différence.</li>
+          <li style={li}>Touchez <b>✓ Enregistrer le rapprochement</b> : Valérie et Nicolas reçoivent une notification avec le résultat.</li>
         </ol>
         <p style={p}>En cas d&apos;écart, cherchez d&apos;abord une dépense ou un encaissement en espèces oublié ou saisi deux fois (onglet Mon historique). Si l&apos;écart reste, prévenez Valérie ou Nicolas : ne corrigez pas la caisse vous-même.</p>
 

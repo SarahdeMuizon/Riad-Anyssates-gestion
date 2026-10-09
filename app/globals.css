@@ -216,6 +216,8 @@ img { max-width: 100%; }
      On les laisse rétrécir à la largeur de leur colonne. */
   [style*="grid-template-columns"] > * { min-width: 0; }
   .form-input { min-width: 0; max-width: 100%; }
+  /* Panneau des notifications : pleine largeur sur téléphone */
+  .notif-panel { position: fixed !important; left: 12px !important; right: 12px !important; top: 120px !important; width: auto !important; max-width: none !important; }
   /* Barre de filtres (Dépenses / Encaissements) : 2 colonnes compactes, total sur sa propre ligne */
   .filters-bar { display: grid !important; grid-template-columns: 1fr 1fr; gap: 0.5rem !important; }
   .filters-bar .form-input { width: 100% !important; min-width: 0 !important; padding: 0.45rem 0.5rem; }

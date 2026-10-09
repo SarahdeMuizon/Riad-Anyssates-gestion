@@ -5,6 +5,7 @@ import type { Entry, Employee, DashboardStats, FondsEntry } from '@/types'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import { openAttachment, fileToDataUrl } from '@/lib/attachments'
 import ManagerGuide from './guide'
+import NotificationBell from './notifications'
  
 type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'banque' | 'coffre' | 'comptable' | 'employees' | 'settings'
  
@@ -68,6 +69,7 @@ export default function ManagerPage() {
         <div className="mgr-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <button onClick={() => window.location.href = '/api/export/excel'} style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', color: 'white', padding: '0.3rem 0.75rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>📊 Excel</button>
           <button onClick={() => setShowGuide(true)} style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', color: 'white', padding: '0.3rem 0.75rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, whiteSpace: 'nowrap' }}>📖 Mode d&apos;emploi</button>
+          <NotificationBell />
           <span style={{ fontSize: '0.8rem', opacity: 0.85 }}>{managerName}</span>
           <button onClick={logout} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '0.3rem 0.75rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.8rem' }}>Déconnexion</button>
         </div>
@@ -1004,6 +1006,21 @@ function FondsTab() {
   const [loading, setLoading] = useState(true)
   const [compteMAD, setCompteMAD] = useState('')
   const [compteEUR, setCompteEUR] = useState('')
+  const [recSaving, setRecSaving] = useState(false)
+  const [recMsg, setRecMsg] = useState('')
+  const [recs, setRecs] = useState<Array<{ id: number; employee_name: string; counted_mad: number | null; counted_eur: number | null; expected_mad: number | null; expected_eur: number | null; created_at: string }>>([])
+  const loadRecs = useCallback(async () => {
+    const r = await fetch('/api/reconciliations', { cache: 'no-store' }).catch(() => null)
+    if (r && r.ok) setRecs(await r.json())
+  }, [])
+  useEffect(() => { loadRecs() }, [loadRecs])
+  async function saveReconciliation() {
+    setRecSaving(true); setRecMsg('')
+    const r = await fetch('/api/reconciliations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ counted_mad: compteMAD, counted_eur: compteEUR }) }).catch(() => null)
+    if (r && r.ok) { setRecMsg('✓ Rapprochement enregistré'); setCompteMAD(''); setCompteEUR(''); loadRecs() }
+    else setRecMsg("Erreur : le rapprochement n'a pas été enregistré.")
+    setRecSaving(false)
+  }
   const [msg, setMsg] = useState('')
   const [deleteTransfer, setDeleteTransfer] = useState<string | null>(null)
  
@@ -1137,6 +1154,41 @@ function FondsTab() {
             )
           })}
         </div>
+        <button type="button" onClick={saveReconciliation} disabled={recSaving || (!compteMAD && !compteEUR)} className="btn-primary"
+          style={{ marginTop: '0.75rem', background: '#6366F1', opacity: (!compteMAD && !compteEUR) ? 0.5 : 1 }}>
+          {recSaving ? 'Enregistrement…' : '✓ Enregistrer le rapprochement'}
+        </button>
+        {recMsg && <span style={{ marginLeft: '0.75rem', fontSize: '0.8rem', color: recMsg.startsWith('✓') ? 'var(--green)' : 'var(--red)' }}>{recMsg}</span>}
+        {recs.length > 0 && (
+          <div style={{ marginTop: '1rem' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#555', marginBottom: '0.35rem' }}>Derniers rapprochements</div>
+            <div style={{ overflowX: 'auto' }}>
+              <table>
+                <thead><tr><th>Date</th><th>Par</th><th>Compté MAD</th><th>Écart MAD</th><th>Compté EUR</th><th>Écart EUR</th></tr></thead>
+                <tbody>
+                  {recs.slice(0, 10).map(r => {
+                    const d = new Date(r.created_at.replace(' ', 'T') + 'Z')
+                    const ecart = (c: number | null, e: number | null) => {
+                      if (c === null || c === undefined) return <span style={{ color: '#bbb' }}>—</span>
+                      const diff = Math.round((Number(c) - Number(e || 0)) * 100) / 100
+                      return <span style={{ fontWeight: 600, color: Math.abs(diff) < 0.01 ? 'var(--green)' : 'var(--red)' }}>{Math.abs(diff) < 0.01 ? '✓ 0' : `${diff > 0 ? '+' : ''}${fmt(diff)}`}</span>
+                    }
+                    return (
+                      <tr key={r.id}>
+                        <td style={{ whiteSpace: 'nowrap' }}>{d.toLocaleDateString('fr-FR')} {d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</td>
+                        <td>{r.employee_name}</td>
+                        <td>{r.counted_mad !== null ? fmt(Number(r.counted_mad)) : '—'}</td>
+                        <td>{ecart(r.counted_mad, r.expected_mad)}</td>
+                        <td>{r.counted_eur !== null ? fmt(Number(r.counted_eur)) : '—'}</td>
+                        <td>{ecart(r.counted_eur, r.expected_eur)}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
  
       {/* Transfert coffre ↔ fond de caisse */}

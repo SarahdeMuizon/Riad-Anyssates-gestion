@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import sql from '@/lib/db'
-import { getManagerSession } from '@/lib/auth'
+import { getManagerSession, getManagerName } from '@/lib/auth'
+import { notify, fmtAmount } from '@/lib/notify'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,6 +65,14 @@ export async function POST(req: NextRequest) {
       VALUES (${empName}, ${direction}, ${date}, ${amount}, ${currency || 'MAD'}, ${category}, ${description || null})
       RETURNING *
     `
+
+    await notify({
+      kind: 'fonds',
+      actor: token ? empName : getManagerName(),
+      title: `${token ? empName : getManagerName()} : ${direction === 'in' ? 'entrée' : 'sortie'} de caisse`,
+      body: [fmtAmount(amount, currency), category, description].filter(Boolean).join(' · '),
+      url: '/manager',
+    })
 
     return NextResponse.json(result[0], { status: 201 })
   } catch (error) {

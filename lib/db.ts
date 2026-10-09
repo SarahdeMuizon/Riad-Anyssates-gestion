@@ -211,6 +211,47 @@ export async function initDb() {
         created_at TEXT DEFAULT (datetime('now'))
       )`,
     },
+    // Notifications pour les administrateurs (nouvelles opérations, rapprochements de caisse)
+    {
+      sql: `CREATE TABLE IF NOT EXISTS notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        kind TEXT NOT NULL,
+        title TEXT NOT NULL,
+        body TEXT,
+        actor TEXT,
+        url TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`,
+    },
+    // Dernière notification vue par chaque administrateur (compteur de la cloche)
+    {
+      sql: `CREATE TABLE IF NOT EXISTS notif_seen (
+        manager_name TEXT PRIMARY KEY,
+        last_seen_id INTEGER DEFAULT 0
+      )`,
+    },
+    // Appareils abonnés aux notifications push
+    {
+      sql: `CREATE TABLE IF NOT EXISTS push_subs (
+        endpoint TEXT PRIMARY KEY,
+        p256dh TEXT NOT NULL,
+        auth TEXT NOT NULL,
+        manager_name TEXT NOT NULL,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`,
+    },
+    // Rapprochements de caisse enregistrés (comptage physique vs solde calculé)
+    {
+      sql: `CREATE TABLE IF NOT EXISTS cash_reconciliations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        employee_name TEXT NOT NULL,
+        counted_mad REAL,
+        counted_eur REAL,
+        expected_mad REAL,
+        expected_eur REAL,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`,
+    },
   ])
  
   for (const r of results) {

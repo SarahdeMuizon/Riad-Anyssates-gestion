@@ -814,6 +814,19 @@ function FondsCaisse({ token }: { token: string }) {
   const [loading, setLoading] = useState(true)
   const [compteMAD, setCompteMAD] = useState('')
   const [compteEUR, setCompteEUR] = useState('')
+  const [recSaving, setRecSaving] = useState(false)
+  const [recMsg, setRecMsg] = useState('')
+
+  // Enregistre le rapprochement : les administrateurs sont prévenus
+  async function saveReconciliation() {
+    setRecSaving(true); setRecMsg('')
+    const r = await fetch('/api/reconciliations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, counted_mad: compteMAD, counted_eur: compteEUR }) }).catch(() => null)
+    if (r && r.ok) {
+      setRecMsg('✓ Rapprochement enregistré — Valérie et Nicolas sont prévenus.')
+      setCompteMAD(''); setCompteEUR('')
+    } else setRecMsg("Erreur : le rapprochement n'a pas été enregistré, réessayez.")
+    setRecSaving(false)
+  }
  
   const [updatedAt, setUpdatedAt] = useState<string>('')
  
@@ -897,6 +910,11 @@ function FondsCaisse({ token }: { token: string }) {
             )}
           </div>
         )}
+        <button type="button" onClick={saveReconciliation} disabled={recSaving || (!compteMAD && !compteEUR)} className="btn-primary"
+          style={{ width: '100%', marginTop: '0.75rem', background: '#6366F1', opacity: (!compteMAD && !compteEUR) ? 0.5 : 1 }}>
+          {recSaving ? 'Enregistrement…' : '✓ Enregistrer le rapprochement'}
+        </button>
+        {recMsg && <p style={{ fontSize: '0.8rem', marginTop: '0.4rem', color: recMsg.startsWith('✓') ? 'var(--green)' : 'var(--red)' }}>{recMsg}</p>}
       </div>
  
     </div>

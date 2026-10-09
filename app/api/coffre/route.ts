@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import sql from '@/lib/db'
-import { getManagerSession } from '@/lib/auth'
+import { getManagerSession, getManagerName } from '@/lib/auth'
+import { notify, fmtAmount } from '@/lib/notify'
  
 export const dynamic = 'force-dynamic'
  
@@ -43,6 +44,13 @@ export async function POST(req: NextRequest) {
       VALUES (${employee_name}, ${direction}, ${date}, ${amount}, ${currency || 'MAD'}, ${category}, ${description || null}, ${invoice_url || null})
       RETURNING *
     `
+    await notify({
+      kind: 'coffre',
+      actor: getManagerName(),
+      title: `${getManagerName()} : ${direction === 'in' ? 'entrée' : 'sortie'} du coffre fort`,
+      body: [fmtAmount(amount, currency), category, description].filter(Boolean).join(' · '),
+      url: '/manager',
+    })
     return NextResponse.json(result[0], { status: 201 })
   } catch (error) {
     console.error('POST coffre error:', error)
