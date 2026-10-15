@@ -50,6 +50,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json(result[0])
     }
 
+    if (body.description !== undefined) {
+      const desc = String(body.description ?? '').trim().slice(0, 1000)
+      const result = await sql`UPDATE entries SET description = ${desc || null} WHERE id = ${id} RETURNING *`
+      if (!result[0]) return NextResponse.json({ error: 'Entrée introuvable' }, { status: 404 })
+      return NextResponse.json(result[0])
+    }
+
     if (body.reference !== undefined) {
       const result = await sql`UPDATE entries SET reference = ${body.reference || null} WHERE id = ${id} RETURNING *`
       return NextResponse.json(result[0])

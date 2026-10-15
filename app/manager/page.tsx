@@ -449,6 +449,18 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     }
   }
  
+  async function changeDescription(entry: Entry, value: string) {
+    const v = value.trim()
+    if (v === (entry.description || '')) return
+    setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, description: v } : e))
+    const r = await fetch(`/api/entries/${entry.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ description: v }) }).catch(() => null)
+    if (!r || !r.ok) {
+      setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, description: entry.description } : e))
+      setFormError('Impossible de modifier la description — réessayez.')
+      setTimeout(() => setFormError(''), 5000)
+    }
+  }
+
   async function toggleAccountant(entry: Entry) {
     const next = !entry.to_accountant
     setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, to_accountant: next } : e))
@@ -957,7 +969,14 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                     </select>
                   </td>
                   <td style={{ fontSize: '0.8rem', color: '#666', whiteSpace: 'nowrap' }}>{e.reference || '—'}</td>
-                  <td className="col-wrap" style={{ fontSize: '0.8rem', color: '#666' }}>{e.description || '—'}</td>
+                  <td className="col-wrap" style={{ fontSize: '0.8rem', color: '#666' }}>
+                    <textarea defaultValue={(e.description as string) || ''} key={`${e.id}-${e.description ?? ''}`} rows={1} placeholder="—" title="Modifier la description"
+                      className="desc-edit"
+                      onInput={ev => { const t = ev.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px' }}
+                      onFocus={ev => { const t = ev.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px' }}
+                      onBlur={ev => changeDescription(e, ev.target.value)}
+                      onKeyDown={ev => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); (ev.target as HTMLTextAreaElement).blur() } if (ev.key === 'Escape') { (ev.target as HTMLTextAreaElement).value = (e.description as string) || ''; (ev.target as HTMLTextAreaElement).blur() } }} />
+                  </td>
                   <td><span style={{ fontWeight: 600, fontSize: '0.8rem', background: '#F3F4F6', padding: '0.15rem 0.4rem', borderRadius: '0.3rem' }}>{(e.currency as string) || 'MAD'}</span></td>
                   <td style={{ fontWeight: 600, color, whiteSpace: 'nowrap' }}>{fmt(Number(e.amount))}</td>
                   <td>
