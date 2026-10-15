@@ -914,7 +914,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       {loading ? <p>Chargement…</p> : shown.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>{entries.length === 0 ? 'Aucune entrée pour ce mois' : 'Aucune entrée ne correspond aux filtres'}</div>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
+        <div className="table-scroll">
           <table className="table-dep">
             <thead>
               <tr>
@@ -970,10 +970,10 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                     <input type="checkbox" checked={!!e.to_accountant} onChange={() => toggleAccountant(e)} title="Facture à envoyer au comptable" style={{ width: '1.1rem', height: '1.1rem', cursor: 'pointer', accentColor: color }} />
                   </td>
                   <td><span className={e.status === 'validated' ? 'badge-validated' : 'badge-pending'}>{e.status === 'validated' ? 'Validé' : 'En attente'}</span></td>
-                  <td style={{ display: 'flex', gap: '0.3rem' }}>
+                  <td style={{ whiteSpace: 'nowrap' }}><div style={{ display: 'flex', gap: '0.3rem' }}>
                     <button onClick={() => toggleStatus(e)} style={{ background: e.status === 'pending' ? 'var(--green)' : '#888', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.8rem' }}>{e.status === 'pending' ? '✓' : '↩'}</button>
                     <button onClick={() => setDeleteModal(e.id)} style={{ background: 'var(--red)', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.8rem' }}>🗑</button>
-                  </td>
+                  </div></td>
                 </tr>
               ))}
             </tbody>
@@ -2090,7 +2090,7 @@ function ComptableTab() {
           <span style={{ fontSize: '0.8rem' }}>Cochez « Facture à envoyer au comptable » dans Dépenses ou Encaissements pour qu&apos;elle apparaisse ici.</span>
         </div>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
+        <div className="table-scroll">
           <table className="table-dep">
             <thead>
               <tr>

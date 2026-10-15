@@ -195,6 +195,10 @@ table tr:hover td {
 .table-dep { font-size: 0.8rem; }
 .table-dep th { padding: 0.5rem 0.4rem; font-size: 0.75rem; line-height: 1.2; vertical-align: bottom; }
 .table-dep td { padding: 0.45rem 0.4rem; }
+.table-dep td { vertical-align: middle; }
+/* Les lignes défilent dans leur cadre ; les titres de colonnes restent visibles */
+.table-scroll { overflow: auto; max-height: calc(100vh - 230px); border-radius: 0.5rem; }
+.table-scroll thead th { position: sticky; top: 0; z-index: 2; box-shadow: inset 0 -1px 0 #E8D9CB; }
 .table-dep td.col-wrap { min-width: 7rem; max-width: 15rem; white-space: normal; overflow-wrap: anywhere; line-height: 1.3; }
 
 /* ─── Téléphone (portrait) ─────────────────────────────────────────────
@@ -216,6 +220,7 @@ img { max-width: 100%; }
   .stat-card div[style*="1.75rem"] { font-size: 1.35rem !important; }
   /* Tableaux larges (Banque, Coffre) : largeur minimale + défilement horizontal */
   .table-compact { min-width: 860px; font-size: 0.75rem; }
+  .table-scroll { max-height: calc(100vh - 160px); }
   table { font-size: 0.8rem; }
   table th, table td { padding: 0.45rem 0.5rem; white-space: nowrap; }
   table td.col-wrap, table th.col-wrap { white-space: normal; min-width: 160px; }
