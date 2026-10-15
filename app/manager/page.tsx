@@ -84,7 +84,7 @@ export default function ManagerPage() {
         ))}
       </div>
  
-      <main className="mgr-main" style={{ padding: '1.5rem', maxWidth: 1100, margin: '0 auto' }}>
+      <main className="mgr-main" style={{ padding: '1.5rem', maxWidth: 1440, margin: '0 auto' }}>
         {tab === 'dashboard' && <DashboardTab />}
         {tab === 'depenses' && <EntriesTab type="cb" label="Dépenses" color="var(--terracotta)" />}
         {tab === 'encaissements' && <EntriesTab type="cash" label="Encaissements" color="var(--green)" />}
@@ -915,18 +915,18 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
         <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>{entries.length === 0 ? 'Aucune entrée pour ce mois' : 'Aucune entrée ne correspond aux filtres'}</div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <table>
+          <table className="table-dep">
             <thead>
               <tr>
                 <th>Date</th><th>Employé</th><th>Catégorie</th>
                 {type === 'cb' && <th>Fournisseur</th>}
                 <th>Paiement</th>
-                <th>N° facture/chèque</th>
+                <th>N° fact./chèque</th>
                 <th>Description</th>
                 <th>Devise</th><th>Montant</th>
                 <th>Justificatif</th>
-                <th title="Facture à envoyer au comptable">Comptable</th>
-                <th>Statut</th><th>Actions</th>
+                <th title="Facture à envoyer au comptable">Compta.</th>
+                <th>Statut</th><th></th>
               </tr>
             </thead>
             <tbody>
@@ -936,18 +936,18 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                     <input type="date" defaultValue={e.date} key={`${e.id}-${e.date}`} title="Modifier la date"
                       onBlur={ev => changeDate(e, ev.target.value)}
                       onKeyDown={ev => { if (ev.key === 'Enter') (ev.target as HTMLInputElement).blur() }}
-                      style={{ border: '1px solid transparent', borderRadius: '0.3rem', background: 'transparent', font: 'inherit', fontSize: '0.85rem', padding: '0.1rem 0.2rem', cursor: 'pointer', width: '8.2rem' }}
+                      style={{ border: '1px solid transparent', borderRadius: '0.3rem', background: 'transparent', font: 'inherit', fontSize: '0.8rem', padding: '0.1rem 0.1rem', cursor: 'pointer', width: '7.3rem' }}
                       onFocus={ev => { ev.target.style.borderColor = '#ddd'; ev.target.style.background = 'white' }} />
                   </td>
                   <td>{e.employee_name}</td>
                   <td>{e.category}</td>
-                  {type === 'cb' && <td>{e.supplier || '—'}</td>}
+                  {type === 'cb' && <td className="col-wrap">{e.supplier || '—'}</td>}
                   <td style={{ whiteSpace: 'nowrap' }}>
                     <select
                       value={e.payment === 'Espèces' ? `Espèces|${e.cash_location === 'coffre' ? 'coffre' : 'fonds'}` : (e.payment || '')}
                       onChange={ev => changePayment(e, ev.target.value)}
                       title="Modifier le mode de paiement"
-                      style={{ border: '1px solid transparent', background: 'transparent', borderRadius: '0.3rem', padding: '0.15rem 0.1rem', font: 'inherit', fontSize: '0.85rem', cursor: 'pointer', color: 'inherit' }}
+                      style={{ border: '1px solid transparent', background: 'transparent', borderRadius: '0.3rem', padding: '0.15rem 0', font: 'inherit', fontSize: '0.8rem', cursor: 'pointer', color: 'inherit', maxWidth: '8.5rem' }}
                       onMouseEnter={ev => { ev.currentTarget.style.borderColor = '#ddd' }}
                       onMouseLeave={ev => { ev.currentTarget.style.borderColor = 'transparent' }}>
                       {!e.payment && <option value="">—</option>}
@@ -957,9 +957,9 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                     </select>
                   </td>
                   <td style={{ fontSize: '0.8rem', color: '#666', whiteSpace: 'nowrap' }}>{e.reference || '—'}</td>
-                  <td style={{ fontSize: '0.8rem', color: '#666' }}>{e.description || '—'}</td>
+                  <td className="col-wrap" style={{ fontSize: '0.8rem', color: '#666' }}>{e.description || '—'}</td>
                   <td><span style={{ fontWeight: 600, fontSize: '0.8rem', background: '#F3F4F6', padding: '0.15rem 0.4rem', borderRadius: '0.3rem' }}>{(e.currency as string) || 'MAD'}</span></td>
-                  <td style={{ fontWeight: 600, color }}>{fmt(Number(e.amount))}</td>
+                  <td style={{ fontWeight: 600, color, whiteSpace: 'nowrap' }}>{fmt(Number(e.amount))}</td>
                   <td>
                     {e.invoice_url
                       ? <a href={e.invoice_url as string} onClick={ev => { ev.preventDefault(); openAttachment(e.invoice_url as string) }} style={{ color: 'var(--blue)', fontSize: '0.8rem', cursor: 'pointer' }}>{type === 'cash' ? '🧾 Ticket' : '📄 Facture'}</a>
@@ -970,7 +970,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                     <input type="checkbox" checked={!!e.to_accountant} onChange={() => toggleAccountant(e)} title="Facture à envoyer au comptable" style={{ width: '1.1rem', height: '1.1rem', cursor: 'pointer', accentColor: color }} />
                   </td>
                   <td><span className={e.status === 'validated' ? 'badge-validated' : 'badge-pending'}>{e.status === 'validated' ? 'Validé' : 'En attente'}</span></td>
-                  <td style={{ display: 'flex', gap: '0.4rem' }}>
+                  <td style={{ display: 'flex', gap: '0.3rem' }}>
                     <button onClick={() => toggleStatus(e)} style={{ background: e.status === 'pending' ? 'var(--green)' : '#888', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.8rem' }}>{e.status === 'pending' ? '✓' : '↩'}</button>
                     <button onClick={() => setDeleteModal(e.id)} style={{ background: 'var(--red)', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.8rem' }}>🗑</button>
                   </td>
@@ -2091,11 +2091,11 @@ function ComptableTab() {
         </div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <table>
+          <table className="table-dep">
             <thead>
               <tr>
                 <th>Date</th><th>Type</th><th>Employé</th><th>Catégorie</th><th>Fournisseur / client</th>
-                <th>Paiement</th><th>N° facture/chèque</th><th>Description</th>
+                <th>Paiement</th><th>N° fact./chèque</th><th>Description</th>
                 <th>Devise</th><th>Montant</th><th>Justificatif</th><th title="Retirer de la liste du comptable">Retirer</th>
               </tr>
             </thead>
@@ -2108,10 +2108,10 @@ function ComptableTab() {
                     <td style={{ color, fontWeight: 600, fontSize: '0.8rem' }}>{e.type === 'cb' ? 'Dépense' : 'Encaissement'}</td>
                     <td>{e.employee_name}</td>
                     <td>{e.category}</td>
-                    <td>{e.supplier || '—'}</td>
+                    <td className="col-wrap">{e.supplier || '—'}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>{e.payment || '—'}</td>
                     <td style={{ fontSize: '0.8rem', color: '#666', whiteSpace: 'nowrap' }}>{e.reference || '—'}</td>
-                    <td style={{ fontSize: '0.8rem', color: '#666' }}>{e.description || '—'}</td>
+                    <td className="col-wrap" style={{ fontSize: '0.8rem', color: '#666' }}>{e.description || '—'}</td>
                     <td><span style={{ fontWeight: 600, fontSize: '0.8rem', background: '#F3F4F6', padding: '0.15rem 0.4rem', borderRadius: '0.3rem' }}>{(e.currency as string) || 'MAD'}</span></td>
                     <td style={{ fontWeight: 600, color, whiteSpace: 'nowrap' }}>{fmt(Number(e.amount))}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>
