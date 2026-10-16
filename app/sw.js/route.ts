@@ -11,8 +11,8 @@ self.addEventListener('push', (event) => {
     body: d.body || '',
     data: { url: d.url || '/manager' },
     tag: d.tag ? d.tag + '-' + Date.now() : undefined,
-    icon: '/icon.svg',
-    badge: '/icon.svg',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
   }));
 });
 self.addEventListener('notificationclick', (event) => {
