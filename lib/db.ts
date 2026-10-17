@@ -252,6 +252,20 @@ export async function initDb() {
         created_at TEXT DEFAULT (datetime('now'))
       )`,
     },
+    // Relevés bancaires déposés (Attijari, CMI, Amex), consultables et téléchargeables
+    {
+      sql: `CREATE TABLE IF NOT EXISTS bank_statements (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        source TEXT NOT NULL,
+        period TEXT NOT NULL,
+        filename TEXT NOT NULL,
+        mime TEXT,
+        size INTEGER,
+        file_data TEXT NOT NULL,
+        uploaded_by TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`,
+    },
     // Factures de vente générées pour les encaissements clients (numérotation continue par année)
     {
       sql: `CREATE TABLE IF NOT EXISTS invoices (

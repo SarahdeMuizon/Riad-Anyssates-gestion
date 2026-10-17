@@ -6,6 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import { openAttachment, fileToDataUrl } from '@/lib/attachments'
 import ManagerGuide from './guide'
 import NotificationBell from './notifications'
+import { StatementsPanel, STATEMENT_LABELS, type StatementSource } from './statements'
 import { InvoiceModal, InvoiceEditor, TaxeSejourPanel, TvaRatesCard, useInvoices, downloadInvoice, emptyDraft, previewDraft, draftBody, type InvoiceDraft } from './invoices'
  
 type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'banque' | 'coffre' | 'comptable' | 'employees' | 'settings'
@@ -1378,7 +1379,27 @@ function FondsTab() {
  
 // ─── Banque Tab ───────────────────────────────────────────────────────────────
  
+// ─── Banque : mouvements et relevés (Attijari, CMI, Amex) ─────────────────────
+
 function BanqueTab() {
+  const [section, setSection] = useState<'mouvements' | StatementSource>('mouvements')
+  const sections: { id: 'mouvements' | StatementSource; label: string }[] = [
+    { id: 'mouvements', label: '🏦 Mouvements' },
+    ...(['attijari', 'cmi', 'amex'] as const).map(id => ({ id, label: `📄 Relevés ${STATEMENT_LABELS[id]}` })),
+  ]
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        {sections.map(s => (
+          <button key={s.id} onClick={() => setSection(s.id)} style={{ padding: '0.45rem 0.9rem', borderRadius: '999px', border: `1px solid ${section === s.id ? '#3730A3' : '#ddd'}`, background: section === s.id ? '#3730A3' : 'white', color: section === s.id ? 'white' : 'var(--text)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>{s.label}</button>
+        ))}
+      </div>
+      {section === 'mouvements' ? <BanqueMouvements /> : <StatementsPanel key={section} source={section} />}
+    </div>
+  )
+}
+
+function BanqueMouvements() {
   const [allEntries, setAllEntries] = useState<Entry[]>([])
   const [loading, setLoading] = useState(true)
   const [soldeInitMAD, setSoldeInitMAD] = useState('')
