@@ -252,6 +252,35 @@ export async function initDb() {
         created_at TEXT DEFAULT (datetime('now'))
       )`,
     },
+    // Factures de vente générées pour les encaissements clients (numérotation continue par année)
+    {
+      sql: `CREATE TABLE IF NOT EXISTS invoices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        number TEXT UNIQUE NOT NULL,
+        year INTEGER NOT NULL,
+        seq INTEGER NOT NULL,
+        entry_id INTEGER UNIQUE,
+        date TEXT NOT NULL,
+        client_name TEXT,
+        description TEXT,
+        lines TEXT,
+        nights INTEGER DEFAULT 0,
+        persons INTEGER DEFAULT 0,
+        children INTEGER DEFAULT 0,
+        child_rate REAL DEFAULT 0,
+        tax_rate REAL DEFAULT 0,
+        tax_amount REAL DEFAULT 0,
+        tax_currency TEXT DEFAULT 'MAD',
+        tax_included INTEGER DEFAULT 1,
+        tva_rate REAL DEFAULT 0,
+        amount_lodging REAL NOT NULL,
+        amount_total REAL NOT NULL,
+        currency TEXT DEFAULT 'MAD',
+        payment TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        UNIQUE (year, seq)
+      )`,
+    },
   ])
  
   for (const r of results) {
@@ -279,6 +308,15 @@ export async function initDb() {
     // Transferts coffre ↔ fond de caisse : relie les deux mouvements d'un même transfert
     `ALTER TABLE fonds_entries ADD COLUMN transfer_id TEXT`,
     `ALTER TABLE coffre_entries ADD COLUMN transfer_id TEXT`,
+    // Devise de la taxe de séjour (les premières factures étaient en MAD)
+    `ALTER TABLE invoices ADD COLUMN tax_currency TEXT DEFAULT 'MAD'`,
+    // Lignes de la facture (Hébergement, Boissons, Spa…) avec leur TVA
+    `ALTER TABLE invoices ADD COLUMN lines TEXT`,
+    // Facture annulée (faite par erreur) : numéro conservé, exclue de la taxe de séjour et du comptable
+    `ALTER TABLE invoices ADD COLUMN cancelled INTEGER DEFAULT 0`,
+    // Taxe de séjour : enfants de moins de 12 ans (tarif réduit)
+    `ALTER TABLE invoices ADD COLUMN children INTEGER DEFAULT 0`,
+    `ALTER TABLE invoices ADD COLUMN child_rate REAL DEFAULT 0`,
   ]) {
     const mResults = await tursoRequest([{ sql: migSql }])
     const r = mResults[0]

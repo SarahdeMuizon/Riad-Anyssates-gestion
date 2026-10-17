@@ -6,6 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import { openAttachment, fileToDataUrl } from '@/lib/attachments'
 import ManagerGuide from './guide'
 import NotificationBell from './notifications'
+import { InvoiceModal, InvoiceEditor, TaxeSejourPanel, TvaRatesCard, useInvoices, downloadInvoice, emptyDraft, previewDraft, draftBody, type InvoiceDraft } from './invoices'
  
 type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'banque' | 'coffre' | 'comptable' | 'employees' | 'settings'
  
@@ -274,64 +275,6 @@ function DashboardTab() {
  
 const DEPENSES_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Aménagement/Déco','Entretien','Livraison/Carrossa','Radeema','Impôts','Divers']
  
-interface InvoiceData {
-  date: string; amount: number; amountTransaction?: number
-  currency: string; category: string; description: string
-  clientName: string; tvaRate: number; nuits: number; personnes: number; payment: string
-}
- 
-function generateInvoice(entry: InvoiceData) {
-  const invoiceAmount = entry.amountTransaction ?? entry.amount
-  const tvaFrac = entry.tvaRate / (100 + entry.tvaRate)
-  const tvaAmt = invoiceAmount * tvaFrac
-  const htAmt = invoiceAmount - tvaAmt
-  const taxeSejour = entry.nuits > 0 && entry.personnes > 0 ? entry.nuits * entry.personnes * 2.5 : 0
-  const num = `RIA-${entry.date.replace(/-/g,'')}${Math.floor(Math.random()*9000+1000)}`
-  const fmtN = (n: number) => n.toFixed(2).replace('.',',')
-  const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Facture ${num}</title>
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Segoe UI',Arial,sans-serif;max-width:640px;margin:40px auto;padding:20px;color:#222;font-size:14px}
-  .top{text-align:center;padding-bottom:20px;border-bottom:3px solid #8B4513;margin-bottom:24px}
-  .top h1{color:#8B4513;font-size:1.6rem;letter-spacing:1px}
-  .top p{color:#888;font-size:.85rem}
-  h2{color:#8B4513;font-size:1rem;font-weight:700;margin-bottom:8px}
-  .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:24px}
-  .meta div{background:#faf8f6;padding:10px;border-radius:6px}
-  .meta .lbl{font-size:.75rem;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-  .meta .val{font-size:.95rem;font-weight:600;margin-top:2px}
-  table{width:100%;border-collapse:collapse;margin-bottom:20px}
-  td{padding:9px 4px;border-bottom:1px solid #eee}
-  td:last-child{text-align:right;font-weight:600}
-  tr.total td{border-top:2px solid #8B4513;border-bottom:none;font-size:1.05rem;font-weight:700;color:#8B4513;padding-top:12px}
-  .footer{text-align:center;margin-top:30px;color:#888;font-size:.8rem;border-top:1px solid #eee;padding-top:16px}
-  .btn{display:block;margin:20px auto 0;padding:10px 28px;background:#8B4513;color:white;border:none;border-radius:6px;cursor:pointer;font-size:.95rem}
-  @media print{.btn{display:none}}
-</style></head><body>
-<div class="top"><h1>🏰 Riad Anyssates</h1><p>Marrakech, Maroc &nbsp;|&nbsp; contact@riadanyssates.com</p></div>
-<h2>FACTURE N° ${num}</h2>
-<div class="meta">
-  <div><div class="lbl">Date</div><div class="val">${entry.date.split('-').reverse().join('/')}</div></div>
-  <div><div class="lbl">Client</div><div class="val">${entry.clientName || '—'}</div></div>
-  <div><div class="lbl">Prestation</div><div class="val">${entry.category}</div></div>
-  <div><div class="lbl">Mode de paiement</div><div class="val">${entry.payment}</div></div>
-  ${entry.description ? `<div style="grid-column:1/-1"><div class="lbl">Détails</div><div class="val">${entry.description}</div></div>` : ''}
-</div>
-<table>
-  <tr><td>Montant HT</td><td>${fmtN(htAmt)} ${entry.currency}</td></tr>
-  <tr><td>TVA (${entry.tvaRate}%)</td><td>${fmtN(tvaAmt)} ${entry.currency}</td></tr>
-  ${taxeSejour > 0 ? `<tr><td>Taxe de séjour — ${entry.nuits} nuit(s) × ${entry.personnes} pers. × 2,50€</td><td>${fmtN(taxeSejour)} €</td></tr>` : ''}
-  <tr class="total">
-    <td>TOTAL TTC</td>
-    <td>${fmtN(invoiceAmount)} ${entry.currency}${taxeSejour > 0 ? ` + ${fmtN(taxeSejour)} €` : ''}</td>
-  </tr>
-</table>
-<div class="footer">Merci pour votre confiance · Riad Anyssates · Marrakech</div>
-<button class="btn" onclick="window.print()">🖨️ Imprimer / Enregistrer en PDF</button>
-</body></html>`
-  const w = window.open('','_blank')
-  if (w) { w.document.write(html); w.document.close() }
-}
 const ENCAISSEMENTS_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Radeema','Impôts','Divers']
 const PAYMENT_MODES_DEPENSES = ['CB', 'Virement', 'Chèque', 'Prélèvement', 'Espèces']
 const PAYMENT_MODES_ENCAISSEMENTS = ['CB', 'Virement', 'Chèque', 'Prélèvement', 'Espèces']
@@ -348,6 +291,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [filterCategory, setFilterCategory] = useState('')
   const [filterPayment, setFilterPayment] = useState('')
   const [filterSupplier, setFilterSupplier] = useState('')
+  const [filterNoInvoice, setFilterNoInvoice] = useState(false)
   const [deleteModal, setDeleteModal] = useState<number | null>(null)
   const [employees, setEmployees] = useState<string[]>([])
   const [showForm, setShowForm] = useState(false)
@@ -376,7 +320,13 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [fTransactionAmount, setFTransactionAmount] = useState('')
   const [fCardType, setFCardType] = useState<'amex' | 'other'>('amex')
   const [fClientName, setFClientName] = useState('')
-  const [fLastEntry, setFLastEntry] = useState<InvoiceData | null>(null)
+  // Dernier encaissement enregistré : proposer d'en créer la facture
+  const [fLastEntry, setFLastEntry] = useState<Entry | null>(null)
+  const { byEntry: invoiceByEntry, taxRate, childRate, tvaRates, reload: reloadInvoices } = useInvoices()
+  const [invoiceFor, setInvoiceFor] = useState<Entry | null>(null)
+  // Facture client créée en même temps que l'encaissement
+  const [fInvoice, setFInvoice] = useState(false)
+  const [fInvDraft, setFInvDraft] = useState<InvoiceDraft>(emptyDraft())
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [formSuccess, setFormSuccess] = useState('')
@@ -421,6 +371,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       setFReference('')
       setFCashLocation('fonds')
       setFToAccountant(false)
+      setFInvoice(false); setFInvDraft(emptyDraft())
     }
   }, [showForm, type])
  
@@ -477,6 +428,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     await fetch(`/api/entries/${id}`, { method: 'DELETE' })
     setDeleteModal(null)
     fetchEntries()
+    if (type === 'cash') reloadInvoices()
   }
  
   async function processFile(file: File) {
@@ -543,7 +495,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       el.removeEventListener('dragleave', onDragLeave)
       el.removeEventListener('drop', onDrop)
     }
-  }, [showForm])
+  }, [showForm, fInvoice])
  
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -631,24 +583,38 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       }
     }
  
-    const invoiceEntry: InvoiceData = {
-      date: fDate, amount: finalAmount,
-      amountTransaction: type === 'cash' && fPayment === 'CB' && fTransactionAmount ? parseFloat(fTransactionAmount) : undefined,
-      currency: fCurrency, category: fCategory, description: fDescription || '',
-      clientName: fClientName || '', tvaRate: 0,
-      nuits: 0, personnes: 0, payment: fPayment,
+    if (type === 'cash' && fInvoice) {
+      if (!invoicePreview.valid) { setFormError('La taxe de séjour et les lignes dépassent le montant encaissé.'); setSubmitting(false); return }
+      body.category = 'Client'
+      body.supplier = fInvDraft.clientName || null
+      body.to_accountant = true
     }
- 
+
     try {
       const r = await fetch('/api/entries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       if (r.ok) {
-        if (type === 'cash') setFLastEntry(invoiceEntry)
+        const created: Entry | null = await r.json().catch(() => null)
+        let invoiceMsg = ''
+        if (type === 'cash' && fInvoice && created) {
+          const ri = await fetch('/api/invoices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+            entry_id: created.id, date: fDate, ...draftBody(fInvDraft),
+          }) }).catch(() => null)
+          const inv = ri ? await ri.json().catch(() => null) : null
+          if (ri && ri.ok && inv) {
+            invoiceMsg = ` Facture ${inv.number} créée.`
+            downloadInvoice(inv).catch(() => {})
+            reloadInvoices()
+          } else {
+            invoiceMsg = ` ⚠️ La facture n'a pas pu être créée${inv?.error ? ` (${inv.error})` : ''} — utilisez « 🧾 Créer » dans la colonne Facture.`
+          }
+        }
+        if (type === 'cash') setFLastEntry(created)
         setFAmount(''); setFAmountHT(''); setFTvaRate(''); setFSupplier(''); setFDescription('')
         setFFile(null); setFFilePreview(null); setFExtracted(false); setShowForm(false)
         setFTransactionAmount(''); setFClientName(''); setFReference(''); setFToAccountant(false)
         setFilterStatus(''); setFilterEmployee(''); setFilterCategory(''); setFilterPayment(''); setFilterSupplier('')
-        setFormSuccess('✓ Entrée ajoutée avec succès !')
-        setTimeout(() => setFormSuccess(''), 4000)
+        setFormSuccess('✓ Entrée ajoutée avec succès !' + invoiceMsg)
+        setTimeout(() => { setFormSuccess(''); setFLastEntry(null) }, type === 'cash' ? 15000 : 4000)
         setMonth(fDate.substring(0, 7))
       } else {
         const d = await r.json().catch(() => ({}))
@@ -660,17 +626,85 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     setSubmitting(false)
   }
  
+  // Aperçu de la facture pendant la saisie de l'encaissement
+  // (facture toujours en dirhams : pour un encaissement en euros, le montant en MAD est saisi dans la facture)
+  const invoiceGross = fCurrency === 'EUR' ? null : parseFloat(fPayment === 'CB' && fTransactionAmount ? fTransactionAmount : fAmount) || 0
+  const invoicePreview = previewDraft(fInvDraft, invoiceGross, taxRate ?? 0, childRate, tvaRates)
+
+  // Encaissement : un seul montant (le total payé par le client). Par carte, l'encaissement
+  // est enregistré net de la commission bancaire, le total restant dans « montant de la transaction ».
+  const cashTotal = fPayment === 'CB' ? fTransactionAmount : fAmount
+  function setCashTotal(v: string, payment = fPayment, card = fCardType) {
+    if (payment === 'CB') {
+      setFTransactionAmount(v)
+      if (!v) { setFAmount(''); return }
+      const a = parseFloat(v)
+      const c = Math.round(a * (card === 'amex' ? 0.033 : 0.0268) * 100) / 100
+      const t = card === 'amex' ? 0 : Math.round(c * 0.10 * 100) / 100
+      setFAmount(String((a - c - t).toFixed(2)))
+    } else {
+      setFTransactionAmount('')
+      setFAmount(v)
+    }
+  }
+  function choosePayment(p: string) {
+    if (type === 'cash') setCashTotal(cashTotal, p)
+    else if (p !== 'CB') setFTransactionAmount('')
+    setFPayment(p)
+    if (p !== 'Espèces') setFCurrency('MAD')
+  }
+  const paymentFields = (
+    <>
+      {/* Mode paiement */}
+      <div>
+        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>Mode de paiement</label>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {paymentModes.map(p => (
+            <button key={p} type="button" onClick={() => choosePayment(p)} style={{ flex: 1, minWidth: '4rem', padding: '0.5rem', border: `2px solid ${fPayment === p ? color : '#ddd'}`, borderRadius: '0.5rem', background: fPayment === p ? (type === 'cb' ? '#FFF5F0' : '#F0FDF4') : 'white', fontWeight: fPayment === p ? 700 : 400, cursor: 'pointer', color: fPayment === p ? color : 'var(--text)', fontSize: '0.85rem' }}>{p}</button>
+          ))}
+        </div>
+      </div>
+ 
+      {/* Devise — uniquement pour les espèces (Fond de caisse). Les mouvements bancaires (CB/Virement/Chèque) sont toujours en MAD. */}
+      {fPayment === 'Espèces' && (
+        <div>
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>Devise</label>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button type="button" onClick={() => setFCurrency('MAD')} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fCurrency === 'MAD' ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: fCurrency === 'MAD' ? '#FFF5F0' : 'white', fontWeight: fCurrency === 'MAD' ? 700 : 400, cursor: 'pointer', color: fCurrency === 'MAD' ? 'var(--terracotta)' : 'var(--text)' }}>MAD</button>
+            <button type="button" onClick={() => setFCurrency('EUR')} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fCurrency === 'EUR' ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: fCurrency === 'EUR' ? '#FFF5F0' : 'white', fontWeight: fCurrency === 'EUR' ? 700 : 400, cursor: 'pointer', color: fCurrency === 'EUR' ? 'var(--terracotta)' : 'var(--text)' }}>EUR</button>
+          </div>
+        </div>
+      )}
+ 
+      {/* Espèces : transitent par le fond de caisse ou le coffre fort */}
+      {fPayment === 'Espèces' && (
+        <div>
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>{type === 'cb' ? 'Espèces sorties de' : 'Espèces déposées dans'}</label>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {([['fonds', '💰 Fond de caisse'], ['coffre', '🔐 Coffre fort']] as const).map(([val, lbl]) => (
+              <button key={val} type="button" onClick={() => setFCashLocation(val)} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fCashLocation === val ? color : '#ddd'}`, borderRadius: '0.5rem', background: fCashLocation === val ? (type === 'cb' ? '#FFF5F0' : '#F0FDF4') : 'white', fontWeight: fCashLocation === val ? 700 : 400, cursor: 'pointer', color: fCashLocation === val ? color : 'var(--text)', fontSize: '0.85rem' }}>{lbl}</button>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  )
+
   function exportCSV() { window.location.href = `/api/export/${type}?month=${month}` }
  
   // Filtres catégorie / paiement / fournisseur (appliqués sur le mois affiché)
   const supplierQuery = filterSupplier.trim().toLowerCase()
+  // Encaissements clients sans facture (ex : saisis par un employé) : à compléter par Valérie ou Nicolas
+  const needsInvoice = (e: Entry) => type === 'cash' && e.category === 'Client' && !invoiceByEntry[e.id]
+  const toInvoiceCount = entries.filter(needsInvoice).length
   const shown = entries.filter(e =>
+    (!filterNoInvoice || needsInvoice(e)) &&
     (!filterCategory || e.category === filterCategory) &&
     (!filterPayment || e.payment === filterPayment) &&
     (!supplierQuery || `${e.supplier || ''} ${e.description || ''}`.toLowerCase().includes(supplierQuery)))
   const categoryOptions = Array.from(new Set([...categories, ...entries.map(e => e.category).filter(Boolean)]))
   const supplierOptions = Array.from(new Set(entries.map(e => (e.supplier || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'fr'))
-  const hasExtraFilter = !!(filterStatus || filterEmployee || filterCategory || filterPayment || filterSupplier)
+  const hasExtraFilter = !!(filterStatus || filterEmployee || filterCategory || filterPayment || filterSupplier || filterNoInvoice)
   const total = shown.reduce((s, e) => s + Number(e.amount), 0)
  
   return (
@@ -708,7 +742,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
           {supplierOptions.map(n => <option key={n} value={n} />)}
         </datalist>
         {hasExtraFilter && (
-          <button type="button" onClick={() => { setFilterStatus(''); setFilterEmployee(''); setFilterCategory(''); setFilterPayment(''); setFilterSupplier('') }}
+          <button type="button" onClick={() => { setFilterStatus(''); setFilterEmployee(''); setFilterCategory(''); setFilterPayment(''); setFilterSupplier(''); setFilterNoInvoice(false) }}
             style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}>Effacer les filtres</button>
         )}
         <span style={{ marginLeft: 'auto', fontWeight: 600, color }}>
@@ -717,19 +751,68 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
         </span>
       </div>
 
-      {formSuccess && <p style={{ color: 'var(--green)', fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: '#F0FDF4', borderRadius: '0.4rem', border: '1px solid #86efac' }}>{formSuccess}</p>}
+      {type === 'cash' && toInvoiceCount > 0 && !filterNoInvoice && (
+        <div style={{ marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: '#FAF6F2', border: '1px solid #EADBCB', borderRadius: '0.4rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          🧾 <strong>{toInvoiceCount} encaissement{toInvoiceCount > 1 ? 's' : ''} client{toInvoiceCount > 1 ? 's' : ''} sans facture</strong> ce mois (par exemple saisi{toInvoiceCount > 1 ? 's' : ''} par un employé).
+          <button type="button" onClick={() => setFilterNoInvoice(true)} style={{ background: '#8B4513', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.7rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Afficher</button>
+        </div>
+      )}
+      {formSuccess && (
+        <div style={{ color: 'var(--green)', fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: '#F0FDF4', borderRadius: '0.4rem', border: '1px solid #86efac', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {formSuccess}
+          {type === 'cash' && fLastEntry && !invoiceByEntry[fLastEntry.id] && taxRate !== null && (
+            <button type="button" onClick={() => setInvoiceFor(fLastEntry)} style={{ padding: '0.35rem 0.8rem', background: '#8B4513', color: 'white', border: 'none', borderRadius: '0.4rem', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem' }}>
+              🧾 Créer la facture client
+            </button>
+          )}
+        </div>
+      )}
       {!showForm && formError && <p style={{ color: 'var(--red)', fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: '#FEF2F2', borderRadius: '0.4rem', border: '1px solid #fca5a5' }}>{formError}</p>}
  
       {showForm && (
         <div className="card" style={{ marginBottom: '1.25rem' }}>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
  
+            {/* Encaissements : on commence par le montant total et le mode de paiement */}
+            {type === 'cash' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.3rem' }}>Montant total encaissé *</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input className="form-input" type="number" step="0.01" min="0" inputMode="decimal" value={cashTotal} onChange={e => setCashTotal(e.target.value)} placeholder="0.00" required autoFocus
+                      style={{ fontSize: '1.25rem', fontWeight: 700, maxWidth: 220 }} />
+                    <span style={{ fontWeight: 700, color: '#666' }}>{fCurrency}</span>
+                  </div>
+                </div>
+                {paymentFields}
+                {fPayment === 'CB' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.8rem', color: '#666' }}>
+                    Carte :
+                    {([['amex', 'American Express (3,3 %)'], ['other', 'Autre carte (2,68 %)']] as const).map(([val, lbl]) => (
+                      <button key={val} type="button" onClick={() => { setFCardType(val); setCashTotal(cashTotal, 'CB', val) }}
+                        style={{ padding: '0.25rem 0.6rem', border: `1px solid ${fCardType === val ? color : '#ddd'}`, borderRadius: '999px', background: fCardType === val ? '#F0FDF4' : 'white', color: fCardType === val ? color : '#555', fontWeight: fCardType === val ? 700 : 400, cursor: 'pointer', fontSize: '0.78rem' }}>{lbl}</button>
+                    ))}
+                    {fTransactionAmount && <span style={{ marginLeft: 'auto' }}>Commission {fmt(parseFloat(fTransactionAmount) - (parseFloat(fAmount) || 0))} · <strong style={{ color }}>Net reçu {fmt(parseFloat(fAmount) || 0)}</strong></span>}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Upload zone — identique page employé */}
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>
-                {type === 'cb' ? 'Facture' : 'Ticket'}
-                <span style={{ color: '#888', fontWeight: 400 }}> (optionnel — peut être ajouté plus tard)</span>
+                {type === 'cb' ? 'Facture' : fInvoice ? 'Facture client' : 'Ticket ou facture client'}
+                {!fInvoice && <span style={{ color: '#888', fontWeight: 400 }}> (optionnel — peut être ajouté plus tard)</span>}
               </label>
+              {type === 'cash' && fInvoice ? (
+                <div style={{ position: 'relative', border: '2px solid #D9B99B', borderRadius: '0.5rem', padding: '1rem', background: '#FAF6F2' }}>
+                  <button type="button" onClick={() => setFInvoice(false)} title="Ne pas créer de facture"
+                    style={{ position: 'absolute', top: '0.35rem', right: '0.35rem', background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '1.1rem', lineHeight: 1 }}>×</button>
+                  <p style={{ fontSize: '0.85rem', fontWeight: 700, color: '#8B4513', marginBottom: '0.75rem' }}>🧾 Facture client — numérotée automatiquement à l&apos;enregistrement</p>
+                  <InvoiceEditor draft={fInvDraft} onChange={setFInvDraft} gross={invoiceGross} taxRate={taxRate ?? 0} childRate={childRate} rates={tvaRates} autoFocus />
+                  <p style={{ fontSize: '0.72rem', color: '#999', marginTop: '0.5rem' }}>La taxe de séjour et les lignes sont déduites du montant total encaissé ; le reste correspond à l&apos;hébergement.</p>
+                </div>
+              ) : (
               <div
                 ref={fDropZoneRef}
                 style={{ position: 'relative', border: `2px dashed ${fDragCounter > 0 ? (type === 'cb' ? 'var(--terracotta)' : 'var(--green)') : fFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1.25rem', textAlign: 'center', background: fDragCounter > 0 ? (type === 'cb' ? '#FFF5F0' : '#F0FDF4') : fExtracting ? '#FFFBF0' : fFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
@@ -764,10 +847,17 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                         <input type="file" accept="image/*,application/pdf" onChange={handleFileSelect} style={{ display: 'none' }} />
                       </label>
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: '#aaa', marginTop: '0.5rem' }}>Image ou PDF — les champs seront remplis automatiquement</div>
+                    {type === 'cash' && (
+                      <button type="button" onClick={() => setFInvoice(true)} disabled={taxRate === null}
+                        style={{ marginTop: '0.75rem', padding: '0.5rem 0.875rem', background: '#8B4513', border: 'none', borderRadius: '0.5rem', color: 'white', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem' }}>
+                        🧾 Créer une facture client
+                      </button>
+                    )}
+                    <div style={{ fontSize: '0.72rem', color: '#aaa', marginTop: '0.5rem' }}>Image ou PDF — les champs seront remplis automatiquement{type === 'cash' ? ' · ou créez la facture client (nuits, personnes, taxe de séjour)' : ''}</div>
                   </div>
                 )}
               </div>
+              )}
               <input ref={fFileRef} type="file" accept="image/*,application/pdf" onChange={handleFileSelect} style={{ display: 'none' }} />
             </div>
  
@@ -791,8 +881,9 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
               )}
             </div>
  
-            {/* Montants */}
-            {type === 'cb' ? (
+            {/* Dépenses : montants HT / TVA / TTC puis mode de paiement */}
+            {type === 'cb' && (
+              <>
               <div style={{ background: '#F8F8F8', border: '1px solid #EEE', borderRadius: '0.5rem', padding: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                 <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#666', marginBottom: '0.1rem' }}>Montants</p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '0.625rem' }}>
@@ -820,61 +911,10 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                   </div>
                 </div>
               </div>
-            ) : fPayment === 'CB' ? (
-              <div style={{ background: '#F0FDF4', border: '1px solid #86efac', borderRadius: '0.5rem', padding: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#16a34a', marginBottom: '0.1rem' }}>Encaissement CB — frais bancaires</p>
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                  <button type="button" onClick={() => { setFCardType('amex'); if (fTransactionAmount) { const a = parseFloat(fTransactionAmount); const c = Math.round(a * 0.033 * 100) / 100; setFAmount(String((a - c).toFixed(2))); } }} style={{ flex: 1, padding: '0.4rem', border: `2px solid ${fCardType === 'amex' ? '#16a34a' : '#ddd'}`, borderRadius: '0.4rem', background: fCardType === 'amex' ? '#F0FDF4' : 'white', fontWeight: fCardType === 'amex' ? 700 : 400, cursor: 'pointer', fontSize: '0.78rem', color: fCardType === 'amex' ? '#16a34a' : '#555', textAlign: 'center' }}>🔵 American Express<br /><span style={{ fontWeight: 400, fontSize: '0.7rem' }}>Taux 3,3 %</span></button>
-                  <button type="button" onClick={() => { setFCardType('other'); if (fTransactionAmount) { const a = parseFloat(fTransactionAmount); const c = Math.round(a * 0.0268 * 100) / 100; const t = Math.round(c * 0.10 * 100) / 100; setFAmount(String((a - c - t).toFixed(2))); } }} style={{ flex: 1, padding: '0.4rem', border: `2px solid ${fCardType === 'other' ? '#16a34a' : '#ddd'}`, borderRadius: '0.4rem', background: fCardType === 'other' ? '#F0FDF4' : 'white', fontWeight: fCardType === 'other' ? 700 : 400, cursor: 'pointer', fontSize: '0.78rem', color: fCardType === 'other' ? '#16a34a' : '#555', textAlign: 'center' }}>💳 Autre carte<br /><span style={{ fontWeight: 400, fontSize: '0.7rem' }}>Taux 2,68 %</span></button>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '0.2rem' }}>Montant de la transaction *</label>
-                  <input className="form-input" type="number" step="0.01" min="0" value={fTransactionAmount} onChange={e => { const v = e.target.value; setFTransactionAmount(v); if (v) { const a = parseFloat(v); const r = fCardType === 'amex' ? 0.033 : 0.0268; const c = Math.round(a * r * 100) / 100; const t = fCardType === 'amex' ? 0 : Math.round(c * 0.10 * 100) / 100; setFAmount(String((a - c - t).toFixed(2))); } else { setFAmount(''); } }} placeholder="0.00" required />
-                </div>
-                <div style={{ fontSize: '0.82rem', color: '#555' }}>Commission bancaire ({fCardType === 'amex' ? '3,3 %' : '2,68 %'}) : {fTransactionAmount ? `− ${fmt(Math.round(parseFloat(fTransactionAmount) * (fCardType === 'amex' ? 0.033 : 0.0268) * 100) / 100)}` : '—'}</div>
-                {fCardType !== 'amex' && <div style={{ fontSize: '0.82rem', color: '#555' }}>TVA sur commission (10 %) : {fTransactionAmount ? `− ${fmt(Math.round(Math.round(parseFloat(fTransactionAmount) * 0.0268 * 100) / 100 * 0.10 * 100) / 100)}` : '—'}</div>}
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#16a34a' }}>Net reçu : {fTransactionAmount ? fmt(parseFloat(fAmount) || 0) : '—'}</div>
-              </div>
-            ) : (
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Montant *</label>
-                <input className="form-input" type="number" step="0.01" min="0" value={fAmount} onChange={e => setFAmount(e.target.value)} placeholder="0.00" required />
-              </div>
+                {paymentFields}
+              </>
             )}
- 
-            {/* Mode paiement */}
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>Mode de paiement</label>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                {paymentModes.map(p => (
-                  <button key={p} type="button" onClick={() => { setFPayment(p); if (p !== 'CB') setFTransactionAmount(''); if (p !== 'Espèces') setFCurrency('MAD') }} style={{ flex: 1, minWidth: '4rem', padding: '0.5rem', border: `2px solid ${fPayment === p ? color : '#ddd'}`, borderRadius: '0.5rem', background: fPayment === p ? (type === 'cb' ? '#FFF5F0' : '#F0FDF4') : 'white', fontWeight: fPayment === p ? 700 : 400, cursor: 'pointer', color: fPayment === p ? color : 'var(--text)', fontSize: '0.85rem' }}>{p}</button>
-                ))}
-              </div>
-            </div>
- 
-            {/* Devise — uniquement pour les espèces (Fond de caisse). Les mouvements bancaires (CB/Virement/Chèque) sont toujours en MAD. */}
-            {fPayment === 'Espèces' && (
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>Devise</label>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button type="button" onClick={() => setFCurrency('MAD')} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fCurrency === 'MAD' ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: fCurrency === 'MAD' ? '#FFF5F0' : 'white', fontWeight: fCurrency === 'MAD' ? 700 : 400, cursor: 'pointer', color: fCurrency === 'MAD' ? 'var(--terracotta)' : 'var(--text)' }}>MAD</button>
-                  <button type="button" onClick={() => setFCurrency('EUR')} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fCurrency === 'EUR' ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: fCurrency === 'EUR' ? '#FFF5F0' : 'white', fontWeight: fCurrency === 'EUR' ? 700 : 400, cursor: 'pointer', color: fCurrency === 'EUR' ? 'var(--terracotta)' : 'var(--text)' }}>EUR</button>
-                </div>
-              </div>
-            )}
- 
-            {/* Espèces : transitent par le fond de caisse ou le coffre fort */}
-            {fPayment === 'Espèces' && (
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>{type === 'cb' ? 'Espèces sorties de' : 'Espèces déposées dans'}</label>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {([['fonds', '💰 Fond de caisse'], ['coffre', '🔐 Coffre fort']] as const).map(([val, lbl]) => (
-                    <button key={val} type="button" onClick={() => setFCashLocation(val)} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fCashLocation === val ? color : '#ddd'}`, borderRadius: '0.5rem', background: fCashLocation === val ? (type === 'cb' ? '#FFF5F0' : '#F0FDF4') : 'white', fontWeight: fCashLocation === val ? 700 : 400, cursor: 'pointer', color: fCashLocation === val ? color : 'var(--text)', fontSize: '0.85rem' }}>{lbl}</button>
-                  ))}
-                </div>
-              </div>
-            )}
- 
+
             {/* Catégorie + Description */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem' }}>
               <div>
@@ -903,8 +943,8 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
               Facture à envoyer au comptable
             </label>
  
-            {/* Nom du client (pour encaissements) */}
-            {type === 'cash' && (
+            {/* Nom du client (pour encaissements) — saisi dans la facture si elle est créée */}
+            {type === 'cash' && !fInvoice && (
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Nom du client</label>
                 <input className="form-input" type="text" value={fClientName} onChange={e => setFClientName(e.target.value)} placeholder="(optionnel)" />
@@ -912,11 +952,6 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
             )}
  
             {formError && <p style={{ color: 'var(--red)', fontSize: '0.875rem' }}>{formError}</p>}
-            {formSuccess && fLastEntry && (
-              <button type="button" onClick={() => generateInvoice(fLastEntry!)} style={{ width: '100%', padding: '0.6rem', background: '#8B4513', color: 'white', border: 'none', borderRadius: '0.5rem', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}>
-                📄 Générer la facture comptable
-              </button>
-            )}
             <button className="btn-primary" type="submit" disabled={submitting || fUploading || fExtracting}>{fExtracting ? '🤖 Analyse document…' : fUploading ? '⬆️ Upload…' : submitting ? 'Enregistrement…' : 'Enregistrer'}</button>
           </form>
         </div>
@@ -937,6 +972,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                 <th>Description</th>
                 <th>Devise</th><th>Montant</th>
                 <th>Justificatif</th>
+                {type === 'cash' && <th title="Facture client (numérotée) avec la taxe de séjour">Facture</th>}
                 <th title="Facture à envoyer au comptable">Compta.</th>
                 <th>Statut</th><th></th>
               </tr>
@@ -985,6 +1021,18 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                       : <button onClick={() => { setPendingUploadEntry(e.id); rowFileRef.current?.click() }} disabled={uploadingEntryId === e.id} style={{ background: 'none', border: '1px dashed #aaa', borderRadius: '0.3rem', color: '#888', cursor: 'pointer', fontSize: '0.75rem', padding: '0.2rem 0.4rem' }}>{uploadingEntryId === e.id ? '⬆️…' : '📎 Ajouter'}</button>
                     }
                   </td>
+                  {type === 'cash' && (
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {invoiceByEntry[e.id] ? (
+                        <>
+                          <button onClick={() => downloadInvoice(invoiceByEntry[e.id])} title="Télécharger la facture" style={{ background: 'none', border: 'none', color: 'var(--blue)', cursor: 'pointer', fontSize: '0.8rem', padding: 0 }}>📄 {invoiceByEntry[e.id].number}</button>
+                          <button onClick={() => setInvoiceFor(e)} title="Modifier la facture" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: '#999', marginLeft: '0.3rem', padding: 0 }}>✎</button>
+                        </>
+                      ) : (
+                        <button onClick={() => setInvoiceFor(e)} disabled={taxRate === null} title="Créer la facture client (nuits, personnes, taxe de séjour)" style={{ background: '#FAF6F2', border: '1px solid #D9B99B', color: '#8B4513', borderRadius: '0.3rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.45rem' }}>🧾 Créer</button>
+                      )}
+                    </td>
+                  )}
                   <td style={{ textAlign: 'center' }}>
                     <input type="checkbox" checked={!!e.to_accountant} onChange={() => toggleAccountant(e)} title="Facture à envoyer au comptable" style={{ width: '1.1rem', height: '1.1rem', cursor: 'pointer', accentColor: color }} />
                   </td>
@@ -1001,11 +1049,22 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       )}
  
       <input ref={rowFileRef} type="file" accept="image/*,application/pdf" onChange={handleRowUpload} style={{ display: 'none' }} />
+
+      {invoiceFor && taxRate !== null && (
+        <InvoiceModal entry={invoiceFor} invoice={invoiceByEntry[invoiceFor.id] ?? null} taxRate={taxRate} childRate={childRate} rates={tvaRates}
+          onClose={() => setInvoiceFor(null)}
+          onSaved={() => {
+            setInvoiceFor(null); setFLastEntry(null); reloadInvoices()
+            // La création de facture coche « à envoyer au comptable » côté serveur
+            fetchEntries()
+          }} />
+      )}
  
       {deleteModal !== null && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
           <div className="card" style={{ maxWidth: 340, width: '90%', textAlign: 'center' }}>
-            <p style={{ marginBottom: '1rem', fontWeight: 600 }}>Supprimer cette entrée ?</p>
+            <p style={{ marginBottom: invoiceByEntry[deleteModal] ? '0.4rem' : '1rem', fontWeight: 600 }}>Supprimer cette entrée ?</p>
+            {invoiceByEntry[deleteModal] && <p style={{ marginBottom: '1rem', fontSize: '0.8rem', color: '#666' }}>Sa facture {invoiceByEntry[deleteModal].number} sera aussi supprimée et sa taxe de séjour ne sera plus comptée.</p>}
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
               <button className="btn-secondary" onClick={() => setDeleteModal(null)}>Annuler</button>
               <button className="btn-red" onClick={() => deleteEntry(deleteModal)}>Supprimer</button>
@@ -1963,16 +2022,42 @@ function CoffreTab() {
 }
  
 // ─── Comptable Tab ─────────────────────────────────────────────────────────────
-// Toutes les factures (dépenses et encaissements) cochées « à envoyer au comptable »
- 
+// Factures cochées « à envoyer au comptable », séparées en factures d'achat (dépenses)
+// et factures de vente (encaissements), plus le relevé trimestriel de la taxe de séjour.
+
+type ComptableSection = 'achats' | 'ventes' | 'taxes'
+
 function ComptableTab() {
+  const [section, setSection] = useState<ComptableSection>('achats')
+  const sections: { id: ComptableSection; label: string }[] = [
+    { id: 'achats', label: '📥 Factures d’achat' },
+    { id: 'ventes', label: '📤 Factures de vente' },
+    { id: 'taxes', label: '🏨 Taxe de séjour et TPT' },
+  ]
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        {sections.map(s => (
+          <button key={s.id} onClick={() => setSection(s.id)} style={{ padding: '0.45rem 0.9rem', borderRadius: '999px', border: `1px solid ${section === s.id ? '#0F766E' : '#ddd'}`, background: section === s.id ? '#0F766E' : 'white', color: section === s.id ? 'white' : 'var(--text)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>{s.label}</button>
+        ))}
+      </div>
+      {section === 'achats' && <ComptableInvoices type="cb" />}
+      {section === 'ventes' && <><TvaRatesCard /><ComptableInvoices type="cash" /></>}
+      {section === 'taxes' && <TaxeSejourPanel />}
+    </div>
+  )
+}
+
+function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
   const now = new Date()
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const [allEntries, setAllEntries] = useState<Entry[]>([])
   const [loading, setLoading] = useState(true)
   const [month, setMonth] = useState(currentMonth)
   const [allMonths, setAllMonths] = useState(false)
-  const [filterType, setFilterType] = useState<'' | 'cb' | 'cash'>('')
+  const { byEntry: invoiceByEntry, taxRate, childRate, tvaRates, reload: reloadInvoices } = useInvoices()
+  // Création / modification d'une facture de vente directement depuis l'onglet Comptable
+  const [invoiceFor, setInvoiceFor] = useState<Entry | null>(null)
  
   const reload = useCallback(async () => {
     setLoading(true)
@@ -1987,8 +2072,8 @@ function ComptableTab() {
   const rows = useMemo(() => allEntries
     .filter(e => !!e.to_accountant)
     .filter(e => allMonths || e.date.substring(0, 7) === month)
-    .filter(e => !filterType || e.type === filterType)
-    .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id), [allEntries, allMonths, month, filterType])
+    .filter(e => e.type === type)
+    .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id), [allEntries, allMonths, month, type])
  
   const totals = useMemo(() => {
     const t: Record<string, { dep: number; enc: number }> = {}
@@ -2003,14 +2088,15 @@ function ComptableTab() {
  
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState('')
-  const exportTitle = allMonths ? 'Tous les mois' : formatMonth(month)
+  const kindLabel = type === 'cb' ? 'Factures d’achat' : 'Factures de vente'
+  const exportTitle = `${kindLabel} - ${allMonths ? 'Tous les mois' : formatMonth(month)}`
  
   async function exportPdf() {
     if (rows.length === 0) return
     setExporting(true); setExportError('')
     try {
       const { buildAccountantPdf } = await import('@/lib/pdf-export')
-      const blob = await buildAccountantPdf(rows, exportTitle)
+      const blob = await buildAccountantPdf(rows, exportTitle, type === 'cash' ? invoiceByEntry : {})
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -2053,7 +2139,7 @@ function ComptableTab() {
     setUploadingId(null); setUploadFor(null)
   }
 
-  const missingCount = rows.filter(e => !e.invoice_url).length
+  const missingCount = rows.filter(e => !e.invoice_url && !invoiceByEntry[e.id]).length
 
   async function removeFromList(entry: Entry) {
     setAllEntries(prev => prev.map(e => e.id === entry.id ? { ...e, to_accountant: false } : e))
@@ -2064,7 +2150,7 @@ function ComptableTab() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
-        <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0F766E' }}>📨 Factures à envoyer au comptable</h2>
+        <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0F766E' }}>{type === 'cb' ? '📥 Factures d’achat (dépenses)' : '📤 Factures de vente (encaissements)'}</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <button onClick={() => { setAllMonths(false); setMonth(shiftMonth(month, -1)) }} disabled={allMonths} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: allMonths ? 'default' : 'pointer', opacity: allMonths ? 0.4 : 1, fontWeight: 600 }}>‹</button>
           <span style={{ fontWeight: 700, minWidth: 140, textAlign: 'center', color: allMonths ? '#aaa' : 'var(--text)' }}>{formatMonth(month)}</span>
@@ -2077,17 +2163,12 @@ function ComptableTab() {
       </div>
  
       <div className="card" style={{ marginBottom: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <select className="form-input" style={{ width: 'auto' }} value={filterType} onChange={e => setFilterType(e.target.value as '' | 'cb' | 'cash')}>
-          <option value="">Dépenses et encaissements</option>
-          <option value="cb">Dépenses uniquement</option>
-          <option value="cash">Encaissements uniquement</option>
-        </select>
         <span style={{ fontSize: '0.85rem', color: '#666' }}>
           {rows.length} facture{rows.length > 1 ? 's' : ''}
           {missingCount > 0 && <span style={{ color: 'var(--red)', fontWeight: 600 }}> · {missingCount} justificatif{missingCount > 1 ? 's' : ''} manquant{missingCount > 1 ? 's' : ''}</span>}
         </span>
         <button className="btn-primary" onClick={exportPdf} disabled={exporting || rows.length === 0} style={{ background: '#0F766E', fontSize: '0.85rem', padding: '0.4rem 0.9rem', opacity: rows.length === 0 ? 0.5 : 1 }}>
-          {exporting ? 'Création du PDF…' : `📄 Exporter le PDF — ${exportTitle}`}
+          {exporting ? 'Création du PDF…' : `📄 Exporter le PDF — ${allMonths ? 'Tous les mois' : formatMonth(month)}`}
         </button>
         {exportError && <span style={{ color: 'var(--red)', fontSize: '0.8rem' }}>{exportError}</span>}
         {uploadError && <span style={{ color: 'var(--red)', fontSize: '0.8rem' }}>{uploadError}</span>}
@@ -2106,14 +2187,16 @@ function ComptableTab() {
       {loading ? <p>Chargement…</p> : rows.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>
           Aucune facture à envoyer {allMonths ? '' : 'pour ce mois'}.<br />
-          <span style={{ fontSize: '0.8rem' }}>Cochez « Facture à envoyer au comptable » dans Dépenses ou Encaissements pour qu&apos;elle apparaisse ici.</span>
+          <span style={{ fontSize: '0.8rem' }}>{type === 'cb'
+            ? <>Cochez « Facture à envoyer au comptable » dans Dépenses pour qu&apos;elle apparaisse ici.</>
+            : <>Créez la facture client depuis Encaissements (colonne « Facture »), ou cochez « Compta. », pour qu&apos;elle apparaisse ici.</>}</span>
         </div>
       ) : (
         <div className="table-scroll">
           <table className="table-dep">
             <thead>
               <tr>
-                <th>Date</th><th>Type</th><th>Employé</th><th>Catégorie</th><th>Fournisseur / client</th>
+                <th>Date</th>{type === 'cash' && <th>Facture</th>}<th>Employé</th><th>Catégorie</th><th>{type === 'cb' ? 'Fournisseur' : 'Client'}</th>
                 <th>Paiement</th><th>N° fact./chèque</th><th>Description</th>
                 <th>Devise</th><th>Montant</th><th>Justificatif</th><th title="Retirer de la liste du comptable">Retirer</th>
               </tr>
@@ -2124,7 +2207,18 @@ function ComptableTab() {
                 return (
                   <tr key={e.id}>
                     <td style={{ whiteSpace: 'nowrap' }}>{new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR')}</td>
-                    <td style={{ color, fontWeight: 600, fontSize: '0.8rem' }}>{e.type === 'cb' ? 'Dépense' : 'Encaissement'}</td>
+                    {type === 'cash' && (
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        {invoiceByEntry[e.id] ? (
+                          <>
+                            <button onClick={() => downloadInvoice(invoiceByEntry[e.id])} title="Télécharger la facture" style={{ background: 'none', border: 'none', color: 'var(--blue)', cursor: 'pointer', fontSize: '0.8rem', padding: 0, fontWeight: 600 }}>📄 {invoiceByEntry[e.id].number}</button>
+                            <button onClick={() => setInvoiceFor(e)} title="Modifier la facture" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: '#999', marginLeft: '0.3rem', padding: 0 }}>✎</button>
+                          </>
+                        ) : (
+                          <button onClick={() => setInvoiceFor(e)} disabled={taxRate === null} title="Créer la facture client" style={{ background: '#FAF6F2', border: '1px solid #D9B99B', color: '#8B4513', borderRadius: '0.3rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.45rem' }}>🧾 Créer</button>
+                        )}
+                      </td>
+                    )}
                     <td>{e.employee_name}</td>
                     <td>{e.category}</td>
                     <td className="col-wrap">{e.supplier || '—'}</td>
@@ -2154,6 +2248,12 @@ function ComptableTab() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {invoiceFor && taxRate !== null && (
+        <InvoiceModal entry={invoiceFor} invoice={invoiceByEntry[invoiceFor.id] ?? null} taxRate={taxRate} childRate={childRate} rates={tvaRates}
+          onClose={() => setInvoiceFor(null)}
+          onSaved={() => { setInvoiceFor(null); reloadInvoices(); reload() }} />
       )}
     </div>
   )
