@@ -5,6 +5,7 @@ import type { Entry, FondsEntry } from '@/types'
 import { Suspense } from 'react'
 import { openAttachment } from '@/lib/attachments'
 import EmployeeGuide from './guide'
+import { DateRangeFilter, EMPTY_RANGE, inRange, type DateRange } from '../manager/date-range'
  
 const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
  
@@ -852,6 +853,7 @@ function EmployeeHistory({ token }: { token: string }) {
   const [fondsEntries, setFondsEntries] = useState<FondsEntry[]>([])
   const [activeSection, setActiveSection] = useState<'entries' | 'fonds'>('entries')
   const [loading, setLoading] = useState(true)
+  const [range, setRange] = useState<DateRange>(EMPTY_RANGE)
  
   const fetchHistory = useCallback(async () => {
     const [entriesR, fondsR] = await Promise.all([
@@ -871,17 +873,18 @@ function EmployeeHistory({ token }: { token: string }) {
     <div>
       <h2 style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.75rem', color: 'var(--terracotta)' }}>📋 Mon historique</h2>
  
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <button onClick={() => setActiveSection('entries')} style={{ padding: '0.4rem 0.9rem', border: 'none', borderRadius: '0.5rem', background: activeSection === 'entries' ? 'var(--terracotta)' : '#EDE0D6', color: activeSection === 'entries' ? 'white' : 'var(--text)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>Dépenses & Encaissements</button>
         <button onClick={() => setActiveSection('fonds')} style={{ padding: '0.4rem 0.9rem', border: 'none', borderRadius: '0.5rem', background: activeSection === 'fonds' ? '#6366F1' : '#EEF2FF', color: activeSection === 'fonds' ? 'white' : '#6366F1', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>Fond de caisse</button>
+        <DateRangeFilter value={range} onChange={setRange} />
       </div>
  
       {activeSection === 'entries' && (
-        entries.length === 0 ? (
+        entries.filter(e => inRange(e.date, range)).length === 0 ? (
           <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>Aucune entrée pour le moment.</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-            {entries.map(e => (
+            {entries.filter(e => inRange(e.date, range)).map(e => (
               <div key={e.id} className="card" style={{ borderLeft: `4px solid ${e.type === 'cb' ? 'var(--terracotta)' : 'var(--green)'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
@@ -905,11 +908,11 @@ function EmployeeHistory({ token }: { token: string }) {
       )}
  
       {activeSection === 'fonds' && (
-        fondsEntries.length === 0 ? (
+        fondsEntries.filter(e => inRange(e.date, range)).length === 0 ? (
           <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>Aucun mouvement de fonds.</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-            {fondsEntries.map(e => (
+            {fondsEntries.filter(e => inRange(e.date, range)).map(e => (
               <div key={e.id} className="card" style={{ borderLeft: `4px solid ${e.direction === 'in' ? 'var(--green)' : 'var(--red)'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
