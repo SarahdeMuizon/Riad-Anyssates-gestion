@@ -233,8 +233,9 @@ export async function buildTaxeSejourPdf(invoices: Invoice[], year: number, quar
   const sorted = [...invoices].sort((a, b) => a.date.localeCompare(b.date) || a.seq - b.seq)
 
   const cols = [
-    { t: 'DATE', w: 62, r: false }, { t: 'N° FACTURE', w: 80, r: false }, { t: 'CLIENT', w: 150, r: false },
-    { t: 'PERS.', w: 40, r: true }, { t: 'NUITS', w: 40, r: true }, { t: 'PERS. x NUITS', w: 62, r: true }, { t: 'TAXE', w: xR - M - 434, r: true },
+    // Relevé destiné à l'administration : pas de nom de client
+    { t: 'DATE', w: 80, r: false }, { t: 'N° FACTURE', w: 100, r: false },
+    { t: 'PERSONNES', w: 75, r: true }, { t: 'NUITS', w: 60, r: true }, { t: 'PERS. x NUITS', w: 85, r: true }, { t: 'TAXE', w: xR - M - 400, r: true },
   ]
   let page = doc.addPage(A4)
   let y = 0
@@ -268,7 +269,7 @@ export async function buildTaxeSejourPdf(invoices: Invoice[], year: number, quar
     const taxCur = inv.tax_currency || 'MAD'
     nuitees += n; persons += inv.persons
     totals[taxCur] = (totals[taxCur] || 0) + Number(inv.tax_amount)
-    const vals = [fmtDate(inv.date), inv.number, inv.client_name || '-', String(inv.persons), String(inv.nights), String(n), `${fmtAmount(Number(inv.tax_amount))} ${taxCur}`]
+    const vals = [fmtDate(inv.date), inv.number, String(inv.persons), String(inv.nights), String(n), `${fmtAmount(Number(inv.tax_amount))} ${taxCur}`]
     y -= 17
     let x = M
     vals.forEach((v, i) => {
