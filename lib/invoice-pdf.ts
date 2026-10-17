@@ -3,7 +3,7 @@
 // Générés entièrement dans le navigateur (pdf-lib).
 import type { PDFDocument, PDFFont, PDFImage, PDFPage, RGB } from 'pdf-lib'
 import type { Invoice } from '@/lib/invoice'
-import { QUARTER_LABELS, invoiceLines, lineTotals } from '@/lib/invoice'
+import { QUARTER_LABELS, TAXE_LABEL, invoiceLines, lineTotals } from '@/lib/invoice'
 import { clean, fmtAmount, fmtDate } from '@/lib/pdf-utils'
 
 const A4: [number, number] = [595.28, 841.89]
@@ -139,8 +139,10 @@ async function drawInvoice(doc: PDFDocument, k: Kit, inv: Invoice) {
   y -= 17
   text(page, inv.client_name || '-', M, y, 13, k.bold, c.ink)
   y -= 15
-  if (inv.nights > 0 || inv.persons > 0) {
-    text(page, `Séjour : ${inv.persons} personne${inv.persons > 1 ? 's' : ''}  -  ${inv.nights} nuit${inv.nights > 1 ? 's' : ''}`, M, y, 9.5, k.font, c.muted)
+  const kids = Number(inv.children || 0)
+  if (inv.nights > 0 || inv.persons > 0 || kids > 0) {
+    const who = [`${inv.persons} adulte${inv.persons > 1 ? 's' : ''}`, kids > 0 ? `${kids} enfant${kids > 1 ? 's' : ''}` : ''].filter(Boolean).join(', ')
+    text(page, `Séjour : ${who}  -  ${inv.nights} nuit${inv.nights > 1 ? 's' : ''}`, M, y, 9.5, k.font, c.muted)
   }
 
   // Tableau des prestations
@@ -156,7 +158,9 @@ async function drawInvoice(doc: PDFDocument, k: Kit, inv: Invoice) {
   const lines = invoiceLines(inv)
   const row = (label: string, sub: string, tva: string, ht: string, ttc: string) => {
     y -= 20
-    text(page, label, M, y, 10.5, k.font, c.ink)
+    let size = 10.5
+    while (size > 8 && k.font.widthOfTextAtSize(clean(label), size) > col.tva - 40 - M) size -= 0.5
+    text(page, label, M, y, size, k.font, c.ink)
     right(page, tva, col.tva, y, 10, k.font, c.muted)
     right(page, ht, col.ht, y, 10, k.font, c.ink)
     right(page, ttc, col.ttc, y, 10, k.bold, c.ink)
@@ -170,8 +174,12 @@ async function drawInvoice(doc: PDFDocument, k: Kit, inv: Invoice) {
   }
   const tax = Number(inv.tax_amount)
   if (tax > 0) {
-    row('Taxe de séjour', `${inv.persons} pers. x ${inv.nights} nuit${inv.nights > 1 ? 's' : ''} x ${fmtAmount(Number(inv.tax_rate))} ${taxCur}${taxCur !== cur ? ' - hors total' : ''}`,
-      '-', fmtAmount(tax), `${fmtAmount(tax)} ${taxCur}`)
+    const n = `${inv.nights} nuit${inv.nights > 1 ? 's' : ''}`
+    const parts = [
+      inv.persons > 0 ? `${inv.persons} adulte${inv.persons > 1 ? 's' : ''} x ${n} x ${fmtAmount(Number(inv.tax_rate))}` : '',
+      kids > 0 ? `${kids} enfant${kids > 1 ? 's' : ''} (- 12 ans) x ${n} x ${fmtAmount(Number(inv.child_rate || 0))}` : '',
+    ].filter(Boolean).join('  +  ')
+    row(TAXE_LABEL, `${parts} ${taxCur}${taxCur !== cur ? ' - hors total' : ''}`, '-', fmtAmount(tax), `${fmtAmount(tax)} ${taxCur}`)
   }
 
   // Totaux
@@ -185,7 +193,7 @@ async function drawInvoice(doc: PDFDocument, k: Kit, inv: Invoice) {
   }
   totalRow('Total HT', `${fmtAmount(t.totalHT + (taxCur === cur ? tax : 0))} ${cur}`)
   totalRow('TVA', `${fmtAmount(t.totalTVA)} ${cur}`)
-  if (tax > 0) totalRow('dont taxe de séjour', `${fmtAmount(tax)} ${taxCur}`)
+  if (tax > 0) totalRow('dont taxe de séjour et TPT', `${fmtAmount(tax)} ${taxCur}`)
   y -= 6
   totalBand(page, k, 'TOTAL TTC', `${fmtAmount(Number(inv.amount_total))} ${cur}`, xL, y)
 
@@ -234,8 +242,8 @@ export async function buildTaxeSejourPdf(invoices: Invoice[], year: number, quar
 
   const cols = [
     // Relevé destiné à l'administration : pas de nom de client
-    { t: 'DATE', w: 80, r: false }, { t: 'N° FACTURE', w: 100, r: false },
-    { t: 'PERSONNES', w: 75, r: true }, { t: 'NUITS', w: 60, r: true }, { t: 'PERS. x NUITS', w: 85, r: true }, { t: 'TAXE', w: xR - M - 400, r: true },
+    { t: 'DATE', w: 70, r: false }, { t: 'N° FACTURE', w: 90, r: false },
+    { t: 'ADULTES', w: 60, r: true }, { t: 'ENFANTS (- 12 ANS)', w: 90, r: true }, { t: 'NUITS', w: 50, r: true }, { t: 'NUITÉES', w: 60, r: true }, { t: 'TAXE', w: xR - M - 420, r: true },
   ]
   let page = doc.addPage(A4)
   let y = 0
@@ -251,25 +259,28 @@ export async function buildTaxeSejourPdf(invoices: Invoice[], year: number, quar
   }
   const newPage = (first: boolean) => {
     if (!first) page = doc.addPage(A4)
-    frame(page, k, 'Taxe de séjour', [['Période', `T${quarter} ${year}`], ['Édité le', today]], 15)
+    frame(page, k, 'Taxe de séjour et TPT', [['Période', `T${quarter} ${year}`], ['Édité le', today]], 13)
     y = H - 162
     if (first) {
-      text(page, `Relevé du ${QUARTER_LABELS[quarter]} ${year}`, M, y, 13, k.bold, c.ink)
-      y -= 34
+      text(page, `${TAXE_LABEL}`, M, y, 13, k.bold, c.ink)
+      y -= 16
+      text(page, `Relevé du ${QUARTER_LABELS[quarter]} ${year}`, M, y, 10, k.font, c.muted)
+      y -= 30
     }
     header()
   }
   newPage(true)
 
-  let nuitees = 0, persons = 0
+  let nuitees = 0, persons = 0, kids = 0
   const totals: Record<string, number> = {}
   for (const inv of sorted) {
     if (y < 150) newPage(false)
-    const n = inv.nights * inv.persons
+    const ch = Number(inv.children || 0)
+    const n = inv.nights * (inv.persons + ch)
     const taxCur = inv.tax_currency || 'MAD'
-    nuitees += n; persons += inv.persons
+    nuitees += n; persons += inv.persons; kids += ch
     totals[taxCur] = (totals[taxCur] || 0) + Number(inv.tax_amount)
-    const vals = [fmtDate(inv.date), inv.number, String(inv.persons), String(inv.nights), String(n), `${fmtAmount(Number(inv.tax_amount))} ${taxCur}`]
+    const vals = [fmtDate(inv.date), inv.number, String(inv.persons), String(ch), String(inv.nights), String(n), `${fmtAmount(Number(inv.tax_amount))} ${taxCur}`]
     y -= 17
     let x = M
     vals.forEach((v, i) => {
@@ -289,11 +300,12 @@ export async function buildTaxeSejourPdf(invoices: Invoice[], year: number, quar
   const xL = 300
   const line = (l: string, v: string) => { text(page, l, xL, y, 9.5, k.font, c.muted); right(page, v, xR - 8, y, 9.5, k.font, c.ink); y -= 16 }
   line('Factures', String(sorted.length))
-  line('Personnes', String(persons))
+  line('Adultes', String(persons))
+  line('Enfants (moins de 12 ans)', String(kids))
   line('Nuitées (personnes x nuits)', String(nuitees))
   y -= 6
   totalBand(page, k, 'TAXE À REVERSER', Object.entries(totals).map(([cur, v]) => `${fmtAmount(v)} ${cur}`).join(' + ') || '0,00 MAD', xL, y)
 
-  doc.setTitle(clean(`Taxe de séjour - T${quarter} ${year}`))
+  doc.setTitle(clean(`${TAXE_LABEL} - T${quarter} ${year}`))
   return new Blob([(await doc.save()) as BlobPart], { type: 'application/pdf' })
 }

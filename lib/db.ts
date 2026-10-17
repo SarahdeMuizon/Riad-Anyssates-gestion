@@ -266,6 +266,8 @@ export async function initDb() {
         lines TEXT,
         nights INTEGER DEFAULT 0,
         persons INTEGER DEFAULT 0,
+        children INTEGER DEFAULT 0,
+        child_rate REAL DEFAULT 0,
         tax_rate REAL DEFAULT 0,
         tax_amount REAL DEFAULT 0,
         tax_currency TEXT DEFAULT 'MAD',
@@ -312,6 +314,9 @@ export async function initDb() {
     `ALTER TABLE invoices ADD COLUMN lines TEXT`,
     // Facture annulée (faite par erreur) : numéro conservé, exclue de la taxe de séjour et du comptable
     `ALTER TABLE invoices ADD COLUMN cancelled INTEGER DEFAULT 0`,
+    // Taxe de séjour : enfants de moins de 12 ans (tarif réduit)
+    `ALTER TABLE invoices ADD COLUMN children INTEGER DEFAULT 0`,
+    `ALTER TABLE invoices ADD COLUMN child_rate REAL DEFAULT 0`,
   ]) {
     const mResults = await tursoRequest([{ sql: migSql }])
     const r = mResults[0]

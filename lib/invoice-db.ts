@@ -1,11 +1,18 @@
 import sql from '@/lib/db'
-import { DEFAULT_TAXE_SEJOUR, mergeTva, type TvaRates } from '@/lib/invoice'
+import { DEFAULT_TAXE_SEJOUR, DEFAULT_TAXE_SEJOUR_ENFANT, mergeTva, type TvaRates } from '@/lib/invoice'
 
-// Tarif de la taxe de séjour (MAD / personne / nuit), modifiable dans l'onglet Comptable
+// Tarif de la taxe de séjour et de promotion touristique (MAD / adulte / nuit), modifiable dans l'onglet Comptable
 export async function getTaxeSejourRate(): Promise<number> {
   const rows = await sql`SELECT value FROM settings WHERE key = 'taxe_sejour_mad'`
   const v = parseFloat((rows[0]?.value as string) ?? '')
   return isNaN(v) ? DEFAULT_TAXE_SEJOUR : v
+}
+
+// Même taxe, par enfant de moins de 12 ans et par nuit
+export async function getTaxeSejourChildRate(): Promise<number> {
+  const rows = await sql`SELECT value FROM settings WHERE key = 'taxe_sejour_enfant_mad'`
+  const v = parseFloat((rows[0]?.value as string) ?? '')
+  return isNaN(v) ? DEFAULT_TAXE_SEJOUR_ENFANT : v
 }
 
 // Retire une facture faite par erreur. La dernière facture de l'année est supprimée (son numéro

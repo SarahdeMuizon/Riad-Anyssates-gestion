@@ -322,7 +322,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [fClientName, setFClientName] = useState('')
   // Dernier encaissement enregistré : proposer d'en créer la facture
   const [fLastEntry, setFLastEntry] = useState<Entry | null>(null)
-  const { byEntry: invoiceByEntry, taxRate, tvaRates, reload: reloadInvoices } = useInvoices()
+  const { byEntry: invoiceByEntry, taxRate, childRate, tvaRates, reload: reloadInvoices } = useInvoices()
   const [invoiceFor, setInvoiceFor] = useState<Entry | null>(null)
   // Facture client créée en même temps que l'encaissement
   const [fInvoice, setFInvoice] = useState(false)
@@ -629,7 +629,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   // Aperçu de la facture pendant la saisie de l'encaissement
   // (facture toujours en dirhams : pour un encaissement en euros, le montant en MAD est saisi dans la facture)
   const invoiceGross = fCurrency === 'EUR' ? null : parseFloat(fPayment === 'CB' && fTransactionAmount ? fTransactionAmount : fAmount) || 0
-  const invoicePreview = previewDraft(fInvDraft, invoiceGross, taxRate ?? 0, tvaRates)
+  const invoicePreview = previewDraft(fInvDraft, invoiceGross, taxRate ?? 0, childRate, tvaRates)
 
   // Encaissement : un seul montant (le total payé par le client). Par carte, l'encaissement
   // est enregistré net de la commission bancaire, le total restant dans « montant de la transaction ».
@@ -809,7 +809,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                   <button type="button" onClick={() => setFInvoice(false)} title="Ne pas créer de facture"
                     style={{ position: 'absolute', top: '0.35rem', right: '0.35rem', background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '1.1rem', lineHeight: 1 }}>×</button>
                   <p style={{ fontSize: '0.85rem', fontWeight: 700, color: '#8B4513', marginBottom: '0.75rem' }}>🧾 Facture client — numérotée automatiquement à l&apos;enregistrement</p>
-                  <InvoiceEditor draft={fInvDraft} onChange={setFInvDraft} gross={invoiceGross} taxRate={taxRate ?? 0} rates={tvaRates} autoFocus />
+                  <InvoiceEditor draft={fInvDraft} onChange={setFInvDraft} gross={invoiceGross} taxRate={taxRate ?? 0} childRate={childRate} rates={tvaRates} autoFocus />
                   <p style={{ fontSize: '0.72rem', color: '#999', marginTop: '0.5rem' }}>La taxe de séjour et les lignes sont déduites du montant total encaissé ; le reste correspond à l&apos;hébergement.</p>
                 </div>
               ) : (
@@ -1051,7 +1051,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       <input ref={rowFileRef} type="file" accept="image/*,application/pdf" onChange={handleRowUpload} style={{ display: 'none' }} />
 
       {invoiceFor && taxRate !== null && (
-        <InvoiceModal entry={invoiceFor} invoice={invoiceByEntry[invoiceFor.id] ?? null} taxRate={taxRate} rates={tvaRates}
+        <InvoiceModal entry={invoiceFor} invoice={invoiceByEntry[invoiceFor.id] ?? null} taxRate={taxRate} childRate={childRate} rates={tvaRates}
           onClose={() => setInvoiceFor(null)}
           onSaved={() => {
             setInvoiceFor(null); setFLastEntry(null); reloadInvoices()
@@ -2032,7 +2032,7 @@ function ComptableTab() {
   const sections: { id: ComptableSection; label: string }[] = [
     { id: 'achats', label: '📥 Factures d’achat' },
     { id: 'ventes', label: '📤 Factures de vente' },
-    { id: 'taxes', label: '🏨 Taxes de séjour' },
+    { id: 'taxes', label: '🏨 Taxe de séjour et TPT' },
   ]
   return (
     <div>
@@ -2055,7 +2055,7 @@ function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
   const [loading, setLoading] = useState(true)
   const [month, setMonth] = useState(currentMonth)
   const [allMonths, setAllMonths] = useState(false)
-  const { byEntry: invoiceByEntry, taxRate, tvaRates, reload: reloadInvoices } = useInvoices()
+  const { byEntry: invoiceByEntry, taxRate, childRate, tvaRates, reload: reloadInvoices } = useInvoices()
   // Création / modification d'une facture de vente directement depuis l'onglet Comptable
   const [invoiceFor, setInvoiceFor] = useState<Entry | null>(null)
  
@@ -2251,7 +2251,7 @@ function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
       )}
 
       {invoiceFor && taxRate !== null && (
-        <InvoiceModal entry={invoiceFor} invoice={invoiceByEntry[invoiceFor.id] ?? null} taxRate={taxRate} rates={tvaRates}
+        <InvoiceModal entry={invoiceFor} invoice={invoiceByEntry[invoiceFor.id] ?? null} taxRate={taxRate} childRate={childRate} rates={tvaRates}
           onClose={() => setInvoiceFor(null)}
           onSaved={() => { setInvoiceFor(null); reloadInvoices(); reload() }} />
       )}

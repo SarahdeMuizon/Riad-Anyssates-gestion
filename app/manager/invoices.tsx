@@ -2,7 +2,7 @@
 // Factures de vente (encaissements clients) et relevé trimestriel de la taxe de séjour
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import type { Entry } from '@/types'
-import { computeInvoice, entryGross, invoiceExtras, quarterOf, EXTRA_CATEGORIES, INVOICE_CATEGORIES, DEFAULT_TVA, LODGING, QUARTER_LABELS, tvaOf, type Invoice, type TvaRates } from '@/lib/invoice'
+import { computeInvoice, entryGross, invoiceExtras, quarterOf, EXTRA_CATEGORIES, INVOICE_CATEGORIES, DEFAULT_TVA, DEFAULT_TAXE_SEJOUR_ENFANT, LODGING, QUARTER_LABELS, TAXE_LABEL, tvaOf, type Invoice, type TvaRates } from '@/lib/invoice'
 
 const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const label: React.CSSProperties = { display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '0.2rem' }
@@ -25,6 +25,7 @@ export async function downloadInvoice(inv: Invoice) {
 export function useInvoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [taxRate, setTaxRate] = useState<number | null>(null)
+  const [childRate, setChildRate] = useState(DEFAULT_TAXE_SEJOUR_ENFANT)
   const [tvaRates, setTvaRates] = useState<TvaRates>(DEFAULT_TVA)
   const reload = useCallback(async () => {
     const [inv, rate] = await Promise.all([
@@ -33,6 +34,7 @@ export function useInvoices() {
     ])
     setInvoices(Array.isArray(inv) ? inv : [])
     if (rate?.taxe_sejour_tarif !== undefined) setTaxRate(Number(rate.taxe_sejour_tarif))
+    if (rate?.taxe_sejour_enfant !== undefined) setChildRate(Number(rate.taxe_sejour_enfant))
     if (rate?.tva_rates) setTvaRates(rate.tva_rates)
   }, [])
   useEffect(() => { reload() }, [reload])
@@ -41,7 +43,7 @@ export function useInvoices() {
     for (const i of invoices) if (i.entry_id && !i.cancelled) m[i.entry_id] = i
     return m
   }, [invoices])
-  return { invoices, byEntry, taxRate, tvaRates, reload }
+  return { invoices, byEntry, taxRate, childRate, tvaRates, reload }
 }
 
 // ─── Saisie d'une facture (formulaire d'encaissement et fenêtre de modification) ──
@@ -49,42 +51,44 @@ export function useInvoices() {
 export interface InvoiceDraft {
   clientName: string
   nights: string
-  persons: string
+  persons: string     // adultes
+  children: string    // enfants de moins de 12 ans
   extras: { label: string; amount: string }[]
   amountMad: string   // encaissement en euros : montant facturé en dirhams
 }
 
-export const emptyDraft = (clientName = ''): InvoiceDraft => ({ clientName, nights: '', persons: '', extras: [], amountMad: '' })
+export const emptyDraft = (clientName = ''): InvoiceDraft => ({ clientName, nights: '', persons: '', children: '', extras: [], amountMad: '' })
 
 // gross : montant payé en MAD, ou null si l'encaissement est en euros (montant saisi dans amountMad)
-export function previewDraft(d: InvoiceDraft, gross: number | null, taxRate: number, rates?: TvaRates) {
+export function previewDraft(d: InvoiceDraft, gross: number | null, taxRate: number, childRate: number, rates?: TvaRates) {
   return computeInvoice({
     gross: gross ?? (parseFloat(d.amountMad) || 0), rates,
-    nights: Number(d.nights), persons: Number(d.persons), taxRate,
+    nights: Number(d.nights), persons: Number(d.persons), children: Number(d.children), taxRate, childRate,
     extras: d.extras.map(e => ({ label: e.label, amount: parseFloat(e.amount) || 0 })),
   })
 }
 
 export function draftBody(d: InvoiceDraft) {
   return {
-    client_name: d.clientName, nights: Number(d.nights) || 0, persons: Number(d.persons) || 0,
+    client_name: d.clientName, nights: Number(d.nights) || 0, persons: Number(d.persons) || 0, children: Number(d.children) || 0,
     extras: d.extras.map(e => ({ label: e.label, amount: parseFloat(e.amount) || 0 })),
     amount_mad: parseFloat(d.amountMad) || undefined,
   }
 }
 
-export function InvoiceEditor({ draft, onChange, gross, taxRate, rates, autoFocus }: {
+export function InvoiceEditor({ draft, onChange, gross, taxRate, childRate, rates, autoFocus }: {
   draft: InvoiceDraft
   onChange: (d: InvoiceDraft) => void
   gross: number | null
   taxRate: number
+  childRate: number
   rates: TvaRates
   autoFocus?: boolean
 }) {
   const set = (patch: Partial<InvoiceDraft>) => onChange({ ...draft, ...patch })
   const setExtra = (i: number, patch: Partial<{ label: string; amount: string }>) =>
     set({ extras: draft.extras.map((e, k) => k === i ? { ...e, ...patch } : e) })
-  const c = previewDraft(draft, gross, taxRate, rates)
+  const c = previewDraft(draft, gross, taxRate, childRate, rates)
   const tvaTag = (l: string) => <span style={{ color: '#999', fontSize: '0.72rem', whiteSpace: 'nowrap' }}>TVA {String(tvaOf(l, rates)).replace('.', ',')} %</span>
   const row: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', gap: '0.5rem', alignItems: 'center' }
 
@@ -96,8 +100,12 @@ export function InvoiceEditor({ draft, onChange, gross, taxRate, rates, autoFocu
           <input className="form-input" value={draft.clientName} onChange={e => set({ clientName: e.target.value })} placeholder="Nom du client" required autoFocus={autoFocus} />
         </div>
         <div>
-          <label style={label}>Nombre de personnes</label>
+          <label style={label}>Adultes</label>
           <input className="form-input" type="number" min="0" step="1" inputMode="numeric" value={draft.persons} onChange={e => set({ persons: e.target.value })} placeholder="0" />
+        </div>
+        <div>
+          <label style={label}>Enfants (moins de 12 ans)</label>
+          <input className="form-input" type="number" min="0" step="1" inputMode="numeric" value={draft.children} onChange={e => set({ children: e.target.value })} placeholder="0" />
         </div>
         <div>
           <label style={label}>Nombre de nuits</label>
@@ -133,7 +141,12 @@ export function InvoiceEditor({ draft, onChange, gross, taxRate, rates, autoFocu
           + Ajouter une ligne (restauration, boissons, spa, transport, divers)
         </button>
         <div style={row}>
-          <span>Taxe de séjour : {c.persons} pers. × {c.nights} nuit{c.nights > 1 ? 's' : ''} × {fmt(taxRate)} MAD</span>
+          <span>
+            {TAXE_LABEL}
+            <span style={{ display: 'block', color: '#999', fontSize: '0.72rem' }}>
+              {c.nights} nuit{c.nights > 1 ? 's' : ''} × ({c.persons} adulte{c.persons > 1 ? 's' : ''} × {fmt(taxRate)}{c.children > 0 ? ` + ${c.children} enfant${c.children > 1 ? 's' : ''} × ${fmt(childRate)}` : ''}) MAD
+            </span>
+          </span>
           <strong style={{ color: BROWN, whiteSpace: 'nowrap' }}>{fmt(c.taxAmount)} MAD</strong>
         </div>
         {c.totalTVA > 0 && c.total > 0 && (
@@ -154,16 +167,17 @@ export function InvoiceEditor({ draft, onChange, gross, taxRate, rates, autoFocu
 
 // ─── Fenêtre de création / modification d'une facture ─────────────────────────
 
-export function InvoiceModal({ entry, invoice, taxRate, rates, onClose, onSaved }: {
+export function InvoiceModal({ entry, invoice, taxRate, childRate, rates, onClose, onSaved }: {
   entry: Entry | null
   invoice: Invoice | null
   taxRate: number
+  childRate: number
   rates: TvaRates
   onClose: () => void
   onSaved: (inv: Invoice | null) => void
 }) {
   const [draft, setDraft] = useState<InvoiceDraft>(() => invoice ? {
-    clientName: invoice.client_name ?? '', nights: String(invoice.nights), persons: String(invoice.persons),
+    clientName: invoice.client_name ?? '', nights: String(invoice.nights), persons: String(invoice.persons), children: String(invoice.children || 0),
     extras: invoiceExtras(invoice).map(e => ({ label: e.label, amount: String(e.amount) })), amountMad: '',
   } : emptyDraft(entry?.supplier ?? ''))
   const [date, setDate] = useState(invoice?.date ?? entry?.date ?? new Date().toISOString().split('T')[0])
@@ -171,8 +185,9 @@ export function InvoiceModal({ entry, invoice, taxRate, rates, onClose, onSaved 
   const [error, setError] = useState('')
 
   const rate = invoice ? Number(invoice.tax_rate) : taxRate
+  const cRate = invoice && Number(invoice.child_rate) > 0 ? Number(invoice.child_rate) : childRate
   const gross = invoice ? Number(invoice.amount_total) : entry && (entry.currency || 'MAD') !== 'EUR' ? entryGross(entry) : null
-  const c = previewDraft(draft, gross, rate, rates)
+  const c = previewDraft(draft, gross, rate, cRate, rates)
 
   async function save(andDownload: boolean) {
     setSaving(true); setError('')
@@ -212,7 +227,7 @@ export function InvoiceModal({ entry, invoice, taxRate, rates, onClose, onSaved 
           <label style={label}>Date de la facture</label>
           <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} style={{ maxWidth: 200 }} />
         </div>
-        <InvoiceEditor draft={draft} onChange={setDraft} gross={gross} taxRate={rate} rates={rates} autoFocus />
+        <InvoiceEditor draft={draft} onChange={setDraft} gross={gross} taxRate={rate} childRate={cRate} rates={rates} autoFocus />
 
         {error && <p style={{ color: 'var(--red)', fontSize: '0.85rem', marginTop: '0.75rem' }}>{error}</p>}
 
@@ -230,25 +245,28 @@ export function InvoiceModal({ entry, invoice, taxRate, rates, onClose, onSaved 
 }
 
 // ─── Relevé trimestriel de la taxe de séjour ──────────────────────────────────
-// Taxe = nombre de personnes × nombre de nuits × tarif (28 MAD par défaut)
+// Taxe de séjour et taxe de promotion touristique = nuits × (adultes × 28 MAD + enfants de moins de 12 ans × 18 MAD)
 
 export function TaxeSejourPanel() {
-  const { invoices, taxRate, tvaRates, reload } = useInvoices()
+  const { invoices, taxRate, childRate, tvaRates, reload } = useInvoices()
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [quarter, setQuarter] = useState(Math.floor(now.getMonth() / 3) + 1)
   const [rateInput, setRateInput] = useState('')
+  const [childInput, setChildInput] = useState('')
   const [rateMsg, setRateMsg] = useState('')
   const [exporting, setExporting] = useState(false)
   const [editing, setEditing] = useState<Invoice | null>(null)
 
   useEffect(() => { if (taxRate !== null) setRateInput(String(taxRate)) }, [taxRate])
+  useEffect(() => { setChildInput(String(childRate)) }, [childRate])
 
   const rows = useMemo(() => invoices
     .filter(i => !i.cancelled && Number(i.tax_amount) > 0 && Number(i.date.substring(0, 4)) === year && quarterOf(i.date) === quarter)
     .sort((a, b) => a.date.localeCompare(b.date) || a.seq - b.seq), [invoices, year, quarter])
-  const persons = rows.reduce((t, i) => t + i.persons, 0)
-  const nuitees = rows.reduce((t, i) => t + i.nights * i.persons, 0)
+  const adults = rows.reduce((t, i) => t + i.persons, 0)
+  const children = rows.reduce((t, i) => t + (i.children || 0), 0)
+  const nuitees = rows.reduce((t, i) => t + i.nights * (i.persons + (i.children || 0)), 0)
   const taxTotals = rows.reduce<Record<string, number>>((t, i) => {
     const c = i.tax_currency || 'MAD'
     t[c] = (t[c] || 0) + Number(i.tax_amount)
@@ -264,11 +282,11 @@ export function TaxeSejourPanel() {
     setQuarter(q); setYear(y)
   }
   const isCurrent = year === now.getFullYear() && quarter === Math.floor(now.getMonth() / 3) + 1
-  const settingsChanged = taxRate !== null && rateInput !== String(taxRate)
+  const settingsChanged = taxRate !== null && (rateInput !== String(taxRate) || childInput !== String(childRate))
 
   async function saveRate() {
     setRateMsg('')
-    const r = await fetch('/api/settings/taxe-sejour', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ taxe_sejour_tarif: rateInput }) }).catch(() => null)
+    const r = await fetch('/api/settings/taxe-sejour', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ taxe_sejour_tarif: rateInput, taxe_sejour_enfant: childInput }) }).catch(() => null)
     setRateMsg(r && r.ok ? '✓ Tarif enregistré (nouvelles factures)' : 'Tarif invalide')
     if (r && r.ok) reload()
     setTimeout(() => setRateMsg(''), 4000)
@@ -278,7 +296,7 @@ export function TaxeSejourPanel() {
     setExporting(true)
     try {
       const { buildTaxeSejourPdf } = await import('@/lib/invoice-pdf')
-      saveBlob(await buildTaxeSejourPdf(rows, year, quarter), `Taxe de séjour - T${quarter} ${year}.pdf`)
+      saveBlob(await buildTaxeSejourPdf(rows, year, quarter), `Taxe de séjour et TPT - T${quarter} ${year}.pdf`)
     } catch (err) { console.error(err) }
     setExporting(false)
   }
@@ -296,19 +314,21 @@ export function TaxeSejourPanel() {
         </button>
         <a href={rows.length ? `/api/export/taxe-sejour?year=${year}&quarter=${quarter}` : undefined} className="btn-secondary" style={{ fontSize: '0.85rem', padding: '0.4rem 0.9rem', textDecoration: 'none', opacity: rows.length === 0 ? 0.5 : 1, pointerEvents: rows.length === 0 ? 'none' : 'auto' }}>📊 Excel</a>
         <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: '#666', flexWrap: 'wrap' }}>
-          Tarif :
-          <input className="form-input" type="number" min="0" step="0.1" value={rateInput} onChange={e => setRateInput(e.target.value)} style={{ width: '4.5rem', padding: '0.25rem 0.4rem' }} />
-          MAD par personne et par nuit
+          Tarif par nuit : adulte
+          <input className="form-input" type="number" min="0" step="0.5" value={rateInput} onChange={e => setRateInput(e.target.value)} style={{ width: '4.5rem', padding: '0.25rem 0.4rem' }} />
+          enfant (- 12 ans)
+          <input className="form-input" type="number" min="0" step="0.5" value={childInput} onChange={e => setChildInput(e.target.value)} style={{ width: '4.5rem', padding: '0.25rem 0.4rem' }} />
+          MAD
           {settingsChanged && <button className="btn-secondary" onClick={saveRate} style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }}>OK</button>}
           {rateMsg && <span style={{ color: rateMsg.startsWith('✓') ? 'var(--green)' : 'var(--red)' }}>{rateMsg}</span>}
         </span>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
-        {[['Personnes', String(persons)], ['Nuitées (personnes × nuits)', String(nuitees)], ['Taxe de séjour à reverser', taxTotalLabel]].map(([l, v], i) => (
+        {[['Adultes', String(adults)], ['Enfants (- 12 ans)', String(children)], ['Nuitées (personnes × nuits)', String(nuitees)], ['Taxe à reverser', taxTotalLabel]].map(([l, v], i) => (
           <div key={l} className="card" style={{ padding: '0.75rem 1rem' }}>
             <div style={{ fontSize: '0.75rem', color: '#888' }}>{l}</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: 700, color: i === 2 ? '#8B4513' : 'var(--text)' }}>{v}</div>
+            <div style={{ fontSize: '1.2rem', fontWeight: 700, color: i === 3 ? '#8B4513' : 'var(--text)' }}>{v}</div>
           </div>
         ))}
       </div>
@@ -316,13 +336,13 @@ export function TaxeSejourPanel() {
       {rows.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>
           Aucune taxe de séjour sur ce trimestre.<br />
-          <span style={{ fontSize: '0.8rem' }}>Créez la facture client en ajoutant un encaissement (bouton « 🧾 Créer une facture client ») avec le nombre de personnes et de nuits.</span>
+          <span style={{ fontSize: '0.8rem' }}>Créez la facture client en ajoutant un encaissement (bouton « 🧾 Créer une facture client ») avec le nombre d&apos;adultes, d&apos;enfants et de nuits.</span>
         </div>
       ) : (
         <div className="table-scroll">
           <table className="table-dep">
             <thead>
-              <tr><th>Date</th><th>N° facture</th><th>Client</th><th>Personnes</th><th>Nuits</th><th>Personnes × nuits</th><th>Taxe de séjour</th></tr>
+              <tr><th>Date</th><th>N° facture</th><th>Client</th><th>Adultes</th><th>Enfants</th><th>Nuits</th><th>Nuitées</th><th>Taxe</th></tr>
             </thead>
             <tbody>
               {rows.map(i => (
@@ -331,14 +351,15 @@ export function TaxeSejourPanel() {
                   <td><button onClick={() => setEditing(i)} title="Ouvrir / corriger la facture" style={{ background: 'none', border: 'none', color: 'var(--blue)', cursor: 'pointer', padding: 0, font: 'inherit', fontWeight: 600 }}>{i.number}</button></td>
                   <td className="col-wrap">{i.client_name || '—'}</td>
                   <td>{i.persons}</td>
+                  <td>{i.children || 0}</td>
                   <td>{i.nights}</td>
-                  <td>{i.nights * i.persons}</td>
+                  <td>{i.nights * (i.persons + (i.children || 0))}</td>
                   <td style={{ fontWeight: 600, color: '#8B4513', whiteSpace: 'nowrap' }}>{fmt(Number(i.tax_amount))} {i.tax_currency || 'MAD'}</td>
                 </tr>
               ))}
               <tr style={{ fontWeight: 700, background: '#FAF6F2' }}>
                 <td colSpan={3}>Total du trimestre</td>
-                <td>{persons}</td><td></td><td>{nuitees}</td>
+                <td>{adults}</td><td>{children}</td><td></td><td>{nuitees}</td>
                 <td style={{ color: '#8B4513', whiteSpace: 'nowrap' }}>{taxTotalLabel}</td>
               </tr>
             </tbody>
@@ -347,7 +368,7 @@ export function TaxeSejourPanel() {
       )}
 
       {editing && taxRate !== null && (
-        <InvoiceModal entry={null} invoice={editing} taxRate={taxRate} rates={tvaRates} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); reload() }} />
+        <InvoiceModal entry={null} invoice={editing} taxRate={taxRate} childRate={childRate} rates={tvaRates} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); reload() }} />
       )}
     </div>
   )

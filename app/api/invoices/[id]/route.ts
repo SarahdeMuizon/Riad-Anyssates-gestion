@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import sql, { ensureDb } from '@/lib/db'
 import { getManagerSession } from '@/lib/auth'
 import { computeInvoice, invoiceExtras, parseExtras, type Invoice } from '@/lib/invoice'
-import { removeInvoice, getTvaRates } from '@/lib/invoice-db'
+import { removeInvoice, getTvaRates, getTaxeSejourChildRate } from '@/lib/invoice-db'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,12 +25,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (parseInt(date.substring(0, 4), 10) !== inv.year) {
       return NextResponse.json({ error: `La date doit rester en ${inv.year} (numéro ${inv.number})` }, { status: 400 })
     }
+    // Factures créées avant le tarif enfant : on prend le tarif enfant actuel
+    const childRate = Number(inv.child_rate) > 0 ? Number(inv.child_rate) : await getTaxeSejourChildRate()
     const gross = Number(body.amount_mad) > 0 ? Number(body.amount_mad) : Number(inv.amount_total)
     const c = computeInvoice({
       gross,
       nights: body.nights !== undefined ? Number(body.nights) : Number(inv.nights),
       persons: body.persons !== undefined ? Number(body.persons) : Number(inv.persons),
+      children: body.children !== undefined ? Number(body.children) : Number(inv.children || 0),
       taxRate: Number(inv.tax_rate),
+      childRate,
       extras: body.extras !== undefined ? parseExtras(body.extras) : invoiceExtras(inv),
       rates: await getTvaRates(),
     })
@@ -39,7 +43,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     const result = await sql`
       UPDATE invoices SET date = ${date}, client_name = ${clientName}, lines = ${JSON.stringify(c.lines)},
-        nights = ${c.nights}, persons = ${c.persons}, tax_amount = ${c.taxAmount}, tax_included = 1, tva_rate = 0,
+        nights = ${c.nights}, persons = ${c.persons}, children = ${c.children}, child_rate = ${childRate}, tax_amount = ${c.taxAmount}, tax_included = 1, tva_rate = 0,
         amount_lodging = ${c.prestations}, amount_total = ${c.total}, currency = 'MAD'
       WHERE id = ${id} RETURNING *
     `

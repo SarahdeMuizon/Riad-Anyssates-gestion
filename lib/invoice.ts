@@ -17,8 +17,10 @@ export interface Invoice {
   description: string | null
   lines: string | null    // JSON InvoiceLine[] — prestations facturées (TTC)
   nights: number
-  persons: number
-  tax_rate: number        // taxe de séjour, par personne et par nuit
+  persons: number         // adultes (12 ans et plus)
+  children?: number       // enfants de moins de 12 ans
+  tax_rate: number        // taxe de séjour et de promotion touristique, par adulte et par nuit
+  child_rate?: number     // la même, par enfant et par nuit
   tax_amount: number
   tax_currency: string    // MAD (les toutes premières factures de test pouvaient être en EUR)
   tax_included: number
@@ -33,7 +35,9 @@ export interface Invoice {
 
 export interface InvoiceLine { label: string; amount: number; tva: number } // amount TTC en MAD, tva en %
 
-export const DEFAULT_TAXE_SEJOUR = 28 // MAD par personne et par nuit
+export const DEFAULT_TAXE_SEJOUR = 28        // MAD par adulte et par nuit
+export const DEFAULT_TAXE_SEJOUR_ENFANT = 18 // MAD par enfant de moins de 12 ans et par nuit
+export const TAXE_LABEL = 'Taxe de séjour et taxe de promotion touristique'
 
 // Catégories de prestations et leur taux de TVA marocain (%) par défaut — modifiables dans
 // Comptable › Factures de vente
@@ -67,7 +71,9 @@ export interface InvoiceInput {
   gross: number                                     // montant payé par le client, en MAD
   nights: number
   persons: number
+  children?: number
   taxRate: number
+  childRate?: number
   extras: { label: string; amount: number }[]       // lignes autres que l'hébergement
   rates?: TvaRates
 }
@@ -77,7 +83,8 @@ const r2 = (n: number) => Math.round(n * 100) / 100
 export function computeInvoice(i: InvoiceInput) {
   const nights = Math.max(0, Math.floor(i.nights || 0))
   const persons = Math.max(0, Math.floor(i.persons || 0))
-  const taxAmount = r2(nights * persons * (i.taxRate || 0))
+  const children = Math.max(0, Math.floor(i.children || 0))
+  const taxAmount = r2(nights * (persons * (i.taxRate || 0) + children * (i.childRate || 0)))
   const extras = i.extras
     .map(e => ({ label: EXTRA_CATEGORIES.includes(e.label) ? e.label : 'Divers', amount: r2(Number(e.amount) || 0) }))
     .filter(e => e.amount > 0)
@@ -86,7 +93,7 @@ export function computeInvoice(i: InvoiceInput) {
     ...(lodging > 0 ? [{ label: LODGING, amount: lodging, tva: tvaOf(LODGING, i.rates) }] : []),
     ...extras.map(e => ({ ...e, tva: tvaOf(e.label, i.rates) })),
   ]
-  return { nights, persons, taxAmount, lodging, lines, ...lineTotals(lines), total: r2(i.gross || 0), valid: lodging >= 0 && (i.gross || 0) > 0 }
+  return { nights, persons, children, taxAmount, lodging, lines, ...lineTotals(lines), total: r2(i.gross || 0), valid: lodging >= 0 && (i.gross || 0) > 0 }
 }
 
 export function lineTotals(lines: InvoiceLine[]) {

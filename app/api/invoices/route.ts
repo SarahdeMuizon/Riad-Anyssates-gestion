@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import sql, { ensureDb } from '@/lib/db'
 import { getManagerSession } from '@/lib/auth'
 import { computeInvoice, entryGross, parseExtras } from '@/lib/invoice'
-import { getTaxeSejourRate, getTvaRates, cleanupOrphanInvoices } from '@/lib/invoice-db'
+import { getTaxeSejourRate, getTaxeSejourChildRate, getTvaRates, cleanupOrphanInvoices } from '@/lib/invoice-db'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,16 +44,17 @@ export async function POST(req: NextRequest) {
       : entryGross(entry as { amount: number; amount_ht?: number; payment?: string })
     if (gross <= 0) return NextResponse.json({ error: 'Indiquez le montant en dirhams' }, { status: 400 })
     const taxRate = await getTaxeSejourRate()
-    const c = computeInvoice({ gross, nights: Number(body.nights), persons: Number(body.persons), taxRate, extras: parseExtras(body.extras), rates: await getTvaRates() })
+    const childRate = await getTaxeSejourChildRate()
+    const c = computeInvoice({ gross, nights: Number(body.nights), persons: Number(body.persons), children: Number(body.children), taxRate, childRate, extras: parseExtras(body.extras), rates: await getTvaRates() })
     if (!c.valid) return NextResponse.json({ error: 'La taxe de séjour et les lignes dépassent le montant encaissé' }, { status: 400 })
 
     const clientName = String(body.client_name ?? entry.supplier ?? '').trim().slice(0, 200) || null
 
     // Numéro attribué dans la même requête que l'insertion : pas de doublon possible
     const result = await sql`
-      INSERT INTO invoices (number, year, seq, entry_id, date, client_name, lines, nights, persons, tax_rate, tax_amount, tax_currency, tax_included, tva_rate, amount_lodging, amount_total, currency, payment)
+      INSERT INTO invoices (number, year, seq, entry_id, date, client_name, lines, nights, persons, children, tax_rate, child_rate, tax_amount, tax_currency, tax_included, tva_rate, amount_lodging, amount_total, currency, payment)
       SELECT printf('FA-%d-%04d', ${year}, COALESCE(MAX(seq), 0) + 1), ${year}, COALESCE(MAX(seq), 0) + 1,
-        ${entryId}, ${date}, ${clientName}, ${JSON.stringify(c.lines)}, ${c.nights}, ${c.persons}, ${taxRate}, ${c.taxAmount}, 'MAD', 1, 0, ${c.prestations}, ${c.total}, 'MAD', ${(entry.payment as string) || null}
+        ${entryId}, ${date}, ${clientName}, ${JSON.stringify(c.lines)}, ${c.nights}, ${c.persons}, ${c.children}, ${taxRate}, ${childRate}, ${c.taxAmount}, 'MAD', 1, 0, ${c.prestations}, ${c.total}, 'MAD', ${(entry.payment as string) || null}
       FROM invoices WHERE year = ${year}
       RETURNING *
     `
