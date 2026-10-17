@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import sql, { ensureDb } from '@/lib/db'
 import { getManagerSession } from '@/lib/auth'
-import { computeInvoice } from '@/lib/invoice'
+import { computeInvoice, invoiceExtras, parseExtras, type Invoice } from '@/lib/invoice'
 
 export const dynamic = 'force-dynamic'
 
-// Correction d'une facture (client, nuits, personnes…) : le numéro ne change pas,
+// Correction d'une facture (client, nuits, personnes, lignes…) : le numéro ne change pas,
 // et le tarif de taxe de séjour reste celui en vigueur à la création.
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -14,7 +14,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (!isAuth) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
     const id = parseInt(params.id)
-    const inv = (await sql`SELECT * FROM invoices WHERE id = ${id}`)[0]
+    const inv = (await sql`SELECT * FROM invoices WHERE id = ${id}`)[0] as unknown as Invoice | undefined
     if (!inv) return NextResponse.json({ error: 'Facture introuvable' }, { status: 404 })
     const body = await req.json()
 
@@ -23,25 +23,21 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (parseInt(date.substring(0, 4), 10) !== inv.year) {
       return NextResponse.json({ error: `La date doit rester en ${inv.year} (numéro ${inv.number})` }, { status: 400 })
     }
-    // Montant payé par le client, retrouvé à partir de la facture existante
-    const gross = Number(inv.tax_included ? inv.amount_total : inv.amount_lodging)
-    const tvaRate = body.tva_rate !== undefined ? Math.max(0, parseFloat(body.tva_rate) || 0) : Number(inv.tva_rate)
+    const gross = Number(body.amount_mad) > 0 ? Number(body.amount_mad) : Number(inv.amount_total)
     const c = computeInvoice({
-      gross, currency: inv.currency as string,
+      gross,
       nights: body.nights !== undefined ? Number(body.nights) : Number(inv.nights),
       persons: body.persons !== undefined ? Number(body.persons) : Number(inv.persons),
-      taxRate: Number(inv.tax_rate), taxCurrency: (inv.tax_currency as string) || 'MAD',
-      taxIncluded: body.tax_included !== undefined ? body.tax_included !== false : !!inv.tax_included,
-      tvaRate,
+      taxRate: Number(inv.tax_rate),
+      extras: body.extras !== undefined ? parseExtras(body.extras) : invoiceExtras(inv),
     })
-    if (c.lodging < 0) return NextResponse.json({ error: 'La taxe de séjour dépasse le montant encaissé' }, { status: 400 })
+    if (!c.valid) return NextResponse.json({ error: 'La taxe de séjour et les lignes dépassent le montant encaissé' }, { status: 400 })
     const clientName = body.client_name !== undefined ? (String(body.client_name).trim().slice(0, 200) || null) : inv.client_name
-    const description = body.description !== undefined ? (String(body.description).trim().slice(0, 500) || null) : inv.description
 
     const result = await sql`
-      UPDATE invoices SET date = ${date}, client_name = ${clientName}, description = ${description},
-        nights = ${c.nights}, persons = ${c.persons}, tax_amount = ${c.taxAmount}, tax_included = ${c.taxIncluded ? 1 : 0},
-        tva_rate = ${tvaRate}, amount_lodging = ${c.lodging}, amount_total = ${c.total}
+      UPDATE invoices SET date = ${date}, client_name = ${clientName}, lines = ${JSON.stringify(c.lines)},
+        nights = ${c.nights}, persons = ${c.persons}, tax_amount = ${c.taxAmount}, tax_included = 1, tva_rate = 0,
+        amount_lodging = ${c.prestations}, amount_total = ${c.total}, currency = 'MAD'
       WHERE id = ${id} RETURNING *
     `
     return NextResponse.json(result[0])

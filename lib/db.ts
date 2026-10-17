@@ -263,6 +263,7 @@ export async function initDb() {
         date TEXT NOT NULL,
         client_name TEXT,
         description TEXT,
+        lines TEXT,
         nights INTEGER DEFAULT 0,
         persons INTEGER DEFAULT 0,
         tax_rate REAL DEFAULT 0,
@@ -307,6 +308,8 @@ export async function initDb() {
     `ALTER TABLE coffre_entries ADD COLUMN transfer_id TEXT`,
     // Devise de la taxe de séjour (les premières factures étaient en MAD)
     `ALTER TABLE invoices ADD COLUMN tax_currency TEXT DEFAULT 'MAD'`,
+    // Lignes de la facture (Hébergement, Boissons, Spa…) avec leur TVA
+    `ALTER TABLE invoices ADD COLUMN lines TEXT`,
   ]) {
     const mResults = await tursoRequest([{ sql: migSql }])
     const r = mResults[0]

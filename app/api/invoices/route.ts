@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import sql, { ensureDb } from '@/lib/db'
 import { getManagerSession } from '@/lib/auth'
-import { computeInvoice, entryGross } from '@/lib/invoice'
-import { getTaxeSejour } from '@/lib/invoice-db'
+import { computeInvoice, entryGross, parseExtras } from '@/lib/invoice'
+import { getTaxeSejourRate } from '@/lib/invoice-db'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,8 +19,8 @@ export async function GET() {
   }
 }
 
-// Crée la facture de vente d'un encaissement : numéro suivant de l'année,
-// calcul de la taxe de séjour, et l'encaissement passe dans la liste du comptable.
+// Crée la facture de vente d'un encaissement : numéro suivant de l'année, taxe de séjour
+// déduite du montant payé, et l'encaissement passe dans la liste du comptable.
 export async function POST(req: NextRequest) {
   try {
     await ensureDb()
@@ -37,24 +37,22 @@ export async function POST(req: NextRequest) {
     const date = String(body.date || entry.date)
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return NextResponse.json({ error: 'Date invalide' }, { status: 400 })
     const year = parseInt(date.substring(0, 4), 10)
-    const currency = (entry.currency as string) || 'MAD'
-    const { rate: taxRate, currency: taxCurrency } = await getTaxeSejour()
-    const tvaRate = Math.max(0, parseFloat(body.tva_rate) || 0)
-    const c = computeInvoice({
-      gross: entryGross(entry as { amount: number; amount_ht?: number; payment?: string }),
-      currency, nights: Number(body.nights), persons: Number(body.persons),
-      taxRate, taxCurrency, taxIncluded: body.tax_included !== false, tvaRate,
-    })
-    if (c.lodging < 0) return NextResponse.json({ error: 'La taxe de séjour dépasse le montant encaissé' }, { status: 400 })
+    // La facture est toujours en dirhams : un encaissement en euros demande son montant en MAD
+    const gross = (entry.currency as string) === 'EUR'
+      ? Number(body.amount_mad) || 0
+      : entryGross(entry as { amount: number; amount_ht?: number; payment?: string })
+    if (gross <= 0) return NextResponse.json({ error: 'Indiquez le montant en dirhams' }, { status: 400 })
+    const taxRate = await getTaxeSejourRate()
+    const c = computeInvoice({ gross, nights: Number(body.nights), persons: Number(body.persons), taxRate, extras: parseExtras(body.extras) })
+    if (!c.valid) return NextResponse.json({ error: 'La taxe de séjour et les lignes dépassent le montant encaissé' }, { status: 400 })
 
     const clientName = String(body.client_name ?? entry.supplier ?? '').trim().slice(0, 200) || null
-    const description = String(body.description ?? '').trim().slice(0, 500) || null
 
     // Numéro attribué dans la même requête que l'insertion : pas de doublon possible
     const result = await sql`
-      INSERT INTO invoices (number, year, seq, entry_id, date, client_name, description, nights, persons, tax_rate, tax_amount, tax_currency, tax_included, tva_rate, amount_lodging, amount_total, currency, payment)
+      INSERT INTO invoices (number, year, seq, entry_id, date, client_name, lines, nights, persons, tax_rate, tax_amount, tax_currency, tax_included, tva_rate, amount_lodging, amount_total, currency, payment)
       SELECT printf('FA-%d-%04d', ${year}, COALESCE(MAX(seq), 0) + 1), ${year}, COALESCE(MAX(seq), 0) + 1,
-        ${entryId}, ${date}, ${clientName}, ${description}, ${c.nights}, ${c.persons}, ${taxRate}, ${c.taxAmount}, ${taxCurrency}, ${c.taxIncluded ? 1 : 0}, ${tvaRate}, ${c.lodging}, ${c.total}, ${currency}, ${(entry.payment as string) || null}
+        ${entryId}, ${date}, ${clientName}, ${JSON.stringify(c.lines)}, ${c.nights}, ${c.persons}, ${taxRate}, ${c.taxAmount}, 'MAD', 1, 0, ${c.prestations}, ${c.total}, 'MAD', ${(entry.payment as string) || null}
       FROM invoices WHERE year = ${year}
       RETURNING *
     `

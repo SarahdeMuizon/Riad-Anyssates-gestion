@@ -1,19 +1,17 @@
-// Factures de vente et relevé de taxe de séjour, sur le papier à en-tête du riad
-// (logo en haut à gauche, « Marrakech le … », mentions légales en pied de page).
+// Factures de vente et relevé de taxe de séjour, au nom du riad
+// (logo, numéro et date en en-tête, mentions légales ICE / RC / PT / IF en pied de page).
 // Générés entièrement dans le navigateur (pdf-lib).
 import type { PDFDocument, PDFFont, PDFImage, PDFPage, RGB } from 'pdf-lib'
 import type { Invoice } from '@/lib/invoice'
-import { QUARTER_LABELS } from '@/lib/invoice'
+import { QUARTER_LABELS, invoiceLines, lineTotals } from '@/lib/invoice'
 import { clean, fmtAmount, fmtDate } from '@/lib/pdf-utils'
 
 const A4: [number, number] = [595.28, 841.89]
-const MARGIN = 70.9 // 2,5 cm, comme le modèle Word
+const M = 48 // marge
 
-const FOOTER = [
-  'RIAD ANYSSATES  -  144 Derb el Bomba - Arset Ihiri - 40000 Marrakech Médina',
-  'Tél : +212 (0)5.24.38.17.38   -   riadanyssates@gmail.com',
-  'ICE : 001656831000023     RC : 34571     PT : 45605273     IF : 40179446',
-]
+const ADDRESS = '144 Derb el Bomba - Arset Ihiri - 40000 Marrakech Médina'
+const CONTACT = 'Tél. +212 (0)5 24 38 17 38  -  riadanyssates@gmail.com'
+const LEGAL = 'ICE 001656831000023   -   RC 34571   -   PT 45605273   -   IF 40179446'
 
 let logoBytes: Uint8Array | null = null
 async function loadLogo(): Promise<Uint8Array> {
@@ -21,38 +19,61 @@ async function loadLogo(): Promise<Uint8Array> {
   return logoBytes
 }
 
-interface Kit { font: PDFFont; bold: PDFFont; logo: PDFImage }
+interface Kit {
+  font: PDFFont; bold: PDFFont; italic: PDFFont; logo: PDFImage
+  c: { accent: RGB; ink: RGB; muted: RGB; hair: RGB; soft: RGB; white: RGB }
+}
 
 async function kit(doc: PDFDocument): Promise<Kit> {
-  const { StandardFonts } = await import('pdf-lib')
+  const { StandardFonts, rgb } = await import('pdf-lib')
   return {
     font: await doc.embedFont(StandardFonts.Helvetica),
     bold: await doc.embedFont(StandardFonts.HelveticaBold),
+    italic: await doc.embedFont(StandardFonts.HelveticaOblique),
     logo: await doc.embedJpg(await loadLogo()),
+    c: {
+      accent: rgb(0.757, 0.376, 0.227), // terracotta de l'application
+      ink: rgb(0.16, 0.16, 0.17), muted: rgb(0.52, 0.5, 0.48), hair: rgb(0.9, 0.88, 0.86),
+      soft: rgb(0.98, 0.965, 0.95), white: rgb(1, 1, 1),
+    },
   }
 }
 
-async function colors() {
-  const { rgb } = await import('pdf-lib')
-  return { white: rgb(1, 1, 1), red: rgb(0.62, 0.11, 0.13), grey: rgb(0.42, 0.42, 0.42), text: rgb(0.12, 0.12, 0.12), line: rgb(0.85, 0.82, 0.8), band: rgb(0.97, 0.95, 0.93) }
-}
+const text = (page: PDFPage, s: string, x: number, y: number, size: number, font: PDFFont, color: RGB) =>
+  page.drawText(clean(s), { x, y, size, font, color })
+const right = (page: PDFPage, s: string, xRight: number, y: number, size: number, font: PDFFont, color: RGB) =>
+  page.drawText(clean(s), { x: xRight - font.widthOfTextAtSize(clean(s), size), y, size, font, color })
+const spaced = (s: string) => s.split('').join(' ').replace(/ {3}/g, '   ')
 
-async function letterhead(page: PDFPage, k: Kit, date: string) {
-  const c = await colors()
+// En-tête : logo et nom du riad à gauche, titre du document à droite ; pied de page légal
+function frame(page: PDFPage, k: Kit, title: string, meta: [string, string][]) {
   const [W, H] = A4
-  page.drawImage(k.logo, { x: 34, y: H - 36.6 - 87.4, width: 129.6, height: 87.4 })
-  const town = clean(`Marrakech le ${fmtDate(date)}`)
-  page.drawText(town, { x: W - MARGIN - k.font.widthOfTextAtSize(town, 11), y: H - MARGIN - 8, size: 11, font: k.font, color: c.text })
-  FOOTER.forEach((line, i) => {
-    const t = clean(line)
-    const f = i === 0 ? k.bold : k.font
-    page.drawText(t, { x: (W - f.widthOfTextAtSize(t, 8.5)) / 2, y: 44 - i * 11, size: 8.5, font: f, color: c.grey })
-  })
-  page.drawLine({ start: { x: MARGIN, y: 58 }, end: { x: W - MARGIN, y: 58 }, thickness: 0.6, color: c.line })
-}
+  const { c } = k
+  // Bandeau d'accent tout en haut
+  page.drawRectangle({ x: 0, y: H - 6, width: W, height: 6, color: c.accent })
+  const logoH = 74, logoW = logoH * k.logo.width / k.logo.height
+  page.drawImage(k.logo, { x: M, y: H - 34 - logoH, width: logoW, height: logoH })
+  const tx = M + logoW + 14
+  text(page, spaced('RIAD ANYSSATES'), tx, H - 66, 13, k.bold, c.ink)
+  text(page, "Maison d'hôtes  -  Marrakech Médina", tx, H - 82, 9, k.font, c.muted)
 
-const right = (page: PDFPage, text: string, xRight: number, y: number, size: number, font: PDFFont, color: RGB) =>
-  page.drawText(text, { x: xRight - font.widthOfTextAtSize(text, size), y, size, font, color })
+  right(page, title, W - M, H - 62, 26, k.bold, c.accent)
+  let y = H - 82
+  for (const [l, v] of meta) {
+    const vw = k.bold.widthOfTextAtSize(clean(v), 9.5)
+    right(page, v, W - M, y, 9.5, k.bold, c.ink)
+    right(page, l, W - M - vw - 6, y, 9.5, k.font, c.muted)
+    y -= 14
+  }
+  page.drawLine({ start: { x: M, y: H - 130 }, end: { x: W - M, y: H - 130 }, thickness: 0.8, color: c.hair })
+
+  // Pied de page
+  page.drawLine({ start: { x: M, y: 62 }, end: { x: W - M, y: 62 }, thickness: 0.8, color: c.hair })
+  ;[[ `RIAD ANYSSATES  -  ${ADDRESS}`, k.bold ], [CONTACT, k.font], [LEGAL, k.font]].forEach(([s, f], i) => {
+    const t = clean(s as string), font = f as PDFFont
+    page.drawText(t, { x: (W - font.widthOfTextAtSize(t, 7.5)) / 2, y: 48 - i * 10.5, size: 7.5, font, color: c.muted })
+  })
+}
 
 // ── Montant en toutes lettres (« Arrêtée la présente facture à la somme de … ») ──
 const UNITS = ['zéro', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf', 'dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize']
@@ -87,81 +108,87 @@ function amountInWords(amount: number, currency: string): string {
   return s
 }
 
+
 async function drawInvoice(doc: PDFDocument, k: Kit, inv: Invoice) {
-  const c = await colors()
   const [W, H] = A4
+  const { c } = k
   const page = doc.addPage(A4)
-  await letterhead(page, k, inv.date)
   const cur = inv.currency || 'MAD'
-  const xR = W - MARGIN
+  const taxCur = inv.tax_currency || 'MAD'
+  frame(page, k, 'FACTURE', [['N°', inv.number], ['Date', fmtDate(inv.date)]])
+  const xR = W - M
 
-  let y = H - 170
-  page.drawText(clean(`FACTURE N° ${inv.number}`), { x: MARGIN, y, size: 18, font: k.bold, color: c.red })
-  y -= 18
-  page.drawText(clean(`Date : ${fmtDate(inv.date)}`), { x: MARGIN, y, size: 10, font: k.font, color: c.grey })
-
-  // Bloc client
-  const boxW = 185, boxX = xR - boxW
-  page.drawRectangle({ x: boxX, y: H - 205, width: boxW, height: 52, borderColor: c.line, borderWidth: 0.8, color: c.band })
-  page.drawText('CLIENT', { x: boxX + 10, y: H - 170, size: 8, font: k.bold, color: c.grey })
-  page.drawText(clean(inv.client_name || '-'), { x: boxX + 10, y: H - 188, size: 11.5, font: k.bold, color: c.text, maxWidth: boxW - 20 })
+  // Client et séjour
+  let y = H - 162
+  text(page, 'FACTURÉ À', M, y, 7.5, k.bold, c.muted)
+  text(page, 'RÈGLEMENT', 330, y, 7.5, k.bold, c.muted)
+  y -= 17
+  text(page, inv.client_name || '-', M, y, 13, k.bold, c.ink)
+  text(page, inv.payment || '-', 330, y, 11, k.font, c.ink)
+  y -= 15
+  if (inv.nights > 0 || inv.persons > 0) {
+    text(page, `Séjour : ${inv.persons} personne${inv.persons > 1 ? 's' : ''}  -  ${inv.nights} nuit${inv.nights > 1 ? 's' : ''}`, M, y, 9.5, k.font, c.muted)
+  }
+  text(page, `Marrakech, le ${fmtDate(inv.date)}`, 330, y, 9.5, k.font, c.muted)
 
   // Tableau des prestations
-  y = H - 250
-  const cols = { des: MARGIN, qty: 330, pu: 440, amt: xR }
-  page.drawRectangle({ x: MARGIN - 4, y: y - 6, width: xR - MARGIN + 8, height: 20, color: c.red })
-  const white = c.white
-  page.drawText('Désignation', { x: cols.des, y, size: 9.5, font: k.bold, color: white })
-  right(page, 'Quantité', cols.qty, y, 9.5, k.bold, white)
-  right(page, clean('Prix unitaire'), cols.pu, y, 9.5, k.bold, white)
-  right(page, 'Montant', cols.amt, y, 9.5, k.bold, white)
-  y -= 26
+  y = H - 240
+  const col = { tva: 360, ht: 450, ttc: xR }
+  text(page, 'DÉSIGNATION', M, y, 7.5, k.bold, c.muted)
+  right(page, 'TVA', col.tva, y, 7.5, k.bold, c.muted)
+  right(page, 'MONTANT HT', col.ht, y, 7.5, k.bold, c.muted)
+  right(page, 'MONTANT TTC', col.ttc, y, 7.5, k.bold, c.muted)
+  y -= 8
+  page.drawLine({ start: { x: M, y }, end: { x: xR, y }, thickness: 1.2, color: c.accent })
 
-  const lodging = Number(inv.amount_lodging)
-  const tva = Number(inv.tva_rate) > 0 ? Math.round((lodging - lodging / (1 + Number(inv.tva_rate) / 100)) * 100) / 100 : 0
-  const lodgingHT = Math.round((lodging - tva) * 100) / 100
-  const row = (label: string, sub: string, qty: string, pu: string, amount: string, bold = false) => {
-    const f = bold ? k.bold : k.font
-    page.drawText(clean(label), { x: cols.des, y, size: 10, font: f, color: c.text, maxWidth: cols.qty - cols.des - 60 })
-    if (qty) right(page, clean(qty), cols.qty, y, 10, k.font, c.text)
-    if (pu) right(page, clean(pu), cols.pu, y, 10, k.font, c.text)
-    right(page, clean(amount), cols.amt, y, 10, f, c.text)
-    if (sub) { y -= 13; page.drawText(clean(sub), { x: cols.des, y, size: 8.5, font: k.font, color: c.grey, maxWidth: cols.qty - cols.des - 60 }) }
+  const lines = invoiceLines(inv)
+  const row = (label: string, sub: string, tva: string, ht: string, ttc: string) => {
+    y -= 20
+    text(page, label, M, y, 10.5, k.font, c.ink)
+    right(page, tva, col.tva, y, 10, k.font, c.muted)
+    right(page, ht, col.ht, y, 10, k.font, c.ink)
+    right(page, ttc, col.ttc, y, 10, k.bold, c.ink)
+    if (sub) { y -= 13; text(page, sub, M, y, 8.5, k.font, c.muted) }
     y -= 10
-    page.drawLine({ start: { x: MARGIN - 4, y }, end: { x: xR + 4, y }, thickness: 0.5, color: c.line })
+    page.drawLine({ start: { x: M, y }, end: { x: xR, y }, thickness: 0.5, color: c.hair })
+  }
+  for (const l of lines) {
+    const ht = l.tva > 0 ? l.amount / (1 + l.tva / 100) : l.amount
+    row(l.label, '', l.tva > 0 ? `${String(l.tva).replace('.', ',')} %` : '-', fmtAmount(ht), `${fmtAmount(l.amount)} ${cur}`)
+  }
+  const tax = Number(inv.tax_amount)
+  if (tax > 0) {
+    row('Taxe de séjour', `${inv.persons} pers. x ${inv.nights} nuit${inv.nights > 1 ? 's' : ''} x ${fmtAmount(Number(inv.tax_rate))} ${taxCur}${taxCur !== cur ? ' - hors total' : ''}`,
+      '-', fmtAmount(tax), `${fmtAmount(tax)} ${taxCur}`)
+  }
+
+  // Totaux
+  const t = lineTotals(lines)
+  y -= 26
+  const xL = 340
+  const totalRow = (l: string, v: string) => {
+    text(page, l, xL, y, 9.5, k.font, c.muted)
+    right(page, v, xR, y, 9.5, k.font, c.ink)
     y -= 16
   }
+  totalRow('Total HT', `${fmtAmount(t.totalHT + (taxCur === cur ? tax : 0))} ${cur}`)
+  totalRow('TVA', `${fmtAmount(t.totalTVA)} ${cur}`)
+  if (tax > 0) totalRow('dont taxe de séjour', `${fmtAmount(tax)} ${taxCur}`)
+  y -= 6
+  page.drawRectangle({ x: xL - 12, y: y - 10, width: xR - xL + 12, height: 30, color: c.accent })
+  text(page, 'TOTAL TTC', xL, y, 11, k.bold, c.white)
+  right(page, `${fmtAmount(Number(inv.amount_total))} ${cur}`, xR - 10, y, 13, k.bold, c.white)
 
-  const stay = inv.nights > 0 ? `${inv.nights} nuit${inv.nights > 1 ? 's' : ''}${inv.persons > 0 ? ` - ${inv.persons} personne${inv.persons > 1 ? 's' : ''}` : ''}` : ''
-  row(inv.description || 'Hébergement', stay, '1', fmtAmount(lodgingHT), `${fmtAmount(lodgingHT)} ${cur}`)
-  if (tva > 0) {
-    row(`TVA ${String(inv.tva_rate).replace('.', ',')} %`, '', '', '', `${fmtAmount(tva)} ${cur}`)
-  }
-  if (Number(inv.tax_amount) > 0) {
-    const nuitees = inv.nights * inv.persons
-    const taxCur = inv.tax_currency || 'MAD'
-    const outside = cur !== taxCur
-    row('Taxe de séjour', `${inv.persons} personne(s) x ${inv.nights} nuit(s)${outside ? ` - en ${taxCur}, hors total` : ''}`,
-      `${nuitees} nuitée${nuitees > 1 ? 's' : ''}`, `${fmtAmount(Number(inv.tax_rate))} ${taxCur}`, `${fmtAmount(Number(inv.tax_amount))} ${taxCur}`)
-  }
-
-  // Total
-  y -= 4
-  page.drawRectangle({ x: 300, y: y - 8, width: xR - 300 + 4, height: 26, color: c.band, borderColor: c.red, borderWidth: 1 })
-  page.drawText('TOTAL TTC', { x: 310, y, size: 12, font: k.bold, color: c.red })
-  right(page, clean(`${fmtAmount(Number(inv.amount_total))} ${cur}`), xR - 6, y, 12, k.bold, c.red)
-  y -= 40
-
-  page.drawText(clean(`Mode de règlement : ${inv.payment || '-'}`), { x: MARGIN, y, size: 10, font: k.font, color: c.text })
-  y -= 30
-  page.drawText('Arrêtée la présente facture à la somme de :', { x: MARGIN, y, size: 10, font: k.font, color: c.text })
-  y -= 15
+  // Montant en lettres
+  y -= 56
+  page.drawRectangle({ x: M, y: y - 14, width: xR - M, height: 40, color: c.soft })
+  text(page, 'Arrêtée la présente facture à la somme de :', M + 12, y + 10, 8.5, k.font, c.muted)
   const words = amountInWords(Number(inv.amount_total), cur)
-  page.drawText(clean(words.charAt(0).toUpperCase() + words.slice(1) + '.'), { x: MARGIN, y, size: 10, font: k.bold, color: c.text, maxWidth: xR - MARGIN, lineHeight: 13 })
-  if (Number(inv.tax_amount) > 0 && Number(inv.tax_included) === 1) {
-    y -= 30
-    page.drawText(clean(`Dont taxe de séjour : ${fmtAmount(Number(inv.tax_amount))} ${inv.tax_currency || 'MAD'}.`), { x: MARGIN, y, size: 9, font: k.font, color: c.grey })
-  }
+  page.drawText(clean(words.charAt(0).toUpperCase() + words.slice(1) + '.'), { x: M + 12, y: y - 4, size: 10, font: k.bold, color: c.ink, maxWidth: xR - M - 24 })
+
+  // Remerciement
+  const thanks = 'Merci pour votre séjour au Riad Anyssates'
+  page.drawText(clean(thanks), { x: (W - k.italic.widthOfTextAtSize(clean(thanks), 10)) / 2, y: 92, size: 10, font: k.italic, color: c.accent })
 }
 
 export async function buildInvoicePdf(inv: Invoice): Promise<Blob> {
@@ -186,70 +213,74 @@ export async function buildTaxeSejourPdf(invoices: Invoice[], year: number, quar
   const { PDFDocument } = await import('pdf-lib')
   const doc = await PDFDocument.create()
   const k = await kit(doc)
-  const c = await colors()
+  const { c } = k
   const [W, H] = A4
-  const xR = W - MARGIN
-  const today = new Date().toISOString().split('T')[0]
+  const xR = W - M
+  const today = fmtDate(new Date().toISOString().split('T')[0])
   const sorted = [...invoices].sort((a, b) => a.date.localeCompare(b.date) || a.seq - b.seq)
 
   const cols = [
-    { t: 'Date', w: 54, r: false }, { t: 'N° facture', w: 72, r: false }, { t: 'Client', w: 120, r: false },
-    { t: 'Pers.', w: 36, r: true }, { t: 'Nuits', w: 36, r: true }, { t: 'Pers. x nuits', w: 60, r: true }, { t: 'Taxe', w: xR - MARGIN - 378, r: true },
+    { t: 'DATE', w: 62, r: false }, { t: 'N° FACTURE', w: 80, r: false }, { t: 'CLIENT', w: 150, r: false },
+    { t: 'PERS.', w: 40, r: true }, { t: 'NUITS', w: 40, r: true }, { t: 'PERS. x NUITS', w: 62, r: true }, { t: 'TAXE', w: xR - M - 434, r: true },
   ]
-  const ROW_H = 16
   let page = doc.addPage(A4)
   let y = 0
   const header = () => {
-    let x = MARGIN
-    page.drawRectangle({ x: MARGIN - 4, y: y - 5, width: xR - MARGIN + 8, height: ROW_H + 2, color: c.red })
+    let x = M
     for (const col of cols) {
-      const t = clean(col.t)
-      page.drawText(t, { x: col.r ? x + col.w - k.bold.widthOfTextAtSize(t, 8.5) - 4 : x, y, size: 8.5, font: k.bold, color: c.white })
+      if (col.r) right(page, col.t, x + col.w, y, 7.5, k.bold, c.muted)
+      else text(page, col.t, x, y, 7.5, k.bold, c.muted)
       x += col.w
     }
-    y -= ROW_H + 4
+    y -= 8
+    page.drawLine({ start: { x: M, y }, end: { x: xR, y }, thickness: 1.2, color: c.accent })
   }
-  const newPage = async (first: boolean) => {
+  const newPage = (first: boolean) => {
     if (!first) page = doc.addPage(A4)
-    await letterhead(page, k, today)
-    y = H - 170
+    frame(page, k, 'TAXE DE SÉJOUR', [['Période', `T${quarter} ${year}`], ['Édité le', today]])
+    y = H - 162
     if (first) {
-      page.drawText('RELEVÉ DE LA TAXE DE SÉJOUR', { x: MARGIN, y, size: 17, font: k.bold, color: c.red })
-      y -= 18
-      page.drawText(clean(`${QUARTER_LABELS[quarter]} ${year}`), { x: MARGIN, y, size: 11, font: k.font, color: c.text })
-      y -= 30
+      text(page, `Relevé du ${QUARTER_LABELS[quarter]} ${year}`, M, y, 13, k.bold, c.ink)
+      y -= 34
     }
     header()
   }
-  await newPage(true)
+  newPage(true)
 
-  let nuitees = 0
+  let nuitees = 0, persons = 0
   const totals: Record<string, number> = {}
   for (const inv of sorted) {
-    if (y < 110) await newPage(false)
+    if (y < 150) newPage(false)
     const n = inv.nights * inv.persons
     const taxCur = inv.tax_currency || 'MAD'
-    nuitees += n; totals[taxCur] = (totals[taxCur] || 0) + Number(inv.tax_amount)
+    nuitees += n; persons += inv.persons
+    totals[taxCur] = (totals[taxCur] || 0) + Number(inv.tax_amount)
     const vals = [fmtDate(inv.date), inv.number, inv.client_name || '-', String(inv.persons), String(inv.nights), String(n), `${fmtAmount(Number(inv.tax_amount))} ${taxCur}`]
-    let x = MARGIN
+    y -= 17
+    let x = M
     vals.forEach((v, i) => {
       let t = clean(v)
       while (t.length > 1 && k.font.widthOfTextAtSize(t, 9) > cols[i].w - 6) t = t.slice(0, -1)
-      page.drawText(t, { x: cols[i].r ? x + cols[i].w - k.font.widthOfTextAtSize(t, 9) - 4 : x, y, size: 9, font: k.font, color: c.text })
+      const f = i === vals.length - 1 ? k.bold : k.font
+      if (cols[i].r) page.drawText(t, { x: x + cols[i].w - f.widthOfTextAtSize(t, 9), y, size: 9, font: f, color: c.ink })
+      else page.drawText(t, { x, y, size: 9, font: f, color: c.ink })
       x += cols[i].w
     })
-    y -= 6
-    page.drawLine({ start: { x: MARGIN - 4, y }, end: { x: xR + 4, y }, thickness: 0.4, color: c.line })
-    y -= ROW_H - 6
+    y -= 7
+    page.drawLine({ start: { x: M, y }, end: { x: xR, y }, thickness: 0.5, color: c.hair })
   }
-  if (y < 150) await newPage(false)
-  y -= 14
-  page.drawRectangle({ x: MARGIN - 4, y: y - 40, width: xR - MARGIN + 8, height: 56, color: c.band, borderColor: c.red, borderWidth: 1 })
-  page.drawText(clean(`${sorted.length} facture${sorted.length > 1 ? 's' : ''}  -  ${nuitees} nuitée${nuitees > 1 ? 's' : ''}`), { x: MARGIN + 6, y, size: 10, font: k.font, color: c.text })
-  y -= 22
-  page.drawText('TOTAL TAXE DE SÉJOUR', { x: MARGIN + 6, y, size: 12, font: k.bold, color: c.red })
-  const totalLabel = Object.entries(totals).map(([cur, v]) => `${fmtAmount(v)} ${cur}`).join(' + ') || '0,00'
-  right(page, clean(totalLabel), xR - 6, y, 12, k.bold, c.red)
+
+  if (y < 190) newPage(false)
+  y -= 34
+  const xL = 300
+  const line = (l: string, v: string) => { text(page, l, xL, y, 9.5, k.font, c.muted); right(page, v, xR, y, 9.5, k.font, c.ink); y -= 16 }
+  line('Factures', String(sorted.length))
+  line('Personnes', String(persons))
+  line('Nuitées (personnes x nuits)', String(nuitees))
+  y -= 6
+  page.drawRectangle({ x: xL - 12, y: y - 10, width: xR - xL + 12, height: 30, color: c.accent })
+  text(page, 'TAXE À REVERSER', xL, y, 11, k.bold, c.white)
+  right(page, Object.entries(totals).map(([cur, v]) => `${fmtAmount(v)} ${cur}`).join(' + ') || '0,00 MAD', xR - 10, y, 13, k.bold, c.white)
 
   doc.setTitle(clean(`Taxe de séjour - T${quarter} ${year}`))
   return new Blob([(await doc.save()) as BlobPart], { type: 'application/pdf' })
