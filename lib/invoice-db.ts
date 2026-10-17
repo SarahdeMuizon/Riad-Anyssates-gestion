@@ -1,5 +1,5 @@
 import sql from '@/lib/db'
-import { DEFAULT_TAXE_SEJOUR } from '@/lib/invoice'
+import { DEFAULT_TAXE_SEJOUR, mergeTva, type TvaRates } from '@/lib/invoice'
 
 // Tarif de la taxe de séjour (MAD / personne / nuit), modifiable dans l'onglet Comptable
 export async function getTaxeSejourRate(): Promise<number> {
@@ -21,4 +21,10 @@ export async function removeInvoice(id: number): Promise<'deleted' | 'cancelled'
   }
   await sql`UPDATE invoices SET cancelled = 1, entry_id = NULL WHERE id = ${id}`
   return 'cancelled'
+}
+
+// Taux de TVA par catégorie de prestation
+export async function getTvaRates(): Promise<TvaRates> {
+  const rows = await sql`SELECT value FROM settings WHERE key = 'tva_rates'`
+  try { return mergeTva(JSON.parse((rows[0]?.value as string) || '{}')) } catch { return mergeTva(null) }
 }

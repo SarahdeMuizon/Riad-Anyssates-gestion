@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import sql, { ensureDb } from '@/lib/db'
 import { getManagerSession } from '@/lib/auth'
 import { computeInvoice, entryGross, parseExtras } from '@/lib/invoice'
-import { getTaxeSejourRate } from '@/lib/invoice-db'
+import { getTaxeSejourRate, getTvaRates } from '@/lib/invoice-db'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       : entryGross(entry as { amount: number; amount_ht?: number; payment?: string })
     if (gross <= 0) return NextResponse.json({ error: 'Indiquez le montant en dirhams' }, { status: 400 })
     const taxRate = await getTaxeSejourRate()
-    const c = computeInvoice({ gross, nights: Number(body.nights), persons: Number(body.persons), taxRate, extras: parseExtras(body.extras) })
+    const c = computeInvoice({ gross, nights: Number(body.nights), persons: Number(body.persons), taxRate, extras: parseExtras(body.extras), rates: await getTvaRates() })
     if (!c.valid) return NextResponse.json({ error: 'La taxe de séjour et les lignes dépassent le montant encaissé' }, { status: 400 })
 
     const clientName = String(body.client_name ?? entry.supplier ?? '').trim().slice(0, 200) || null

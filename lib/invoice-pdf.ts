@@ -10,7 +10,7 @@ const A4: [number, number] = [595.28, 841.89]
 const M = 48 // marge
 
 const ADDRESS = '144 Derb el Bomba - Arset Ihiri - 40000 Marrakech Médina'
-const CONTACT = 'Tél. +212 (0)5 24 38 17 38  -  riadanyssates@gmail.com'
+const CONTACT = 'Tél. +212 (0)5 24 38 17 38  -  contact@riadanyssates.com'
 const LEGAL = 'ICE 001656831000023   -   RC 34571   -   PT 45605273   -   IF 40179446'
 
 let logoBytes: Uint8Array | null = null
@@ -119,6 +119,10 @@ function totalBand(page: PDFPage, k: Kit, label: string, value: string, xL: numb
   right(page, value, xR - 8, y, size, k.bold, k.c.white)
 }
 
+const PAYMENT_LABELS: Record<string, string> = {
+  CB: 'Carte bancaire', Virement: 'Virement bancaire', 'Chèque': 'Chèque', 'Prélèvement': 'Prélèvement', 'Espèces': 'Espèces',
+}
+
 async function drawInvoice(doc: PDFDocument, k: Kit, inv: Invoice) {
   const [W, H] = A4
   const { c } = k
@@ -131,15 +135,13 @@ async function drawInvoice(doc: PDFDocument, k: Kit, inv: Invoice) {
   // Client et séjour
   let y = H - 162
   text(page, 'FACTURÉ À', M, y, 7.5, k.bold, c.muted)
-  text(page, 'RÈGLEMENT', 330, y, 7.5, k.bold, c.muted)
+  right(page, `Marrakech, le ${fmtDate(inv.date)}`, xR, y - 17, 10, k.font, c.muted)
   y -= 17
   text(page, inv.client_name || '-', M, y, 13, k.bold, c.ink)
-  text(page, inv.payment || '-', 330, y, 11, k.font, c.ink)
   y -= 15
   if (inv.nights > 0 || inv.persons > 0) {
     text(page, `Séjour : ${inv.persons} personne${inv.persons > 1 ? 's' : ''}  -  ${inv.nights} nuit${inv.nights > 1 ? 's' : ''}`, M, y, 9.5, k.font, c.muted)
   }
-  text(page, `Marrakech, le ${fmtDate(inv.date)}`, 330, y, 9.5, k.font, c.muted)
 
   // Tableau des prestations
   y = H - 240
@@ -187,16 +189,19 @@ async function drawInvoice(doc: PDFDocument, k: Kit, inv: Invoice) {
   y -= 6
   totalBand(page, k, 'TOTAL TTC', `${fmtAmount(Number(inv.amount_total))} ${cur}`, xL, y)
 
-  // Montant en lettres
-  y -= 56
-  page.drawRectangle({ x: M, y: y - 14, width: xR - M, height: 40, color: c.soft })
-  text(page, 'Arrêtée la présente facture à la somme de :', M + 12, y + 10, 8.5, k.font, c.muted)
+  // Bas de page : montant en lettres et mode de règlement
+  const by = 104
+  page.drawRectangle({ x: M, y: by, width: xR - M, height: 66, color: c.soft })
+  text(page, 'Arrêtée la présente facture à la somme de :', M + 14, by + 48, 8.5, k.font, c.muted)
   const words = amountInWords(Number(inv.amount_total), cur)
-  page.drawText(clean(words.charAt(0).toUpperCase() + words.slice(1) + '.'), { x: M + 12, y: y - 4, size: 10, font: k.bold, color: c.ink, maxWidth: xR - M - 24 })
+  page.drawText(clean(words.charAt(0).toUpperCase() + words.slice(1) + '.'), { x: M + 14, y: by + 33, size: 10, font: k.bold, color: c.ink, maxWidth: xR - M - 28 })
+  page.drawLine({ start: { x: M + 14, y: by + 24 }, end: { x: xR - 14, y: by + 24 }, thickness: 0.5, color: c.hair })
+  text(page, 'Règlement :', M + 14, by + 10, 9, k.font, c.muted)
+  text(page, `${PAYMENT_LABELS[inv.payment || ''] || inv.payment || '-'}  -  le ${fmtDate(inv.date)}`, M + 14 + k.font.widthOfTextAtSize('Règlement :', 9) + 6, by + 10, 9.5, k.bold, c.ink)
 
   // Remerciement
   const thanks = 'Merci pour votre séjour au Riad Anyssates'
-  page.drawText(clean(thanks), { x: (W - k.italic.widthOfTextAtSize(clean(thanks), 10)) / 2, y: 92, size: 10, font: k.italic, color: c.accent })
+  page.drawText(clean(thanks), { x: (W - k.italic.widthOfTextAtSize(clean(thanks), 9.5)) / 2, y: 80, size: 9.5, font: k.italic, color: c.accent })
 }
 
 export async function buildInvoicePdf(inv: Invoice): Promise<Blob> {

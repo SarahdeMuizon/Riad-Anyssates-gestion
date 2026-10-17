@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import sql, { ensureDb } from '@/lib/db'
 import { getManagerSession } from '@/lib/auth'
 import { computeInvoice, invoiceExtras, parseExtras, type Invoice } from '@/lib/invoice'
-import { removeInvoice } from '@/lib/invoice-db'
+import { removeInvoice, getTvaRates } from '@/lib/invoice-db'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +32,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       persons: body.persons !== undefined ? Number(body.persons) : Number(inv.persons),
       taxRate: Number(inv.tax_rate),
       extras: body.extras !== undefined ? parseExtras(body.extras) : invoiceExtras(inv),
+      rates: await getTvaRates(),
     })
     if (!c.valid) return NextResponse.json({ error: 'La taxe de séjour et les lignes dépassent le montant encaissé' }, { status: 400 })
     const clientName = body.client_name !== undefined ? (String(body.client_name).trim().slice(0, 200) || null) : inv.client_name

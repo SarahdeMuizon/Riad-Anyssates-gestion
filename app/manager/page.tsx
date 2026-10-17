@@ -6,7 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import { openAttachment, fileToDataUrl } from '@/lib/attachments'
 import ManagerGuide from './guide'
 import NotificationBell from './notifications'
-import { InvoiceModal, InvoiceEditor, TaxeSejourPanel, useInvoices, downloadInvoice, emptyDraft, previewDraft, draftBody, type InvoiceDraft } from './invoices'
+import { InvoiceModal, InvoiceEditor, TaxeSejourPanel, TvaRatesCard, useInvoices, downloadInvoice, emptyDraft, previewDraft, draftBody, type InvoiceDraft } from './invoices'
  
 type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'banque' | 'coffre' | 'comptable' | 'employees' | 'settings'
  
@@ -321,7 +321,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [fClientName, setFClientName] = useState('')
   // Dernier encaissement enregistré : proposer d'en créer la facture
   const [fLastEntry, setFLastEntry] = useState<Entry | null>(null)
-  const { byEntry: invoiceByEntry, taxRate, reload: reloadInvoices } = useInvoices()
+  const { byEntry: invoiceByEntry, taxRate, tvaRates, reload: reloadInvoices } = useInvoices()
   const [invoiceFor, setInvoiceFor] = useState<Entry | null>(null)
   // Facture client créée en même temps que l'encaissement
   const [fInvoice, setFInvoice] = useState(false)
@@ -628,7 +628,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   // Aperçu de la facture pendant la saisie de l'encaissement
   // (facture toujours en dirhams : pour un encaissement en euros, le montant en MAD est saisi dans la facture)
   const invoiceGross = fCurrency === 'EUR' ? null : parseFloat(fPayment === 'CB' && fTransactionAmount ? fTransactionAmount : fAmount) || 0
-  const invoicePreview = previewDraft(fInvDraft, invoiceGross, taxRate ?? 0)
+  const invoicePreview = previewDraft(fInvDraft, invoiceGross, taxRate ?? 0, tvaRates)
 
   function exportCSV() { window.location.href = `/api/export/${type}?month=${month}` }
  
@@ -714,7 +714,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                   <button type="button" onClick={() => setFInvoice(false)} title="Ne pas créer de facture"
                     style={{ position: 'absolute', top: '0.35rem', right: '0.35rem', background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '1.1rem', lineHeight: 1 }}>×</button>
                   <p style={{ fontSize: '0.85rem', fontWeight: 700, color: '#8B4513', marginBottom: '0.75rem' }}>🧾 Facture client — numérotée automatiquement à l&apos;enregistrement</p>
-                  <InvoiceEditor draft={fInvDraft} onChange={setFInvDraft} gross={invoiceGross} taxRate={taxRate ?? 0} autoFocus />
+                  <InvoiceEditor draft={fInvDraft} onChange={setFInvDraft} gross={invoiceGross} taxRate={taxRate ?? 0} rates={tvaRates} autoFocus />
                   <p style={{ fontSize: '0.72rem', color: '#999', marginTop: '0.5rem' }}>Le montant encaissé se saisit plus bas, comme d&apos;habitude : la taxe de séjour et les lignes en sont déduites, le reste correspond à l&apos;hébergement.</p>
                 </div>
               ) : (
@@ -1006,7 +1006,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       <input ref={rowFileRef} type="file" accept="image/*,application/pdf" onChange={handleRowUpload} style={{ display: 'none' }} />
 
       {invoiceFor && taxRate !== null && (
-        <InvoiceModal entry={invoiceFor} invoice={invoiceByEntry[invoiceFor.id] ?? null} taxRate={taxRate}
+        <InvoiceModal entry={invoiceFor} invoice={invoiceByEntry[invoiceFor.id] ?? null} taxRate={taxRate} rates={tvaRates}
           onClose={() => setInvoiceFor(null)}
           onSaved={() => {
             setInvoiceFor(null); setFLastEntry(null); reloadInvoices()
@@ -1997,7 +1997,7 @@ function ComptableTab() {
         ))}
       </div>
       {section === 'achats' && <ComptableInvoices type="cb" />}
-      {section === 'ventes' && <ComptableInvoices type="cash" />}
+      {section === 'ventes' && <><TvaRatesCard /><ComptableInvoices type="cash" /></>}
       {section === 'taxes' && <TaxeSejourPanel />}
     </div>
   )

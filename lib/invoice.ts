@@ -35,17 +35,33 @@ export interface InvoiceLine { label: string; amount: number; tva: number } // a
 
 export const DEFAULT_TAXE_SEJOUR = 28 // MAD par personne et par nuit
 
-// Catégories de prestations et leur taux de TVA (%) — à compléter avec les taux du comptable
+// Catégories de prestations et leur taux de TVA (%) par défaut — modifiables dans
+// Comptable › Factures de vente (à valider avec le comptable)
 export const INVOICE_CATEGORIES: { label: string; tva: number }[] = [
-  { label: 'Hébergement', tva: 0 },
-  { label: 'Boissons', tva: 0 },
-  { label: 'Spa', tva: 0 },
-  { label: 'Transport', tva: 0 },
-  { label: 'Divers', tva: 0 },
+  { label: 'Hébergement', tva: 10 },
+  { label: 'Boissons alcoolisées', tva: 20 },
+  { label: 'Boissons non alcoolisées', tva: 10 },
+  { label: 'Spa', tva: 20 },
+  { label: 'Transport', tva: 14 },
+  { label: 'Divers', tva: 20 },
 ]
+export type TvaRates = Record<string, number>
+export const DEFAULT_TVA: TvaRates = Object.fromEntries(INVOICE_CATEGORIES.map(c => [c.label, c.tva]))
 export const LODGING = 'Hébergement'
 export const EXTRA_CATEGORIES = INVOICE_CATEGORIES.filter(c => c.label !== LODGING).map(c => c.label)
-export const tvaOf = (label: string) => INVOICE_CATEGORIES.find(c => c.label === label)?.tva ?? 0
+export const tvaOf = (label: string, rates: TvaRates = DEFAULT_TVA) => rates[label] ?? DEFAULT_TVA[label] ?? 0
+
+// Taux enregistrés (JSON) complétés par les taux par défaut
+export function mergeTva(stored: unknown): TvaRates {
+  const out: TvaRates = { ...DEFAULT_TVA }
+  if (stored && typeof stored === 'object') {
+    for (const c of INVOICE_CATEGORIES) {
+      const v = Number((stored as Record<string, unknown>)[c.label])
+      if (!isNaN(v) && v >= 0 && v <= 100) out[c.label] = v
+    }
+  }
+  return out
+}
 
 export interface InvoiceInput {
   gross: number                                     // montant payé par le client, en MAD
@@ -53,6 +69,7 @@ export interface InvoiceInput {
   persons: number
   taxRate: number
   extras: { label: string; amount: number }[]       // lignes autres que l'hébergement
+  rates?: TvaRates
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100
@@ -66,8 +83,8 @@ export function computeInvoice(i: InvoiceInput) {
     .filter(e => e.amount > 0)
   const lodging = r2((i.gross || 0) - taxAmount - extras.reduce((s, e) => s + e.amount, 0))
   const lines: InvoiceLine[] = [
-    ...(lodging > 0 ? [{ label: LODGING, amount: lodging, tva: tvaOf(LODGING) }] : []),
-    ...extras.map(e => ({ ...e, tva: tvaOf(e.label) })),
+    ...(lodging > 0 ? [{ label: LODGING, amount: lodging, tva: tvaOf(LODGING, i.rates) }] : []),
+    ...extras.map(e => ({ ...e, tva: tvaOf(e.label, i.rates) })),
   ]
   return { nights, persons, taxAmount, lodging, lines, ...lineTotals(lines), total: r2(i.gross || 0), valid: lodging >= 0 && (i.gross || 0) > 0 }
 }
