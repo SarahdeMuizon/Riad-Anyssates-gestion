@@ -7,10 +7,11 @@ import { openAttachment, fileToDataUrl } from '@/lib/attachments'
 import ManagerGuide from './guide'
 import NotificationBell from './notifications'
 import { StatementsPanel, StatementsMonthPanel, STATEMENT_LABELS, type StatementSource } from './statements'
+import PayablesTab from './payables'
 import { DateRangeFilter, EMPTY_RANGE, inRange, rangeActive, rangeLabel, type DateRange } from './date-range'
 import { InvoiceModal, InvoiceEditor, TaxeSejourPanel, TvaRatesCard, useInvoices, downloadInvoice, emptyDraft, previewDraft, draftBody, type InvoiceDraft } from './invoices'
  
-type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'banque' | 'coffre' | 'comptable' | 'employees' | 'settings'
+type Tab = 'dashboard' | 'depenses' | 'apayer' | 'encaissements' | 'fonds' | 'banque' | 'coffre' | 'comptable' | 'employees' | 'settings'
  
 const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
  
@@ -56,6 +57,7 @@ export default function ManagerPage() {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'dashboard', label: '📊 Dashboard' },
     { id: 'depenses', label: '💳 Dépenses' },
+    { id: 'apayer', label: '🧾 À payer' },
     { id: 'encaissements', label: '💵 Encaissements' },
     { id: 'fonds', label: '💰 Fond de caisse' },
     { id: 'banque', label: '🏦 Banque' },
@@ -90,6 +92,7 @@ export default function ManagerPage() {
       <main className="mgr-main" style={{ padding: '1.5rem', maxWidth: 1440, margin: '0 auto' }}>
         {tab === 'dashboard' && <DashboardTab />}
         {tab === 'depenses' && <EntriesTab type="cb" label="Dépenses" color="var(--terracotta)" />}
+        {tab === 'apayer' && <PayablesTab />}
         {tab === 'encaissements' && <EntriesTab type="cash" label="Encaissements" color="var(--green)" />}
         {tab === 'fonds' && <FondsTab />}
         {tab === 'banque' && <BanqueTab />}
