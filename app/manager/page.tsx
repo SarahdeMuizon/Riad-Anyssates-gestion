@@ -291,6 +291,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [filterCategory, setFilterCategory] = useState('')
   const [filterPayment, setFilterPayment] = useState('')
   const [filterSupplier, setFilterSupplier] = useState('')
+  const [filterNoInvoice, setFilterNoInvoice] = useState(false)
   const [deleteModal, setDeleteModal] = useState<number | null>(null)
   const [employees, setEmployees] = useState<string[]>([])
   const [showForm, setShowForm] = useState(false)
@@ -630,17 +631,80 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const invoiceGross = fCurrency === 'EUR' ? null : parseFloat(fPayment === 'CB' && fTransactionAmount ? fTransactionAmount : fAmount) || 0
   const invoicePreview = previewDraft(fInvDraft, invoiceGross, taxRate ?? 0, tvaRates)
 
+  // Encaissement : un seul montant (le total payé par le client). Par carte, l'encaissement
+  // est enregistré net de la commission bancaire, le total restant dans « montant de la transaction ».
+  const cashTotal = fPayment === 'CB' ? fTransactionAmount : fAmount
+  function setCashTotal(v: string, payment = fPayment, card = fCardType) {
+    if (payment === 'CB') {
+      setFTransactionAmount(v)
+      if (!v) { setFAmount(''); return }
+      const a = parseFloat(v)
+      const c = Math.round(a * (card === 'amex' ? 0.033 : 0.0268) * 100) / 100
+      const t = card === 'amex' ? 0 : Math.round(c * 0.10 * 100) / 100
+      setFAmount(String((a - c - t).toFixed(2)))
+    } else {
+      setFTransactionAmount('')
+      setFAmount(v)
+    }
+  }
+  function choosePayment(p: string) {
+    if (type === 'cash') setCashTotal(cashTotal, p)
+    else if (p !== 'CB') setFTransactionAmount('')
+    setFPayment(p)
+    if (p !== 'Espèces') setFCurrency('MAD')
+  }
+  const paymentFields = (
+    <>
+      {/* Mode paiement */}
+      <div>
+        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>Mode de paiement</label>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {paymentModes.map(p => (
+            <button key={p} type="button" onClick={() => choosePayment(p)} style={{ flex: 1, minWidth: '4rem', padding: '0.5rem', border: `2px solid ${fPayment === p ? color : '#ddd'}`, borderRadius: '0.5rem', background: fPayment === p ? (type === 'cb' ? '#FFF5F0' : '#F0FDF4') : 'white', fontWeight: fPayment === p ? 700 : 400, cursor: 'pointer', color: fPayment === p ? color : 'var(--text)', fontSize: '0.85rem' }}>{p}</button>
+          ))}
+        </div>
+      </div>
+ 
+      {/* Devise — uniquement pour les espèces (Fond de caisse). Les mouvements bancaires (CB/Virement/Chèque) sont toujours en MAD. */}
+      {fPayment === 'Espèces' && (
+        <div>
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>Devise</label>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button type="button" onClick={() => setFCurrency('MAD')} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fCurrency === 'MAD' ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: fCurrency === 'MAD' ? '#FFF5F0' : 'white', fontWeight: fCurrency === 'MAD' ? 700 : 400, cursor: 'pointer', color: fCurrency === 'MAD' ? 'var(--terracotta)' : 'var(--text)' }}>MAD</button>
+            <button type="button" onClick={() => setFCurrency('EUR')} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fCurrency === 'EUR' ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: fCurrency === 'EUR' ? '#FFF5F0' : 'white', fontWeight: fCurrency === 'EUR' ? 700 : 400, cursor: 'pointer', color: fCurrency === 'EUR' ? 'var(--terracotta)' : 'var(--text)' }}>EUR</button>
+          </div>
+        </div>
+      )}
+ 
+      {/* Espèces : transitent par le fond de caisse ou le coffre fort */}
+      {fPayment === 'Espèces' && (
+        <div>
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>{type === 'cb' ? 'Espèces sorties de' : 'Espèces déposées dans'}</label>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {([['fonds', '💰 Fond de caisse'], ['coffre', '🔐 Coffre fort']] as const).map(([val, lbl]) => (
+              <button key={val} type="button" onClick={() => setFCashLocation(val)} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fCashLocation === val ? color : '#ddd'}`, borderRadius: '0.5rem', background: fCashLocation === val ? (type === 'cb' ? '#FFF5F0' : '#F0FDF4') : 'white', fontWeight: fCashLocation === val ? 700 : 400, cursor: 'pointer', color: fCashLocation === val ? color : 'var(--text)', fontSize: '0.85rem' }}>{lbl}</button>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  )
+
   function exportCSV() { window.location.href = `/api/export/${type}?month=${month}` }
  
   // Filtres catégorie / paiement / fournisseur (appliqués sur le mois affiché)
   const supplierQuery = filterSupplier.trim().toLowerCase()
+  // Encaissements clients sans facture (ex : saisis par un employé) : à compléter par Valérie ou Nicolas
+  const needsInvoice = (e: Entry) => type === 'cash' && e.category === 'Client' && !invoiceByEntry[e.id]
+  const toInvoiceCount = entries.filter(needsInvoice).length
   const shown = entries.filter(e =>
+    (!filterNoInvoice || needsInvoice(e)) &&
     (!filterCategory || e.category === filterCategory) &&
     (!filterPayment || e.payment === filterPayment) &&
     (!supplierQuery || `${e.supplier || ''} ${e.description || ''}`.toLowerCase().includes(supplierQuery)))
   const categoryOptions = Array.from(new Set([...categories, ...entries.map(e => e.category).filter(Boolean)]))
   const supplierOptions = Array.from(new Set(entries.map(e => (e.supplier || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'fr'))
-  const hasExtraFilter = !!(filterStatus || filterEmployee || filterCategory || filterPayment || filterSupplier)
+  const hasExtraFilter = !!(filterStatus || filterEmployee || filterCategory || filterPayment || filterSupplier || filterNoInvoice)
   const total = shown.reduce((s, e) => s + Number(e.amount), 0)
  
   return (
@@ -678,7 +742,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
           {supplierOptions.map(n => <option key={n} value={n} />)}
         </datalist>
         {hasExtraFilter && (
-          <button type="button" onClick={() => { setFilterStatus(''); setFilterEmployee(''); setFilterCategory(''); setFilterPayment(''); setFilterSupplier('') }}
+          <button type="button" onClick={() => { setFilterStatus(''); setFilterEmployee(''); setFilterCategory(''); setFilterPayment(''); setFilterSupplier(''); setFilterNoInvoice(false) }}
             style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}>Effacer les filtres</button>
         )}
         <span style={{ marginLeft: 'auto', fontWeight: 600, color }}>
@@ -687,6 +751,12 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
         </span>
       </div>
 
+      {type === 'cash' && toInvoiceCount > 0 && !filterNoInvoice && (
+        <div style={{ marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: '#FAF6F2', border: '1px solid #EADBCB', borderRadius: '0.4rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          🧾 <strong>{toInvoiceCount} encaissement{toInvoiceCount > 1 ? 's' : ''} client{toInvoiceCount > 1 ? 's' : ''} sans facture</strong> ce mois (par exemple saisi{toInvoiceCount > 1 ? 's' : ''} par un employé).
+          <button type="button" onClick={() => setFilterNoInvoice(true)} style={{ background: '#8B4513', color: 'white', border: 'none', borderRadius: '0.4rem', padding: '0.3rem 0.7rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Afficher</button>
+        </div>
+      )}
       {formSuccess && (
         <div style={{ color: 'var(--green)', fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: '#F0FDF4', borderRadius: '0.4rem', border: '1px solid #86efac', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           {formSuccess}
@@ -703,6 +773,31 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
         <div className="card" style={{ marginBottom: '1.25rem' }}>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
  
+            {/* Encaissements : on commence par le montant total et le mode de paiement */}
+            {type === 'cash' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.3rem' }}>Montant total encaissé *</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input className="form-input" type="number" step="0.01" min="0" inputMode="decimal" value={cashTotal} onChange={e => setCashTotal(e.target.value)} placeholder="0.00" required autoFocus
+                      style={{ fontSize: '1.25rem', fontWeight: 700, maxWidth: 220 }} />
+                    <span style={{ fontWeight: 700, color: '#666' }}>{fCurrency}</span>
+                  </div>
+                </div>
+                {paymentFields}
+                {fPayment === 'CB' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.8rem', color: '#666' }}>
+                    Carte :
+                    {([['amex', 'American Express (3,3 %)'], ['other', 'Autre carte (2,68 %)']] as const).map(([val, lbl]) => (
+                      <button key={val} type="button" onClick={() => { setFCardType(val); setCashTotal(cashTotal, 'CB', val) }}
+                        style={{ padding: '0.25rem 0.6rem', border: `1px solid ${fCardType === val ? color : '#ddd'}`, borderRadius: '999px', background: fCardType === val ? '#F0FDF4' : 'white', color: fCardType === val ? color : '#555', fontWeight: fCardType === val ? 700 : 400, cursor: 'pointer', fontSize: '0.78rem' }}>{lbl}</button>
+                    ))}
+                    {fTransactionAmount && <span style={{ marginLeft: 'auto' }}>Commission {fmt(parseFloat(fTransactionAmount) - (parseFloat(fAmount) || 0))} · <strong style={{ color }}>Net reçu {fmt(parseFloat(fAmount) || 0)}</strong></span>}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Upload zone — identique page employé */}
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>
@@ -715,7 +810,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                     style={{ position: 'absolute', top: '0.35rem', right: '0.35rem', background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '1.1rem', lineHeight: 1 }}>×</button>
                   <p style={{ fontSize: '0.85rem', fontWeight: 700, color: '#8B4513', marginBottom: '0.75rem' }}>🧾 Facture client — numérotée automatiquement à l&apos;enregistrement</p>
                   <InvoiceEditor draft={fInvDraft} onChange={setFInvDraft} gross={invoiceGross} taxRate={taxRate ?? 0} rates={tvaRates} autoFocus />
-                  <p style={{ fontSize: '0.72rem', color: '#999', marginTop: '0.5rem' }}>Le montant encaissé se saisit plus bas, comme d&apos;habitude : la taxe de séjour et les lignes en sont déduites, le reste correspond à l&apos;hébergement.</p>
+                  <p style={{ fontSize: '0.72rem', color: '#999', marginTop: '0.5rem' }}>La taxe de séjour et les lignes sont déduites du montant total encaissé ; le reste correspond à l&apos;hébergement.</p>
                 </div>
               ) : (
               <div
@@ -786,8 +881,9 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
               )}
             </div>
  
-            {/* Montants */}
-            {type === 'cb' ? (
+            {/* Dépenses : montants HT / TVA / TTC puis mode de paiement */}
+            {type === 'cb' && (
+              <>
               <div style={{ background: '#F8F8F8', border: '1px solid #EEE', borderRadius: '0.5rem', padding: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                 <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#666', marginBottom: '0.1rem' }}>Montants</p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '0.625rem' }}>
@@ -815,61 +911,10 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                   </div>
                 </div>
               </div>
-            ) : fPayment === 'CB' ? (
-              <div style={{ background: '#F0FDF4', border: '1px solid #86efac', borderRadius: '0.5rem', padding: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#16a34a', marginBottom: '0.1rem' }}>Encaissement CB — frais bancaires</p>
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                  <button type="button" onClick={() => { setFCardType('amex'); if (fTransactionAmount) { const a = parseFloat(fTransactionAmount); const c = Math.round(a * 0.033 * 100) / 100; setFAmount(String((a - c).toFixed(2))); } }} style={{ flex: 1, padding: '0.4rem', border: `2px solid ${fCardType === 'amex' ? '#16a34a' : '#ddd'}`, borderRadius: '0.4rem', background: fCardType === 'amex' ? '#F0FDF4' : 'white', fontWeight: fCardType === 'amex' ? 700 : 400, cursor: 'pointer', fontSize: '0.78rem', color: fCardType === 'amex' ? '#16a34a' : '#555', textAlign: 'center' }}>🔵 American Express<br /><span style={{ fontWeight: 400, fontSize: '0.7rem' }}>Taux 3,3 %</span></button>
-                  <button type="button" onClick={() => { setFCardType('other'); if (fTransactionAmount) { const a = parseFloat(fTransactionAmount); const c = Math.round(a * 0.0268 * 100) / 100; const t = Math.round(c * 0.10 * 100) / 100; setFAmount(String((a - c - t).toFixed(2))); } }} style={{ flex: 1, padding: '0.4rem', border: `2px solid ${fCardType === 'other' ? '#16a34a' : '#ddd'}`, borderRadius: '0.4rem', background: fCardType === 'other' ? '#F0FDF4' : 'white', fontWeight: fCardType === 'other' ? 700 : 400, cursor: 'pointer', fontSize: '0.78rem', color: fCardType === 'other' ? '#16a34a' : '#555', textAlign: 'center' }}>💳 Autre carte<br /><span style={{ fontWeight: 400, fontSize: '0.7rem' }}>Taux 2,68 %</span></button>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '0.2rem' }}>Montant de la transaction *</label>
-                  <input className="form-input" type="number" step="0.01" min="0" value={fTransactionAmount} onChange={e => { const v = e.target.value; setFTransactionAmount(v); if (v) { const a = parseFloat(v); const r = fCardType === 'amex' ? 0.033 : 0.0268; const c = Math.round(a * r * 100) / 100; const t = fCardType === 'amex' ? 0 : Math.round(c * 0.10 * 100) / 100; setFAmount(String((a - c - t).toFixed(2))); } else { setFAmount(''); } }} placeholder="0.00" required />
-                </div>
-                <div style={{ fontSize: '0.82rem', color: '#555' }}>Commission bancaire ({fCardType === 'amex' ? '3,3 %' : '2,68 %'}) : {fTransactionAmount ? `− ${fmt(Math.round(parseFloat(fTransactionAmount) * (fCardType === 'amex' ? 0.033 : 0.0268) * 100) / 100)}` : '—'}</div>
-                {fCardType !== 'amex' && <div style={{ fontSize: '0.82rem', color: '#555' }}>TVA sur commission (10 %) : {fTransactionAmount ? `− ${fmt(Math.round(Math.round(parseFloat(fTransactionAmount) * 0.0268 * 100) / 100 * 0.10 * 100) / 100)}` : '—'}</div>}
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#16a34a' }}>Net reçu : {fTransactionAmount ? fmt(parseFloat(fAmount) || 0) : '—'}</div>
-              </div>
-            ) : (
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Montant *</label>
-                <input className="form-input" type="number" step="0.01" min="0" value={fAmount} onChange={e => setFAmount(e.target.value)} placeholder="0.00" required />
-              </div>
+                {paymentFields}
+              </>
             )}
- 
-            {/* Mode paiement */}
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>Mode de paiement</label>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                {paymentModes.map(p => (
-                  <button key={p} type="button" onClick={() => { setFPayment(p); if (p !== 'CB') setFTransactionAmount(''); if (p !== 'Espèces') setFCurrency('MAD') }} style={{ flex: 1, minWidth: '4rem', padding: '0.5rem', border: `2px solid ${fPayment === p ? color : '#ddd'}`, borderRadius: '0.5rem', background: fPayment === p ? (type === 'cb' ? '#FFF5F0' : '#F0FDF4') : 'white', fontWeight: fPayment === p ? 700 : 400, cursor: 'pointer', color: fPayment === p ? color : 'var(--text)', fontSize: '0.85rem' }}>{p}</button>
-                ))}
-              </div>
-            </div>
- 
-            {/* Devise — uniquement pour les espèces (Fond de caisse). Les mouvements bancaires (CB/Virement/Chèque) sont toujours en MAD. */}
-            {fPayment === 'Espèces' && (
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>Devise</label>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button type="button" onClick={() => setFCurrency('MAD')} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fCurrency === 'MAD' ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: fCurrency === 'MAD' ? '#FFF5F0' : 'white', fontWeight: fCurrency === 'MAD' ? 700 : 400, cursor: 'pointer', color: fCurrency === 'MAD' ? 'var(--terracotta)' : 'var(--text)' }}>MAD</button>
-                  <button type="button" onClick={() => setFCurrency('EUR')} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fCurrency === 'EUR' ? 'var(--terracotta)' : '#ddd'}`, borderRadius: '0.5rem', background: fCurrency === 'EUR' ? '#FFF5F0' : 'white', fontWeight: fCurrency === 'EUR' ? 700 : 400, cursor: 'pointer', color: fCurrency === 'EUR' ? 'var(--terracotta)' : 'var(--text)' }}>EUR</button>
-                </div>
-              </div>
-            )}
- 
-            {/* Espèces : transitent par le fond de caisse ou le coffre fort */}
-            {fPayment === 'Espèces' && (
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>{type === 'cb' ? 'Espèces sorties de' : 'Espèces déposées dans'}</label>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {([['fonds', '💰 Fond de caisse'], ['coffre', '🔐 Coffre fort']] as const).map(([val, lbl]) => (
-                    <button key={val} type="button" onClick={() => setFCashLocation(val)} style={{ flex: 1, padding: '0.5rem', border: `2px solid ${fCashLocation === val ? color : '#ddd'}`, borderRadius: '0.5rem', background: fCashLocation === val ? (type === 'cb' ? '#FFF5F0' : '#F0FDF4') : 'white', fontWeight: fCashLocation === val ? 700 : 400, cursor: 'pointer', color: fCashLocation === val ? color : 'var(--text)', fontSize: '0.85rem' }}>{lbl}</button>
-                  ))}
-                </div>
-              </div>
-            )}
- 
+
             {/* Catégorie + Description */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem' }}>
               <div>

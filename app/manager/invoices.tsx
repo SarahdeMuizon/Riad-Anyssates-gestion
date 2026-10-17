@@ -145,7 +145,7 @@ export function InvoiceEditor({ draft, onChange, gross, taxRate, rates, autoFocu
           <span>Total facture</span>
           <span style={{ whiteSpace: 'nowrap' }}>{c.total > 0 ? `${fmt(c.total)} MAD` : '—'}</span>
         </div>
-        {c.total <= 0 && <span style={{ fontSize: '0.75rem', color: '#888' }}>{gross === null ? 'Indiquez le montant facturé en dirhams.' : 'Saisissez le montant encaissé : le total s’affichera ici.'}</span>}
+        {c.total <= 0 && <span style={{ fontSize: '0.75rem', color: '#888' }}>{gross === null ? 'Indiquez le montant facturé en dirhams.' : 'Saisissez le montant total encaissé : la facture s’affichera ici.'}</span>}
         {c.lodging < 0 && c.total > 0 && <span style={{ color: 'var(--red)', fontWeight: 600, fontSize: '0.78rem' }}>La taxe de séjour et les lignes dépassent le montant encaissé.</span>}
       </div>
     </div>
