@@ -31,16 +31,18 @@ export interface Invoice {
   created_at: string
 }
 
-export interface InvoiceLine { label: string; amount: number; tva: number } // amount TTC en MAD, tva en %
+// amount TTC en MAD, tva en %, detail : précision imprimée sous la ligne (ex : « 2 thés, 1 jus d'orange »)
+export interface InvoiceLine { label: string; amount: number; tva: number; detail?: string }
+export interface InvoiceExtra { label: string; amount: number; detail?: string }
 
 export const DEFAULT_TAXE_SEJOUR = 28 // MAD par personne et par nuit
 
-// Catégories de prestations et leur taux de TVA (%) par défaut — modifiables dans
-// Comptable › Factures de vente (à valider avec le comptable)
+// Catégories de prestations et leur taux de TVA marocain (%) par défaut — modifiables dans
+// Comptable › Factures de vente
 export const INVOICE_CATEGORIES: { label: string; tva: number }[] = [
   { label: 'Hébergement', tva: 10 },
-  { label: 'Boissons alcoolisées', tva: 20 },
-  { label: 'Boissons non alcoolisées', tva: 10 },
+  { label: 'Restauration', tva: 10 },
+  { label: 'Boissons', tva: 10 },
   { label: 'Spa', tva: 20 },
   { label: 'Transport', tva: 14 },
   { label: 'Divers', tva: 20 },
@@ -68,7 +70,7 @@ export interface InvoiceInput {
   nights: number
   persons: number
   taxRate: number
-  extras: { label: string; amount: number }[]       // lignes autres que l'hébergement
+  extras: InvoiceExtra[]                            // lignes autres que l'hébergement
   rates?: TvaRates
 }
 
@@ -79,7 +81,7 @@ export function computeInvoice(i: InvoiceInput) {
   const persons = Math.max(0, Math.floor(i.persons || 0))
   const taxAmount = r2(nights * persons * (i.taxRate || 0))
   const extras = i.extras
-    .map(e => ({ label: EXTRA_CATEGORIES.includes(e.label) ? e.label : 'Divers', amount: r2(Number(e.amount) || 0) }))
+    .map(e => ({ label: EXTRA_CATEGORIES.includes(e.label) ? e.label : 'Divers', amount: r2(Number(e.amount) || 0), ...(e.detail?.trim() ? { detail: e.detail.trim() } : {}) }))
     .filter(e => e.amount > 0)
   const lodging = r2((i.gross || 0) - taxAmount - extras.reduce((s, e) => s + e.amount, 0))
   const lines: InvoiceLine[] = [
@@ -99,8 +101,10 @@ export function lineTotals(lines: InvoiceLine[]) {
 }
 
 // Lignes envoyées par le formulaire (requête API)
-export function parseExtras(v: unknown): { label: string; amount: number }[] {
-  return Array.isArray(v) ? v.slice(0, 20).map(e => ({ label: String(e?.label ?? ''), amount: Number(e?.amount) || 0 })) : []
+export function parseExtras(v: unknown): InvoiceExtra[] {
+  return Array.isArray(v) ? v.slice(0, 20).map(e => ({
+    label: String(e?.label ?? ''), amount: Number(e?.amount) || 0, detail: String(e?.detail ?? '').slice(0, 300),
+  })) : []
 }
 
 // Lignes d'une facture enregistrée (les premières factures n'avaient qu'une ligne)
@@ -113,7 +117,7 @@ export function invoiceLines(inv: Invoice): InvoiceLine[] {
 
 // Lignes autres que l'hébergement, pour rouvrir une facture en modification
 export function invoiceExtras(inv: Invoice) {
-  return invoiceLines(inv).filter(l => l.label !== LODGING).map(l => ({ label: l.label, amount: l.amount }))
+  return invoiceLines(inv).filter(l => l.label !== LODGING).map(l => ({ label: l.label, amount: l.amount, detail: l.detail }))
 }
 
 // Montant réellement payé par le client pour un encaissement :

@@ -160,13 +160,23 @@ async function drawInvoice(doc: PDFDocument, k: Kit, inv: Invoice) {
     right(page, tva, col.tva, y, 10, k.font, c.muted)
     right(page, ht, col.ht, y, 10, k.font, c.ink)
     right(page, ttc, col.ttc, y, 10, k.bold, c.ink)
-    if (sub) { y -= 13; text(page, sub, M, y, 8.5, k.font, c.muted) }
+    if (sub) {
+      // détail sur plusieurs lignes si besoin, sans déborder sur la colonne TVA
+      const maxW = col.tva - 50 - M
+      let line = ''
+      for (const word of clean(sub).split(' ')) {
+        const next = line ? `${line} ${word}` : word
+        if (line && k.font.widthOfTextAtSize(next, 8.5) > maxW) { y -= 12; text(page, line, M, y, 8.5, k.font, c.muted); line = word }
+        else line = next
+      }
+      if (line) { y -= 12; text(page, line, M, y, 8.5, k.font, c.muted) }
+    }
     y -= 10
     page.drawLine({ start: { x: M, y }, end: { x: xR, y }, thickness: 0.5, color: c.hair })
   }
   for (const l of lines) {
     const ht = l.tva > 0 ? l.amount / (1 + l.tva / 100) : l.amount
-    row(l.label, '', l.tva > 0 ? `${String(l.tva).replace('.', ',')} %` : '-', fmtAmount(ht), `${fmtAmount(l.amount)} ${cur}`)
+    row(l.label, l.detail || '', l.tva > 0 ? `${String(l.tva).replace('.', ',')} %` : '-', fmtAmount(ht), `${fmtAmount(l.amount)} ${cur}`)
   }
   const tax = Number(inv.tax_amount)
   if (tax > 0) {
