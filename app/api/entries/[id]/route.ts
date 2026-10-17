@@ -100,6 +100,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     // sa taxe de séjour ne compte plus. On la retire avant l'encaissement pour ne jamais la laisser orpheline.
     const inv = await sql`SELECT id FROM invoices WHERE entry_id = ${id}`
     for (const i of inv) await removeInvoice(i.id as number)
+    // Facture fournisseur réglée par cette dépense : elle redevient « à payer »
+    await sql`UPDATE payables SET status = 'todo', paid_date = NULL, payment = NULL, entry_id = NULL WHERE entry_id = ${id}`
     await sql`DELETE FROM entries WHERE id = ${id}`
     return NextResponse.json({ ok: true })
   } catch (error) {

@@ -266,6 +266,28 @@ export async function initDb() {
         created_at TEXT DEFAULT (datetime('now'))
       )`,
     },
+    // Factures fournisseurs à payer (NDT, Renaisens, Berghout, Elite Food, artisans…)
+    {
+      sql: `CREATE TABLE IF NOT EXISTS payables (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        supplier TEXT NOT NULL,
+        category TEXT,
+        date TEXT NOT NULL,
+        reference TEXT,
+        description TEXT,
+        amount REAL NOT NULL,
+        currency TEXT DEFAULT 'MAD',
+        due_date TEXT,
+        file_data TEXT,
+        filename TEXT,
+        status TEXT DEFAULT 'todo',
+        paid_date TEXT,
+        payment TEXT,
+        entry_id INTEGER,
+        created_by TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`,
+    },
     // Factures de vente générées pour les encaissements clients (numérotation continue par année)
     {
       sql: `CREATE TABLE IF NOT EXISTS invoices (
