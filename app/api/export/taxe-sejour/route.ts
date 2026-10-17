@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import sql, { ensureDb } from '@/lib/db'
 import { getManagerSession } from '@/lib/auth'
 import { QUARTER_LABELS } from '@/lib/invoice'
+import { cleanupOrphanInvoices } from '@/lib/invoice-db'
 import ExcelJS from 'exceljs'
 
 export const dynamic = 'force-dynamic'
@@ -20,6 +21,7 @@ export async function GET(req: NextRequest) {
     const from = `${year}-${String(quarter * 3 - 2).padStart(2, '0')}-01`
     const to = `${year}-${String(quarter * 3).padStart(2, '0')}-31`
 
+    await cleanupOrphanInvoices()
     const rows = await sql`SELECT * FROM invoices WHERE date >= ${from} AND date <= ${to} AND tax_amount > 0 AND COALESCE(cancelled, 0) = 0 ORDER BY date, seq`
 
     const wb = new ExcelJS.Workbook()

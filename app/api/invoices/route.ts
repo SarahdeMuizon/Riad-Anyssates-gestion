@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import sql, { ensureDb } from '@/lib/db'
 import { getManagerSession } from '@/lib/auth'
 import { computeInvoice, entryGross, parseExtras } from '@/lib/invoice'
-import { getTaxeSejourRate, getTvaRates } from '@/lib/invoice-db'
+import { getTaxeSejourRate, getTvaRates, cleanupOrphanInvoices } from '@/lib/invoice-db'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,6 +11,7 @@ export async function GET() {
     await ensureDb()
     const isAuth = await getManagerSession()
     if (!isAuth) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    await cleanupOrphanInvoices()
     const rows = await sql`SELECT * FROM invoices ORDER BY year DESC, seq DESC`
     return NextResponse.json(rows)
   } catch (error) {

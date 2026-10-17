@@ -94,12 +94,13 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
  
+    await ensureDb()
     const id = parseInt(params.id)
-    await sql`DELETE FROM entries WHERE id = ${id}`
     // La facture de cet encaissement est supprimée (ou annulée si d'autres ont été faites depuis) :
-    // sa taxe de séjour ne compte plus
-    const inv = await sql`SELECT id FROM invoices WHERE entry_id = ${id}`.catch(() => [])
+    // sa taxe de séjour ne compte plus. On la retire avant l'encaissement pour ne jamais la laisser orpheline.
+    const inv = await sql`SELECT id FROM invoices WHERE entry_id = ${id}`
     for (const i of inv) await removeInvoice(i.id as number)
+    await sql`DELETE FROM entries WHERE id = ${id}`
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('DELETE entry error:', error)

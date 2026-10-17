@@ -23,6 +23,18 @@ export async function removeInvoice(id: number): Promise<'deleted' | 'cancelled'
   return 'cancelled'
 }
 
+// Factures restées sans encaissement (encaissement supprimé avant que la facture soit retirée) :
+// elles sont supprimées ou annulées comme une facture faite par erreur, pour que leur taxe de
+// séjour ne compte plus. Les plus récentes d'abord, pour garder la numérotation continue.
+export async function cleanupOrphanInvoices() {
+  const rows = await sql`
+    SELECT i.id FROM invoices i
+    WHERE COALESCE(i.cancelled, 0) = 0
+      AND (i.entry_id IS NULL OR NOT EXISTS (SELECT 1 FROM entries e WHERE e.id = i.entry_id))
+    ORDER BY i.year DESC, i.seq DESC`
+  for (const r of rows) await removeInvoice(r.id as number)
+}
+
 // Taux de TVA par catégorie de prestation
 export async function getTvaRates(): Promise<TvaRates> {
   const rows = await sql`SELECT value FROM settings WHERE key = 'tva_rates'`
