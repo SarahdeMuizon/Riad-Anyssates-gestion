@@ -6,16 +6,22 @@ export const dynamic = 'force-dynamic'
 
 const STATEMENT_SOURCES = ['attijari', 'cmi', 'amex']
 
-// Liste des relevés d'une banque (sans le contenu des fichiers, chargé à la demande)
+// Liste des relevés (sans le contenu des fichiers, chargé à la demande)
 export async function GET(req: NextRequest) {
   try {
     await ensureDb()
     const isAuth = await getManagerSession()
     if (!isAuth) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    const source = new URL(req.url).searchParams.get('source') || ''
-    const rows = await sql`
-      SELECT id, source, period, filename, mime, size, uploaded_by, created_at
-      FROM bank_statements WHERE source = ${source} ORDER BY period DESC, id DESC`
+    const { searchParams } = new URL(req.url)
+    const period = searchParams.get('period')
+    // ?period=AAAA-MM : tous les relevés du mois (onglet Comptable) ; sinon ceux d'une banque
+    const rows = period
+      ? await sql`
+        SELECT id, source, period, filename, mime, size, uploaded_by, created_at
+        FROM bank_statements WHERE period = ${period} ORDER BY source, id`
+      : await sql`
+        SELECT id, source, period, filename, mime, size, uploaded_by, created_at
+        FROM bank_statements WHERE source = ${searchParams.get('source') || ''} ORDER BY period DESC, id DESC`
     return NextResponse.json(rows)
   } catch (error) {
     console.error('GET statements error:', error)

@@ -152,3 +152,112 @@ export function StatementsPanel({ source }: { source: StatementSource }) {
     </div>
   )
 }
+
+// ─── Onglet Comptable : relevés du mois des trois banques, réunis en un PDF ───
+
+const SOURCES: StatementSource[] = ['attijari', 'cmi', 'amex']
+
+export function StatementsMonthPanel() {
+  const [period, setPeriod] = useState(previousMonth())
+  const [rows, setRows] = useState<Statement[]>([])
+  const [loading, setLoading] = useState(true)
+  const [exporting, setExporting] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  const reload = useCallback(async () => {
+    setLoading(true)
+    const r = await fetch(`/api/statements?period=${period}`, { cache: 'no-store' }).catch(() => null)
+    const d = r && r.ok ? await r.json() : []
+    setRows(Array.isArray(d) ? d : [])
+    setLoading(false)
+  }, [period])
+  useEffect(() => { reload() }, [reload])
+
+  function shift(delta: number) {
+    const d = new Date(parseInt(period.slice(0, 4), 10), parseInt(period.slice(5, 7), 10) - 1 + delta, 1)
+    setPeriod(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+  }
+  const isLast = period >= previousMonth()
+
+  async function getData(s: Statement): Promise<string | null> {
+    const r = await fetch(`/api/statements/${s.id}`, { cache: 'no-store' }).catch(() => null)
+    const d = r && r.ok ? await r.json() : null
+    return d?.file_data ?? null
+  }
+
+  async function exportPdf() {
+    setExporting(true); setMsg('')
+    try {
+      const files = await Promise.all(rows.map(async s => ({ bank: STATEMENT_LABELS[s.source as StatementSource], filename: s.filename, data: await getData(s) })))
+      const { buildStatementsPdf } = await import('@/lib/statements-pdf')
+      const blob = await buildStatementsPdf(files, SOURCES.map(s => STATEMENT_LABELS[s]), monthLabel(period))
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url; a.download = `Relevés bancaires - ${monthLabel(period)}.pdf`
+      document.body.appendChild(a); a.click(); a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    } catch (err) {
+      console.error(err)
+      setMsg('Erreur lors de la création du PDF — réessayez.')
+    }
+    setExporting(false)
+  }
+
+  async function open(s: Statement) {
+    const d = await getData(s)
+    if (d) openAttachment(d)
+  }
+
+  const missing = SOURCES.filter(src => !rows.some(r => r.source === src))
+  const separate = rows.filter(r => !/^(application\/pdf|image\/(jpeg|png))/.test(r.mime || ''))
+
+  return (
+    <div>
+      <div className="card" style={{ marginBottom: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <button onClick={() => shift(-1)} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: 'pointer', fontWeight: 600 }}>‹</button>
+          <span style={{ fontWeight: 700, minWidth: 140, textAlign: 'center' }}>{monthLabel(period)}</span>
+          <button onClick={() => shift(1)} disabled={isLast} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: isLast ? 'default' : 'pointer', opacity: isLast ? 0.4 : 1, fontWeight: 600 }}>›</button>
+        </div>
+        <button className="btn-primary" onClick={exportPdf} disabled={exporting || rows.length === 0} style={{ background: '#0F766E', fontSize: '0.85rem', padding: '0.4rem 0.9rem', opacity: rows.length === 0 ? 0.5 : 1 }}>
+          {exporting ? 'Création du PDF…' : `📄 Exporter les relevés — ${monthLabel(period)}`}
+        </button>
+        {missing.length > 0 && !loading && <span style={{ fontSize: '0.8rem', color: 'var(--red)', fontWeight: 600 }}>Manquant : {missing.map(s => STATEMENT_LABELS[s]).join(', ')}</span>}
+        {msg && <span style={{ fontSize: '0.8rem', color: 'var(--red)' }}>{msg}</span>}
+      </div>
+
+      {loading ? <p>Chargement…</p> : (
+        <div className="table-scroll">
+          <table className="table-dep">
+            <thead><tr><th>Banque</th><th>Relevé</th><th></th></tr></thead>
+            <tbody>
+              {SOURCES.map(src => {
+                const mine = rows.filter(r => r.source === src)
+                return (
+                  <tr key={src}>
+                    <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{STATEMENT_LABELS[src]}</td>
+                    <td className="col-wrap">
+                      {mine.length === 0
+                        ? <span style={{ color: 'var(--red)', fontWeight: 600, fontSize: '0.85rem' }}>Manquant — à déposer dans Banque › Relevés {STATEMENT_LABELS[src]}</span>
+                        : mine.map(s => <div key={s.id} style={{ fontSize: '0.85rem' }}>{s.filename} <span style={{ color: '#999' }}>· {sizeLabel(s.size)}</span></div>)}
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {mine.map(s => (
+                        <button key={s.id} onClick={() => open(s)} style={{ background: 'none', border: '1px solid #ddd', borderRadius: '0.35rem', padding: '0.2rem 0.55rem', cursor: 'pointer', fontSize: '0.78rem', marginRight: '0.3rem' }}>👁 Voir</button>
+                      ))}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {separate.length > 0 && (
+        <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.75rem' }}>
+          Les fichiers Excel / CSV ({separate.map(s => s.filename).join(', ')}) ne peuvent pas être mis dans le PDF : téléchargez-les depuis Banque et envoyez-les à part.
+        </p>
+      )}
+    </div>
+  )
+}

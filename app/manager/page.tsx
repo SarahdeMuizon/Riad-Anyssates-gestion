@@ -6,7 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import { openAttachment, fileToDataUrl } from '@/lib/attachments'
 import ManagerGuide from './guide'
 import NotificationBell from './notifications'
-import { StatementsPanel, STATEMENT_LABELS, type StatementSource } from './statements'
+import { StatementsPanel, StatementsMonthPanel, STATEMENT_LABELS, type StatementSource } from './statements'
 import { InvoiceModal, InvoiceEditor, TaxeSejourPanel, TvaRatesCard, useInvoices, downloadInvoice, emptyDraft, previewDraft, draftBody, type InvoiceDraft } from './invoices'
  
 type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'banque' | 'coffre' | 'comptable' | 'employees' | 'settings'
@@ -2046,7 +2046,7 @@ function CoffreTab() {
 // Factures cochées « à envoyer au comptable », séparées en factures d'achat (dépenses)
 // et factures de vente (encaissements), plus le relevé trimestriel de la taxe de séjour.
 
-type ComptableSection = 'achats' | 'ventes' | 'taxes'
+type ComptableSection = 'achats' | 'ventes' | 'taxes' | 'releves'
 
 function ComptableTab() {
   const [section, setSection] = useState<ComptableSection>('achats')
@@ -2054,6 +2054,7 @@ function ComptableTab() {
     { id: 'achats', label: '📥 Factures d’achat' },
     { id: 'ventes', label: '📤 Factures de vente' },
     { id: 'taxes', label: '🏨 Taxe de séjour et TPT' },
+    { id: 'releves', label: '🏦 Relevés bancaires' },
   ]
   return (
     <div>
@@ -2065,6 +2066,7 @@ function ComptableTab() {
       {section === 'achats' && <ComptableInvoices type="cb" />}
       {section === 'ventes' && <><TvaRatesCard /><ComptableInvoices type="cash" /></>}
       {section === 'taxes' && <TaxeSejourPanel />}
+      {section === 'releves' && <StatementsMonthPanel />}
     </div>
   )
 }
