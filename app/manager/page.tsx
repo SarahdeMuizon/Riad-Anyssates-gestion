@@ -2163,6 +2163,10 @@ function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
   }
 
   const missingCount = rows.filter(e => !e.invoice_url && !invoiceByEntry[e.id]).length
+  // Ventes sans facture (ex : encaissements saisis par un employé) : facture à compléter ici
+  const toComplete = type === 'cash' ? rows.filter(e => !invoiceByEntry[e.id]) : []
+  const [onlyToComplete, setOnlyToComplete] = useState(false)
+  const shownRows = onlyToComplete ? toComplete : rows
 
   async function removeFromList(entry: Entry) {
     setAllEntries(prev => prev.map(e => e.id === entry.id ? { ...e, to_accountant: false } : e))
@@ -2185,6 +2189,16 @@ function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
         </div>
       </div>
  
+      {type === 'cash' && toComplete.length > 0 && (
+        <div style={{ marginBottom: '0.75rem', padding: '0.55rem 0.8rem', background: '#FAF6F2', border: '1px solid #EADBCB', borderRadius: '0.4rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          🧾 <strong>{toComplete.length} facture{toComplete.length > 1 ? 's' : ''} à compléter</strong>
+          <span style={{ color: '#666' }}>— encaissements saisis sans facture (par exemple par un employé) : cliquez sur « Compléter » pour indiquer le client, les adultes, enfants et nuits.</span>
+          <button type="button" onClick={() => setOnlyToComplete(v => !v)} style={{ marginLeft: 'auto', background: onlyToComplete ? 'white' : '#8B4513', color: onlyToComplete ? '#8B4513' : 'white', border: '1px solid #8B4513', borderRadius: '0.4rem', padding: '0.3rem 0.7rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>
+            {onlyToComplete ? 'Tout afficher' : 'Afficher seulement celles-ci'}
+          </button>
+        </div>
+      )}
+
       <div className="card" style={{ marginBottom: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <span style={{ fontSize: '0.85rem', color: '#666' }}>
           {rows.length} facture{rows.length > 1 ? 's' : ''}
@@ -2225,7 +2239,7 @@ function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map(e => {
+              {shownRows.map(e => {
                 const color = e.type === 'cb' ? 'var(--terracotta)' : 'var(--green)'
                 return (
                   <tr key={e.id}>
@@ -2238,7 +2252,7 @@ function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
                             <button onClick={() => setInvoiceFor(e)} title="Modifier la facture" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: '#999', marginLeft: '0.3rem', padding: 0 }}>✎</button>
                           </>
                         ) : (
-                          <button onClick={() => setInvoiceFor(e)} disabled={taxRate === null} title="Créer la facture client" style={{ background: '#FAF6F2', border: '1px solid #D9B99B', color: '#8B4513', borderRadius: '0.3rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.45rem' }}>🧾 Créer</button>
+                          <button onClick={() => setInvoiceFor(e)} disabled={taxRate === null} title="Compléter la facture client (client, adultes, enfants, nuits)" style={{ background: '#8B4513', border: 'none', color: 'white', borderRadius: '0.3rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, padding: '0.25rem 0.55rem' }}>🧾 Compléter</button>
                         )}
                       </td>
                     )}
