@@ -2055,7 +2055,9 @@ function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
   const [loading, setLoading] = useState(true)
   const [month, setMonth] = useState(currentMonth)
   const [allMonths, setAllMonths] = useState(false)
-  const { byEntry: invoiceByEntry } = useInvoices()
+  const { byEntry: invoiceByEntry, taxRate, tvaRates, reload: reloadInvoices } = useInvoices()
+  // Création / modification d'une facture de vente directement depuis l'onglet Comptable
+  const [invoiceFor, setInvoiceFor] = useState<Entry | null>(null)
  
   const reload = useCallback(async () => {
     setLoading(true)
@@ -2207,9 +2209,14 @@ function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
                     <td style={{ whiteSpace: 'nowrap' }}>{new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR')}</td>
                     {type === 'cash' && (
                       <td style={{ whiteSpace: 'nowrap' }}>
-                        {invoiceByEntry[e.id]
-                          ? <button onClick={() => downloadInvoice(invoiceByEntry[e.id])} title="Télécharger la facture" style={{ background: 'none', border: 'none', color: 'var(--blue)', cursor: 'pointer', fontSize: '0.8rem', padding: 0, fontWeight: 600 }}>📄 {invoiceByEntry[e.id].number}</button>
-                          : <span style={{ fontSize: '0.75rem', color: '#aaa' }}>—</span>}
+                        {invoiceByEntry[e.id] ? (
+                          <>
+                            <button onClick={() => downloadInvoice(invoiceByEntry[e.id])} title="Télécharger la facture" style={{ background: 'none', border: 'none', color: 'var(--blue)', cursor: 'pointer', fontSize: '0.8rem', padding: 0, fontWeight: 600 }}>📄 {invoiceByEntry[e.id].number}</button>
+                            <button onClick={() => setInvoiceFor(e)} title="Modifier la facture" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: '#999', marginLeft: '0.3rem', padding: 0 }}>✎</button>
+                          </>
+                        ) : (
+                          <button onClick={() => setInvoiceFor(e)} disabled={taxRate === null} title="Créer la facture client" style={{ background: '#FAF6F2', border: '1px solid #D9B99B', color: '#8B4513', borderRadius: '0.3rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.45rem' }}>🧾 Créer</button>
+                        )}
                       </td>
                     )}
                     <td>{e.employee_name}</td>
@@ -2241,6 +2248,12 @@ function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
             </tbody>
           </table>
         </div>
+      )}
+
+      {invoiceFor && taxRate !== null && (
+        <InvoiceModal entry={invoiceFor} invoice={invoiceByEntry[invoiceFor.id] ?? null} taxRate={taxRate} rates={tvaRates}
+          onClose={() => setInvoiceFor(null)}
+          onSaved={() => { setInvoiceFor(null); reloadInvoices(); reload() }} />
       )}
     </div>
   )
