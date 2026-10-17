@@ -119,20 +119,24 @@ function DashboardTab() {
   const [trend, setTrend] = useState<TrendRow[]>([])
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
+  const [range, setRange] = useState<DateRange>(EMPTY_RANGE)
+  const useRange = rangeActive(range)
  
   useEffect(() => { setMounted(true) }, [])
  
   const fetchStats = useCallback(async () => {
     setLoading(true)
+    // Période libre : les totaux portent sur la période, l'évolution sur les 6 mois qui se terminent à sa fin
+    const trendMonth = useRange && range.to ? range.to.slice(0, 7) : month
     const [r1, r2] = await Promise.all([
-      fetch(`/api/dashboard?month=${month}`),
-      fetch(`/api/dashboard/trend?month=${month}`),
+      fetch(useRange ? `/api/dashboard?from=${range.from}&to=${range.to}` : `/api/dashboard?month=${month}`),
+      fetch(`/api/dashboard/trend?month=${trendMonth}`),
     ])
     setStats(await r1.json())
     const t = await r2.json()
     setTrend(Array.isArray(t) ? t : [])
     setLoading(false)
-  }, [month])
+  }, [month, useRange, range.from, range.to])
  
   useEffect(() => { fetchStats() }, [fetchStats])
  
@@ -147,13 +151,18 @@ function DashboardTab() {
  
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+        {useRange ? (
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--terracotta)' }}>Période {rangeLabel(range)}</h2>
+        ) : <>
         <button onClick={() => setMonth(shiftMonth(month, -1))} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.35rem 0.75rem', cursor: 'pointer', fontWeight: 600 }}>‹</button>
         <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--terracotta)', minWidth: 180, textAlign: 'center' }}>{formatMonth(month)}</h2>
         <button onClick={() => setMonth(shiftMonth(month, 1))} disabled={isCurrentMonth} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.35rem 0.75rem', cursor: isCurrentMonth ? 'default' : 'pointer', opacity: isCurrentMonth ? 0.4 : 1, fontWeight: 600 }}>›</button>
         {!isCurrentMonth && (
           <button onClick={() => setMonth(currentMonthStr)} style={{ border: 'none', background: 'var(--terracotta)', color: 'white', borderRadius: '0.4rem', padding: '0.35rem 0.75rem', cursor: 'pointer', fontSize: '0.8rem' }}>Mois actuel</button>
         )}
+        </>}
+        <DateRangeFilter value={range} onChange={setRange} />
       </div>
  
       {loading ? <p>Chargement…</p> : !stats ? <p>Erreur.</p> : (
@@ -235,7 +244,7 @@ function DashboardTab() {
                     })}
                   </div>
                 </>
-              ) : <p style={{ color: '#aaa', fontSize: '0.9rem' }}>Aucune dépense ce mois.</p>}
+              ) : <p style={{ color: '#aaa', fontSize: '0.9rem' }}>Aucune dépense sur cette période.</p>}
             </div>
             <div className="card">
               <h3 style={{ fontWeight: 700, marginBottom: '0.75rem', color: 'var(--green)' }}>💵 Encaissements par catégorie</h3>
@@ -267,7 +276,7 @@ function DashboardTab() {
                     })}
                   </div>
                 </>
-              ) : <p style={{ color: '#aaa', fontSize: '0.9rem' }}>Aucun encaissement ce mois.</p>}
+              ) : <p style={{ color: '#aaa', fontSize: '0.9rem' }}>Aucun encaissement sur cette période.</p>}
             </div>
           </div>
         </>

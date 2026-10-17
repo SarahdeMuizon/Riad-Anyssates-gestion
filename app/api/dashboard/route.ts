@@ -16,37 +16,40 @@ export async function GET(req: NextRequest) {
     const now = new Date()
     const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
     const month = searchParams.get('month') || defaultMonth
+    // Période libre (?from=AAAA-MM-JJ&to=AAAA-MM-JJ) ou, par défaut, le mois
+    const from = searchParams.get('from') || (searchParams.get('to') ? '0000-01-01' : `${month}-01`)
+    const to = searchParams.get('to') || (searchParams.get('from') ? '9999-12-31' : `${month}-31`)
 
     const [totalsDepenses, totalsEncaissements, totalsFonds, pendingCount, validatedCount, depensesByCategory, encaissementsByCategory] = await Promise.all([
       sql`
         SELECT SUM(amount) as total
         FROM entries WHERE type = 'cb'
-        AND strftime('%Y-%m', date) = ${month}
+        AND date >= ${from} AND date <= ${to}
       `,
       sql`
         SELECT SUM(amount) as total
         FROM entries WHERE type = 'cash'
-        AND strftime('%Y-%m', date) = ${month}
+        AND date >= ${from} AND date <= ${to}
       `,
       sql`
         SELECT
           SUM(CASE WHEN direction = 'in' THEN amount ELSE 0 END) as total_in,
           SUM(CASE WHEN direction = 'out' THEN amount ELSE 0 END) as total_out
         FROM fonds_entries
-        WHERE strftime('%Y-%m', date) = ${month}
+        WHERE date >= ${from} AND date <= ${to}
       `,
-      sql`SELECT COUNT(*) as count FROM entries WHERE status = 'pending' AND strftime('%Y-%m', date) = ${month}`,
-      sql`SELECT COUNT(*) as count FROM entries WHERE status = 'validated' AND strftime('%Y-%m', date) = ${month}`,
+      sql`SELECT COUNT(*) as count FROM entries WHERE status = 'pending' AND date >= ${from} AND date <= ${to}`,
+      sql`SELECT COUNT(*) as count FROM entries WHERE status = 'validated' AND date >= ${from} AND date <= ${to}`,
       sql`
         SELECT category, SUM(amount) as total
         FROM entries WHERE type = 'cb'
-        AND strftime('%Y-%m', date) = ${month}
+        AND date >= ${from} AND date <= ${to}
         GROUP BY category ORDER BY total DESC
       `,
       sql`
         SELECT category, SUM(amount) as total
         FROM entries WHERE type = 'cash'
-        AND strftime('%Y-%m', date) = ${month}
+        AND date >= ${from} AND date <= ${to}
         GROUP BY category ORDER BY total DESC
       `,
     ])
