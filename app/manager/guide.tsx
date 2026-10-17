@@ -112,7 +112,8 @@ export default function ManagerGuide({ onClose }: { onClose: () => void }) {
         </ul>
 
         <h2 style={h2}>5. Banque (🏦)</h2>
-        <p style={p}>L&apos;onglet Banque regroupe automatiquement tout ce qui n&apos;est pas payé en espèces : CB, virements, chèques, prélèvements. Il n&apos;y a rien à y saisir : tout vient de Dépenses et Encaissements.</p>
+        <p style={p}>L&apos;onglet Banque a quatre boutons en haut : <b>🏦 Mouvements</b>, <b>📄 Relevés Attijari</b>, <b>📄 Relevés CMI</b> et <b>📄 Relevés American Express</b>.</p>
+        <p style={p}><b>Mouvements</b> : l&apos;onglet regroupe automatiquement tout ce qui n&apos;est pas payé en espèces : CB, virements, chèques, prélèvements. Il n&apos;y a rien à y saisir : tout vient de Dépenses et Encaissements.</p>
         <ul style={list}>
           <li style={li}><b>Solde net MAD</b> : le solde du compte selon l&apos;application. Il doit être égal au solde Attijari.</li>
           <li style={li}><b>Par mode de paiement</b> : les totaux CB, virement, chèque et prélèvement.</li>
@@ -125,10 +126,37 @@ export default function ManagerGuide({ onClose }: { onClose: () => void }) {
           ['Écart', 'Différence entre Théorique et Réel : les opérations pas encore passées en banque'],
         ]} />
         <p style={p}><b>Rapprocher avec Attijari</b> : ouvrez la liste des opérations sur la banque en ligne et cochez « Pointé » pour chaque ligne retrouvée. Une opération Attijari absente de l&apos;application est une saisie oubliée. Une ligne de l&apos;application absente du relevé est un doublon ou une opération pas encore débitée.</p>
+        <h3 style={{ ...h2, fontSize: '0.95rem' }}>Les relevés Attijari, CMI et Amex</h3>
+        <ul style={list}>
+          <li style={li}>Chaque mois, ouvrez le sous-onglet de la banque, choisissez le <b>mois</b> (le mois précédent est proposé), puis <b>📤 Choisir le fichier</b> : PDF, photo, Excel ou CSV, 3 Mo maximum.</li>
+          <li style={li}>Chaque relevé de la liste se consulte avec <b>👁 Voir</b>, se télécharge avec <b>⬇ Télécharger</b> et se supprime avec 🗑.</li>
+          <li style={li}>Pour le comptable, les relevés du mois se regroupent dans <b>Comptable › Relevés bancaires</b> (voir plus bas).</li>
+        </ul>
+
+        <h3 style={{ ...h2, fontSize: '0.95rem' }}>Le contrôle du relevé Attijari</h3>
+        <p style={p}><b>Quand</b> : le contrôle se lance tout seul quand vous déposez un relevé Attijari en <b>PDF ou en photo</b> (pas en Excel). Vous pouvez le relancer avec <b>🔍 Contrôler</b>, dans Banque › Relevés Attijari ou dans Comptable › Relevés bancaires.</p>
+        <p style={p}><b>Comment</b> :</p>
+        <ul style={list}>
+          <li style={li}>Claude lit toutes les opérations du relevé (date, libellé, débit ou crédit) et les soldes de début et de fin. Cela prend une à deux minutes. La lecture est faite une seule fois par relevé et gardée ; <b>↻ Relire</b> la refait si elle semble incomplète.</li>
+          <li style={li}>L&apos;application prend vos mouvements bancaires du mois (CB, virement, chèque, prélèvement, en dirhams, hors espèces) et cherche chaque ligne du relevé : <b>même montant</b>, avec jusqu&apos;à <b>7 jours d&apos;écart</b> de date (temps de passage en banque).</li>
+          <li style={li}>Sans montant exact, elle cherche une saisie au <b>montant proche</b> (jusqu&apos;à 20 % d&apos;écart, à 5 jours près) : c&apos;est une erreur de frappe probable.</li>
+          <li style={li}>Les <b>remises CMI et Amex</b> arrivent groupées : elles sont comparées au <b>total net</b> des encaissements carte du mois, pas ligne par ligne.</li>
+          <li style={li}>La comparaison est refaite à chaque contrôle : après avoir corrigé une saisie, relancez <b>🔍 Contrôler</b> et le point corrigé disparaît.</li>
+        </ul>
+        <p style={p}><b>Le rapport</b> s&apos;affiche sous la liste des relevés :</p>
+        <ul style={list}>
+          <li style={li}>Un <b>bandeau vert</b> si tout correspond, <b>rouge</b> s&apos;il y a des points à vérifier, avec leur nombre.</li>
+          <li style={li}>Un <b>tableau des totaux</b> (sorties, entrées, remises cartes) : chiffre du relevé, chiffre de l&apos;application et écart en rouge. « Grosse différence » est signalé au-delà de 500 MAD ou 5 % d&apos;écart.</li>
+          <li style={li}>🔴 <b>Sur le relevé mais pas dans l&apos;application</b> : oublis (frais bancaires, prélèvement non saisi…) à ajouter dans Dépenses ou Encaissements.</li>
+          <li style={li}>🟠 <b>Montant différent</b> : l&apos;opération du relevé à côté de la saisie correspondante, à corriger.</li>
+          <li style={li}>🔵 <b>Dans l&apos;application mais pas sur le relevé</b> : erreur de saisie, doublon, ou opération pas encore passée en banque (elle apparaîtra sur le relevé suivant).</li>
+        </ul>
+        <p style={note}>Le résultat n&apos;est visible qu&apos;en ouvrant le rapport : il n&apos;y a pas de notification dans la cloche. Pensez à contrôler chaque relevé Attijari dès qu&apos;il est déposé.</p>
+
         <p style={note}>Fiez-vous à la liste en ligne d&apos;Attijari : l&apos;export CSV peut sauter des lignes. Pour corriger un écart qui reste inexpliqué, ajoutez une <b>ligne de régularisation datée</b> dans Dépenses ou Encaissements. Ne modifiez pas le solde initial : cela fausserait tous les mois passés.</p>
 
         <h2 style={h2}>6. Comptable (📨)</h2>
-        <p style={p}>L&apos;onglet Comptable liste, mois par mois, toutes les saisies cochées « Facture à envoyer au comptable », en trois rubriques : <b>Factures d&apos;achat</b> (dépenses), <b>Factures de vente</b> (encaissements) et <b>Taxes de séjour</b>.</p>
+        <p style={p}>L&apos;onglet Comptable liste, mois par mois, toutes les saisies cochées « Facture à envoyer au comptable », en quatre rubriques : <b>Factures d&apos;achat</b> (dépenses), <b>Factures de vente</b> (encaissements), <b>Taxe de séjour et TPT</b> et <b>Relevés bancaires</b>.</p>
         <ul style={list}>
           <li style={li}>Choisissez le mois avec les flèches, ou cochez « Tous les mois ».</li>
           <li style={li}>Le nombre de <b>justificatifs manquants</b> s&apos;affiche en rouge. Sur chaque ligne sans facture, <b>+ Ajouter</b> permet de joindre la photo ou le PDF directement. La flèche ↻ remplace une facture déjà jointe.</li>
@@ -137,7 +165,7 @@ export default function ManagerGuide({ onClose }: { onClose: () => void }) {
         </ul>
         <p style={p}>Avant d&apos;exporter, vérifiez qu&apos;il ne reste aucun justificatif manquant pour le mois. Dans les factures de vente, le PDF exporté contient les factures clients générées par l&apos;application.</p>
         <p style={p}><b>Encaissements saisis par un employé</b> : l&apos;employé garde son écran habituel, sans facture. Son encaissement arrive directement dans Comptable › Factures de vente avec « 🧾 Compléter » : ouvrez-le pour indiquer le client, les adultes, enfants et nuits, la facture numérotée est alors créée.</p>
-        <p style={p}><b>Relevés bancaires</b> : déposez chaque mois les relevés Attijari, CMI et Amex dans Banque (sous-onglets Relevés) ; dans Comptable › Relevés bancaires, choisissez le mois et <b>📄 Exporter les relevés</b> les réunit en un seul PDF pour le comptable (les relevés manquants sont signalés en rouge). Le relevé Attijari est contrôlé automatiquement quand il est déposé (bouton 🔍 Contrôler pour relancer) : opérations oubliées dans l&apos;application, montants différents, saisies absentes du relevé, et écarts sur les totaux et les remises cartes.</p>
+        <p style={p}><b>Relevés bancaires</b> : choisissez le mois avec les flèches : pour chaque banque, le relevé déposé s&apos;affiche, ou « Manquant » en rouge. <b>📄 Exporter les relevés</b> les réunit en un seul PDF pour le comptable (une page de garde, puis les relevés à la suite). Les relevés en Excel ou CSV ne peuvent pas entrer dans le PDF : ils sont signalés, à envoyer à part. <b>🔍 Contrôler le relevé Attijari</b> lance le même contrôle que dans Banque.</p>
         <p style={p}><b>Taxes de séjour</b> : choisissez le trimestre avec les flèches pour voir le total des nuitées et de la taxe à reverser. <b>📄 Relevé PDF</b> et <b>📊 Excel</b> créent le fichier à remettre au comptable. Le tableau donne, par facture, le nombre de personnes et de nuits ; la taxe vaut nuits × (adultes × 28 MAD + enfants de moins de 12 ans × 18 MAD) et elle est déduite du montant encaissé. Le tarif se modifie en haut à droite ; il s&apos;applique aux nouvelles factures seulement. Une facture se corrige à tout moment (son numéro ne change pas) ; seule la dernière facture de l&apos;année peut être supprimée.</p>
 
         <h2 style={h2}>7. Employés et Paramètres (👥 / ⚙️)</h2>
@@ -163,6 +191,9 @@ export default function ManagerGuide({ onClose }: { onClose: () => void }) {
           ['Chaque semaine', 'Vérifier le solde du coffre et les sorties sans facture (SF)', 'Coffre fort'],
           ['Chaque mois', 'Cocher les factures pour le comptable et compléter les justificatifs manquants', 'Dépenses, Encaissements, Comptable'],
           ['Chaque mois', 'Exporter le PDF du mois et l’envoyer au comptable', 'Comptable'],
+          ['Chaque mois', 'Déposer les relevés Attijari, CMI et Amex, lire le contrôle Attijari et corriger les écarts', 'Banque › Relevés'],
+          ['Chaque mois', 'Exporter les relevés bancaires du mois et les envoyer au comptable', 'Comptable › Relevés bancaires'],
+          ['Chaque semaine', 'Compléter les factures des encaissements saisis par les employés', 'Comptable › Factures de vente'],
           ['Chaque trimestre', 'Exporter le relevé de la taxe de séjour et TPT et l’envoyer au comptable', 'Comptable › Taxe de séjour et TPT'],
         ]} />
         <p style={p}>En cas de doute sur un chiffre ou d&apos;anomalie dans l&apos;application, notez la date et le montant concernés et prévenez Sarah.</p>
