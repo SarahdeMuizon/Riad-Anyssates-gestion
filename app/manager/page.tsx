@@ -57,11 +57,11 @@ export default function ManagerPage() {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'dashboard', label: '📊 Dashboard' },
     { id: 'depenses', label: '💳 Dépenses' },
-    { id: 'apayer', label: '🧾 À payer' },
     { id: 'encaissements', label: '💵 Encaissements' },
     { id: 'fonds', label: '💰 Fond de caisse' },
     { id: 'banque', label: '🏦 Banque' },
     { id: 'coffre', label: '🔐 Coffre fort' },
+    { id: 'apayer', label: '🧾 À payer' },
     { id: 'comptable', label: '📨 Comptable' },
     { id: 'employees', label: '👥 Employés' },
     { id: 'settings', label: '⚙️ Paramètres' },
