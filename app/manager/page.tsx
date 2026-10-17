@@ -6,6 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import { openAttachment, fileToDataUrl } from '@/lib/attachments'
 import ManagerGuide from './guide'
 import NotificationBell from './notifications'
+import { StatementsPanel, StatementsMonthPanel, STATEMENT_LABELS, type StatementSource } from './statements'
 import { InvoiceModal, InvoiceEditor, TaxeSejourPanel, TvaRatesCard, useInvoices, downloadInvoice, emptyDraft, previewDraft, draftBody, type InvoiceDraft } from './invoices'
  
 type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'banque' | 'coffre' | 'comptable' | 'employees' | 'settings'
@@ -1378,7 +1379,27 @@ function FondsTab() {
  
 // ─── Banque Tab ───────────────────────────────────────────────────────────────
  
+// ─── Banque : mouvements et relevés (Attijari, CMI, Amex) ─────────────────────
+
 function BanqueTab() {
+  const [section, setSection] = useState<'mouvements' | StatementSource>('mouvements')
+  const sections: { id: 'mouvements' | StatementSource; label: string }[] = [
+    { id: 'mouvements', label: '🏦 Mouvements' },
+    ...(['attijari', 'cmi', 'amex'] as const).map(id => ({ id, label: `📄 Relevés ${STATEMENT_LABELS[id]}` })),
+  ]
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        {sections.map(s => (
+          <button key={s.id} onClick={() => setSection(s.id)} style={{ padding: '0.45rem 0.9rem', borderRadius: '999px', border: `1px solid ${section === s.id ? '#3730A3' : '#ddd'}`, background: section === s.id ? '#3730A3' : 'white', color: section === s.id ? 'white' : 'var(--text)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>{s.label}</button>
+        ))}
+      </div>
+      {section === 'mouvements' ? <BanqueMouvements /> : <StatementsPanel key={section} source={section} />}
+    </div>
+  )
+}
+
+function BanqueMouvements() {
   const [allEntries, setAllEntries] = useState<Entry[]>([])
   const [loading, setLoading] = useState(true)
   const [soldeInitMAD, setSoldeInitMAD] = useState('')
@@ -2025,7 +2046,7 @@ function CoffreTab() {
 // Factures cochées « à envoyer au comptable », séparées en factures d'achat (dépenses)
 // et factures de vente (encaissements), plus le relevé trimestriel de la taxe de séjour.
 
-type ComptableSection = 'achats' | 'ventes' | 'taxes'
+type ComptableSection = 'achats' | 'ventes' | 'taxes' | 'releves'
 
 function ComptableTab() {
   const [section, setSection] = useState<ComptableSection>('achats')
@@ -2033,6 +2054,7 @@ function ComptableTab() {
     { id: 'achats', label: '📥 Factures d’achat' },
     { id: 'ventes', label: '📤 Factures de vente' },
     { id: 'taxes', label: '🏨 Taxe de séjour et TPT' },
+    { id: 'releves', label: '🏦 Relevés bancaires' },
   ]
   return (
     <div>
@@ -2044,6 +2066,7 @@ function ComptableTab() {
       {section === 'achats' && <ComptableInvoices type="cb" />}
       {section === 'ventes' && <><TvaRatesCard /><ComptableInvoices type="cash" /></>}
       {section === 'taxes' && <TaxeSejourPanel />}
+      {section === 'releves' && <StatementsMonthPanel />}
     </div>
   )
 }
@@ -2140,6 +2163,10 @@ function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
   }
 
   const missingCount = rows.filter(e => !e.invoice_url && !invoiceByEntry[e.id]).length
+  // Ventes sans facture (ex : encaissements saisis par un employé) : facture à compléter ici
+  const toComplete = type === 'cash' ? rows.filter(e => !invoiceByEntry[e.id]) : []
+  const [onlyToComplete, setOnlyToComplete] = useState(false)
+  const shownRows = onlyToComplete ? toComplete : rows
 
   async function removeFromList(entry: Entry) {
     setAllEntries(prev => prev.map(e => e.id === entry.id ? { ...e, to_accountant: false } : e))
@@ -2162,6 +2189,16 @@ function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
         </div>
       </div>
  
+      {type === 'cash' && toComplete.length > 0 && (
+        <div style={{ marginBottom: '0.75rem', padding: '0.55rem 0.8rem', background: '#FAF6F2', border: '1px solid #EADBCB', borderRadius: '0.4rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          🧾 <strong>{toComplete.length} facture{toComplete.length > 1 ? 's' : ''} à compléter</strong>
+          <span style={{ color: '#666' }}>— encaissements saisis sans facture (par exemple par un employé) : cliquez sur « Compléter » pour indiquer le client, les adultes, enfants et nuits.</span>
+          <button type="button" onClick={() => setOnlyToComplete(v => !v)} style={{ marginLeft: 'auto', background: onlyToComplete ? 'white' : '#8B4513', color: onlyToComplete ? '#8B4513' : 'white', border: '1px solid #8B4513', borderRadius: '0.4rem', padding: '0.3rem 0.7rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>
+            {onlyToComplete ? 'Tout afficher' : 'Afficher seulement celles-ci'}
+          </button>
+        </div>
+      )}
+
       <div className="card" style={{ marginBottom: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <span style={{ fontSize: '0.85rem', color: '#666' }}>
           {rows.length} facture{rows.length > 1 ? 's' : ''}
@@ -2202,7 +2239,7 @@ function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map(e => {
+              {shownRows.map(e => {
                 const color = e.type === 'cb' ? 'var(--terracotta)' : 'var(--green)'
                 return (
                   <tr key={e.id}>
@@ -2215,7 +2252,7 @@ function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
                             <button onClick={() => setInvoiceFor(e)} title="Modifier la facture" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: '#999', marginLeft: '0.3rem', padding: 0 }}>✎</button>
                           </>
                         ) : (
-                          <button onClick={() => setInvoiceFor(e)} disabled={taxRate === null} title="Créer la facture client" style={{ background: '#FAF6F2', border: '1px solid #D9B99B', color: '#8B4513', borderRadius: '0.3rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.45rem' }}>🧾 Créer</button>
+                          <button onClick={() => setInvoiceFor(e)} disabled={taxRate === null} title="Compléter la facture client (client, adultes, enfants, nuits)" style={{ background: '#8B4513', border: 'none', color: 'white', borderRadius: '0.3rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, padding: '0.25rem 0.55rem' }}>🧾 Compléter</button>
                         )}
                       </td>
                     )}
