@@ -91,7 +91,7 @@ export default function ManagerGuide({ onClose }: { onClose: () => void }) {
           ['Actions', '✓ pour valider, ↩ pour remettre en attente, 🗑 pour supprimer (avec confirmation).'],
         ]} />
         <p style={note}>Les saisies des employés arrivent « En attente » : vérifiez le montant et la facture, puis validez avec ✓. Une suppression est définitive, justificatif compris.</p>
-        <p style={p}>Dans Encaissements, <b>📄 Générer la facture comptable</b> crée une facture au nom du riad pour le client. Le bouton <b>📊 Excel</b> de la barre du haut télécharge toutes les données dans un fichier Excel.</p>
+        <p style={p}>Dans Encaissements, la colonne <b>Facture</b> (bouton <b>🧾 Créer</b>) crée la facture client sur le papier à en-tête du riad : indiquez le nombre de nuits et de personnes, la taxe de séjour est calculée automatiquement. Les factures sont numérotées à la suite (FA-2026-0001, FA-2026-0002…) et partent directement dans l&apos;onglet Comptable. Le bouton <b>📊 Excel</b> de la barre du haut télécharge toutes les données dans un fichier Excel.</p>
 
         <h2 style={h2}>4. Fond de caisse et Coffre fort (💰 / 🔐)</h2>
         <p style={p}>Les espèces vivent à deux endroits : la <b>caisse</b> (l&apos;argent du quotidien, visible par les employés) et le <b>coffre fort</b> (la réserve, visible seulement des administrateurs).</p>
@@ -128,14 +128,15 @@ export default function ManagerGuide({ onClose }: { onClose: () => void }) {
         <p style={note}>Fiez-vous à la liste en ligne d&apos;Attijari : l&apos;export CSV peut sauter des lignes. Pour corriger un écart qui reste inexpliqué, ajoutez une <b>ligne de régularisation datée</b> dans Dépenses ou Encaissements. Ne modifiez pas le solde initial : cela fausserait tous les mois passés.</p>
 
         <h2 style={h2}>6. Comptable (📨)</h2>
-        <p style={p}>L&apos;onglet Comptable liste, mois par mois, toutes les saisies cochées « Facture à envoyer au comptable ».</p>
+        <p style={p}>L&apos;onglet Comptable liste, mois par mois, toutes les saisies cochées « Facture à envoyer au comptable », en trois rubriques : <b>Factures d&apos;achat</b> (dépenses), <b>Factures de vente</b> (encaissements) et <b>Taxes de séjour</b>.</p>
         <ul style={list}>
-          <li style={li}>Choisissez le mois avec les flèches, ou cochez « Tous les mois ». Le filtre permet de ne voir que les dépenses ou que les encaissements.</li>
+          <li style={li}>Choisissez le mois avec les flèches, ou cochez « Tous les mois ».</li>
           <li style={li}>Le nombre de <b>justificatifs manquants</b> s&apos;affiche en rouge. Sur chaque ligne sans facture, <b>+ Ajouter</b> permet de joindre la photo ou le PDF directement. La flèche ↻ remplace une facture déjà jointe.</li>
           <li style={li}><b>✕</b> retire une ligne de la liste du comptable, sans supprimer la saisie.</li>
           <li style={li}><b>📄 Exporter le PDF</b> crée le dossier du mois, par exemple « Comptable - Octobre 2026.pdf » : une page récapitulative avec les totaux, puis toutes les factures à la suite. Le récapitulatif indique la page de chaque facture, ou « manque ».</li>
         </ul>
-        <p style={p}>Avant d&apos;exporter, vérifiez qu&apos;il ne reste aucun justificatif manquant pour le mois.</p>
+        <p style={p}>Avant d&apos;exporter, vérifiez qu&apos;il ne reste aucun justificatif manquant pour le mois. Dans les factures de vente, le PDF exporté contient les factures clients générées par l&apos;application.</p>
+        <p style={p}><b>Taxes de séjour</b> : choisissez le trimestre avec les flèches pour voir le total des nuitées et de la taxe à reverser. <b>📄 Relevé PDF</b> et <b>📊 Excel</b> créent le fichier à remettre au comptable. Le tarif (MAD par personne et par nuit) se modifie en haut à droite ; il s&apos;applique aux nouvelles factures seulement. Une facture se corrige à tout moment (son numéro ne change pas) ; seule la dernière facture de l&apos;année peut être supprimée.</p>
 
         <h2 style={h2}>7. Employés et Paramètres (👥 / ⚙️)</h2>
         <h3 style={h3}>Employés</h3>
@@ -160,6 +161,7 @@ export default function ManagerGuide({ onClose }: { onClose: () => void }) {
           ['Chaque semaine', 'Vérifier le solde du coffre et les sorties sans facture (SF)', 'Coffre fort'],
           ['Chaque mois', 'Cocher les factures pour le comptable et compléter les justificatifs manquants', 'Dépenses, Encaissements, Comptable'],
           ['Chaque mois', 'Exporter le PDF du mois et l’envoyer au comptable', 'Comptable'],
+          ['Chaque trimestre', 'Exporter le relevé de la taxe de séjour et l’envoyer au comptable', 'Comptable › Taxes de séjour'],
         ]} />
         <p style={p}>En cas de doute sur un chiffre ou d&apos;anomalie dans l&apos;application, notez la date et le montant concernés et prévenez Sarah.</p>
 

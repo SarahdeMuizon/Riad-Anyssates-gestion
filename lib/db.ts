@@ -252,6 +252,31 @@ export async function initDb() {
         created_at TEXT DEFAULT (datetime('now'))
       )`,
     },
+    // Factures de vente générées pour les encaissements clients (numérotation continue par année)
+    {
+      sql: `CREATE TABLE IF NOT EXISTS invoices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        number TEXT UNIQUE NOT NULL,
+        year INTEGER NOT NULL,
+        seq INTEGER NOT NULL,
+        entry_id INTEGER UNIQUE,
+        date TEXT NOT NULL,
+        client_name TEXT,
+        description TEXT,
+        nights INTEGER DEFAULT 0,
+        persons INTEGER DEFAULT 0,
+        tax_rate REAL DEFAULT 0,
+        tax_amount REAL DEFAULT 0,
+        tax_included INTEGER DEFAULT 1,
+        tva_rate REAL DEFAULT 0,
+        amount_lodging REAL NOT NULL,
+        amount_total REAL NOT NULL,
+        currency TEXT DEFAULT 'MAD',
+        payment TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        UNIQUE (year, seq)
+      )`,
+    },
   ])
  
   for (const r of results) {

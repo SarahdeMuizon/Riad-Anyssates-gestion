@@ -2,25 +2,12 @@
 // dans l'ordre chronologique. Généré entièrement dans le navigateur (pdf-lib).
 import type { Entry } from '@/types'
 import { dataUrlToBlob } from '@/lib/attachments'
+import type { Invoice } from '@/lib/invoice'
+import { clean, fmtAmount, fmtDate } from '@/lib/pdf-utils'
+import { invoicePageWriter } from '@/lib/invoice-pdf'
 
 const A4: [number, number] = [595.28, 841.89]
 const MARGIN = 36
-
-// Les polices standard des PDF ne gèrent que l'alphabet latin (WinAnsi) :
-// on remplace les caractères qu'elles ne savent pas dessiner.
-function clean(s: unknown): string {
-  return String(s ?? '')
-    .replace(/[   ]/g, ' ')
-    .replace(/[‘’]/g, "'")
-    .replace(/[“”]/g, '"')
-    .replace(/↔/g, '<->').replace(/→/g, '->')
-    .replace(/[−–—]/g, '-')
-    .replace(/…/g, '...')
-    .replace(/[^\x20-\x7E\xA0-\xFF€]/g, '')
-}
-
-const fmtAmount = (n: number) => clean(n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
-const fmtDate = (d: string) => d.split('-').reverse().join('/')
 
 async function imageToJpegBytes(blob: Blob): Promise<Uint8Array> {
   const bmp = await createImageBitmap(blob)
@@ -31,7 +18,9 @@ async function imageToJpegBytes(blob: Blob): Promise<Uint8Array> {
   return new Uint8Array(await out.arrayBuffer())
 }
 
-export async function buildAccountantPdf(entries: Entry[], title: string): Promise<Blob> {
+// invoices : factures de vente générées par l'application, par encaissement —
+// elles sont placées avant le justificatif (ticket CB…) de l'encaissement.
+export async function buildAccountantPdf(entries: Entry[], title: string, invoices: Record<number, Invoice> = {}): Promise<Blob> {
   const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib')
   const doc = await PDFDocument.create()
   const font = await doc.embedFont(StandardFonts.Helvetica)
@@ -42,17 +31,24 @@ export async function buildAccountantPdf(entries: Entry[], title: string): Promi
   const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id)
   const label = (e: Entry, n: number) => clean(
     `#${n} - ${fmtDate(e.date)} - ${e.type === 'cb' ? 'Dépense' : 'Encaissement'} - ${e.supplier || e.category}` +
-    ` - ${fmtAmount(Number(e.amount))} ${e.currency || 'MAD'}${e.reference ? ` - N° ${e.reference}` : ''}`)
+    ` - ${fmtAmount(Number(e.amount))} ${e.currency || 'MAD'}${e.reference ? ` - N° ${e.reference}` : ''}` +
+    `${invoices[e.id] ? ` - Facture ${invoices[e.id].number}` : ''}`)
 
   // 1) Justificatifs, dans un document séparé pour connaître leur numéro de page
   const body = await PDFDocument.create()
   const bFont = await body.embedFont(StandardFonts.Helvetica)
+  const writeInvoice = await invoicePageWriter(body)
   const firstPage: (number | null)[] = []
   for (let i = 0; i < sorted.length; i++) {
     const e = sorted[i]
     const url = e.invoice_url as string | undefined
-    if (!url || !url.startsWith('data:')) { firstPage.push(null); continue }
-    firstPage.push(body.getPageCount())
+    const inv = invoices[e.id]
+    if (inv) {
+      firstPage.push(body.getPageCount())
+      await writeInvoice(inv)
+    }
+    if (!url || !url.startsWith('data:')) { if (!inv) firstPage.push(null); continue }
+    if (!inv) firstPage.push(body.getPageCount())
     const head = label(e, i + 1)
     try {
       const blob = dataUrlToBlob(url)
@@ -139,7 +135,7 @@ export async function buildAccountantPdf(entries: Entry[], title: string): Promi
     const p = firstPage[i]
     const vals = [
       String(i + 1), fmtDate(e.date), e.type === 'cb' ? 'Dépense' : 'Encaiss.', e.supplier || '-', e.category,
-      e.payment || '-', e.reference || '-', `${fmtAmount(Number(e.amount))} ${e.currency || 'MAD'}`,
+      e.payment || '-', invoices[e.id]?.number || e.reference || '-', `${fmtAmount(Number(e.amount))} ${e.currency || 'MAD'}`,
       p === null ? 'manque' : `p. ${summaryPages + p + 1}`,
     ]
     let x = MARGIN

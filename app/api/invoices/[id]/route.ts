@@ -1,0 +1,74 @@
+import { NextRequest, NextResponse } from 'next/server'
+import sql, { ensureDb } from '@/lib/db'
+import { getManagerSession } from '@/lib/auth'
+import { computeInvoice } from '@/lib/invoice'
+
+export const dynamic = 'force-dynamic'
+
+// Correction d'une facture (client, nuits, personnes…) : le numéro ne change pas,
+// et le tarif de taxe de séjour reste celui en vigueur à la création.
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    await ensureDb()
+    const isAuth = await getManagerSession()
+    if (!isAuth) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
+    const id = parseInt(params.id)
+    const inv = (await sql`SELECT * FROM invoices WHERE id = ${id}`)[0]
+    if (!inv) return NextResponse.json({ error: 'Facture introuvable' }, { status: 404 })
+    const body = await req.json()
+
+    const date = String(body.date || inv.date)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return NextResponse.json({ error: 'Date invalide' }, { status: 400 })
+    if (parseInt(date.substring(0, 4), 10) !== inv.year) {
+      return NextResponse.json({ error: `La date doit rester en ${inv.year} (numéro ${inv.number})` }, { status: 400 })
+    }
+    // Montant payé par le client, retrouvé à partir de la facture existante
+    const gross = Number(inv.tax_included ? inv.amount_total : inv.amount_lodging)
+    const tvaRate = body.tva_rate !== undefined ? Math.max(0, parseFloat(body.tva_rate) || 0) : Number(inv.tva_rate)
+    const c = computeInvoice({
+      gross, currency: inv.currency as string,
+      nights: body.nights !== undefined ? Number(body.nights) : Number(inv.nights),
+      persons: body.persons !== undefined ? Number(body.persons) : Number(inv.persons),
+      taxRate: Number(inv.tax_rate),
+      taxIncluded: body.tax_included !== undefined ? body.tax_included !== false : !!inv.tax_included,
+      tvaRate,
+    })
+    if (c.lodging < 0) return NextResponse.json({ error: 'La taxe de séjour dépasse le montant encaissé' }, { status: 400 })
+    const clientName = body.client_name !== undefined ? (String(body.client_name).trim().slice(0, 200) || null) : inv.client_name
+    const description = body.description !== undefined ? (String(body.description).trim().slice(0, 500) || null) : inv.description
+
+    const result = await sql`
+      UPDATE invoices SET date = ${date}, client_name = ${clientName}, description = ${description},
+        nights = ${c.nights}, persons = ${c.persons}, tax_amount = ${c.taxAmount}, tax_included = ${c.taxIncluded ? 1 : 0},
+        tva_rate = ${tvaRate}, amount_lodging = ${c.lodging}, amount_total = ${c.total}
+      WHERE id = ${id} RETURNING *
+    `
+    return NextResponse.json(result[0])
+  } catch (error) {
+    console.error('PATCH invoice error:', error)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+  }
+}
+
+// Seule la dernière facture de l'année peut être supprimée : la numérotation reste continue.
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    await ensureDb()
+    const isAuth = await getManagerSession()
+    if (!isAuth) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
+    const id = parseInt(params.id)
+    const inv = (await sql`SELECT * FROM invoices WHERE id = ${id}`)[0]
+    if (!inv) return NextResponse.json({ error: 'Facture introuvable' }, { status: 404 })
+    const last = await sql`SELECT MAX(seq) AS m FROM invoices WHERE year = ${inv.year}`
+    if (Number(last[0]?.m) !== Number(inv.seq)) {
+      return NextResponse.json({ error: `Seule la dernière facture de ${inv.year} peut être supprimée — corrigez plutôt la facture ${inv.number}.` }, { status: 400 })
+    }
+    await sql`DELETE FROM invoices WHERE id = ${id}`
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    console.error('DELETE invoice error:', error)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+  }
+}

@@ -95,6 +95,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
  
     const id = parseInt(params.id)
     await sql`DELETE FROM entries WHERE id = ${id}`
+    // La facture éventuelle est conservée (numérotation et taxe de séjour), détachée de l'encaissement
+    await sql`UPDATE invoices SET entry_id = NULL WHERE entry_id = ${id}`.catch(() => null)
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('DELETE entry error:', error)

@@ -6,6 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import { openAttachment, fileToDataUrl } from '@/lib/attachments'
 import ManagerGuide from './guide'
 import NotificationBell from './notifications'
+import { InvoiceModal, TaxeSejourPanel, useInvoices, downloadInvoice } from './invoices'
  
 type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'banque' | 'coffre' | 'comptable' | 'employees' | 'settings'
  
@@ -274,64 +275,6 @@ function DashboardTab() {
  
 const DEPENSES_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Aménagement/Déco','Entretien','Livraison/Carrossa','Radeema','Impôts','Divers']
  
-interface InvoiceData {
-  date: string; amount: number; amountTransaction?: number
-  currency: string; category: string; description: string
-  clientName: string; tvaRate: number; nuits: number; personnes: number; payment: string
-}
- 
-function generateInvoice(entry: InvoiceData) {
-  const invoiceAmount = entry.amountTransaction ?? entry.amount
-  const tvaFrac = entry.tvaRate / (100 + entry.tvaRate)
-  const tvaAmt = invoiceAmount * tvaFrac
-  const htAmt = invoiceAmount - tvaAmt
-  const taxeSejour = entry.nuits > 0 && entry.personnes > 0 ? entry.nuits * entry.personnes * 2.5 : 0
-  const num = `RIA-${entry.date.replace(/-/g,'')}${Math.floor(Math.random()*9000+1000)}`
-  const fmtN = (n: number) => n.toFixed(2).replace('.',',')
-  const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Facture ${num}</title>
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Segoe UI',Arial,sans-serif;max-width:640px;margin:40px auto;padding:20px;color:#222;font-size:14px}
-  .top{text-align:center;padding-bottom:20px;border-bottom:3px solid #8B4513;margin-bottom:24px}
-  .top h1{color:#8B4513;font-size:1.6rem;letter-spacing:1px}
-  .top p{color:#888;font-size:.85rem}
-  h2{color:#8B4513;font-size:1rem;font-weight:700;margin-bottom:8px}
-  .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:24px}
-  .meta div{background:#faf8f6;padding:10px;border-radius:6px}
-  .meta .lbl{font-size:.75rem;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-  .meta .val{font-size:.95rem;font-weight:600;margin-top:2px}
-  table{width:100%;border-collapse:collapse;margin-bottom:20px}
-  td{padding:9px 4px;border-bottom:1px solid #eee}
-  td:last-child{text-align:right;font-weight:600}
-  tr.total td{border-top:2px solid #8B4513;border-bottom:none;font-size:1.05rem;font-weight:700;color:#8B4513;padding-top:12px}
-  .footer{text-align:center;margin-top:30px;color:#888;font-size:.8rem;border-top:1px solid #eee;padding-top:16px}
-  .btn{display:block;margin:20px auto 0;padding:10px 28px;background:#8B4513;color:white;border:none;border-radius:6px;cursor:pointer;font-size:.95rem}
-  @media print{.btn{display:none}}
-</style></head><body>
-<div class="top"><h1>🏰 Riad Anyssates</h1><p>Marrakech, Maroc &nbsp;|&nbsp; contact@riadanyssates.com</p></div>
-<h2>FACTURE N° ${num}</h2>
-<div class="meta">
-  <div><div class="lbl">Date</div><div class="val">${entry.date.split('-').reverse().join('/')}</div></div>
-  <div><div class="lbl">Client</div><div class="val">${entry.clientName || '—'}</div></div>
-  <div><div class="lbl">Prestation</div><div class="val">${entry.category}</div></div>
-  <div><div class="lbl">Mode de paiement</div><div class="val">${entry.payment}</div></div>
-  ${entry.description ? `<div style="grid-column:1/-1"><div class="lbl">Détails</div><div class="val">${entry.description}</div></div>` : ''}
-</div>
-<table>
-  <tr><td>Montant HT</td><td>${fmtN(htAmt)} ${entry.currency}</td></tr>
-  <tr><td>TVA (${entry.tvaRate}%)</td><td>${fmtN(tvaAmt)} ${entry.currency}</td></tr>
-  ${taxeSejour > 0 ? `<tr><td>Taxe de séjour — ${entry.nuits} nuit(s) × ${entry.personnes} pers. × 2,50€</td><td>${fmtN(taxeSejour)} €</td></tr>` : ''}
-  <tr class="total">
-    <td>TOTAL TTC</td>
-    <td>${fmtN(invoiceAmount)} ${entry.currency}${taxeSejour > 0 ? ` + ${fmtN(taxeSejour)} €` : ''}</td>
-  </tr>
-</table>
-<div class="footer">Merci pour votre confiance · Riad Anyssates · Marrakech</div>
-<button class="btn" onclick="window.print()">🖨️ Imprimer / Enregistrer en PDF</button>
-</body></html>`
-  const w = window.open('','_blank')
-  if (w) { w.document.write(html); w.document.close() }
-}
 const ENCAISSEMENTS_CATEGORIES = ['Client','Commission','Administratif','Nourriture','Spa','Prestataire','Banque','Salaire','Maroc Telecom','Travaux','Radeema','Impôts','Divers']
 const PAYMENT_MODES_DEPENSES = ['CB', 'Virement', 'Chèque', 'Prélèvement', 'Espèces']
 const PAYMENT_MODES_ENCAISSEMENTS = ['CB', 'Virement', 'Chèque', 'Prélèvement', 'Espèces']
@@ -376,7 +319,10 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [fTransactionAmount, setFTransactionAmount] = useState('')
   const [fCardType, setFCardType] = useState<'amex' | 'other'>('amex')
   const [fClientName, setFClientName] = useState('')
-  const [fLastEntry, setFLastEntry] = useState<InvoiceData | null>(null)
+  // Dernier encaissement enregistré : proposer d'en créer la facture
+  const [fLastEntry, setFLastEntry] = useState<Entry | null>(null)
+  const { byEntry: invoiceByEntry, taxRate, reload: reloadInvoices } = useInvoices()
+  const [invoiceFor, setInvoiceFor] = useState<Entry | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [formSuccess, setFormSuccess] = useState('')
@@ -631,24 +577,16 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       }
     }
  
-    const invoiceEntry: InvoiceData = {
-      date: fDate, amount: finalAmount,
-      amountTransaction: type === 'cash' && fPayment === 'CB' && fTransactionAmount ? parseFloat(fTransactionAmount) : undefined,
-      currency: fCurrency, category: fCategory, description: fDescription || '',
-      clientName: fClientName || '', tvaRate: 0,
-      nuits: 0, personnes: 0, payment: fPayment,
-    }
- 
     try {
       const r = await fetch('/api/entries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       if (r.ok) {
-        if (type === 'cash') setFLastEntry(invoiceEntry)
+        if (type === 'cash') setFLastEntry(await r.json().catch(() => null))
         setFAmount(''); setFAmountHT(''); setFTvaRate(''); setFSupplier(''); setFDescription('')
         setFFile(null); setFFilePreview(null); setFExtracted(false); setShowForm(false)
         setFTransactionAmount(''); setFClientName(''); setFReference(''); setFToAccountant(false)
         setFilterStatus(''); setFilterEmployee(''); setFilterCategory(''); setFilterPayment(''); setFilterSupplier('')
         setFormSuccess('✓ Entrée ajoutée avec succès !')
-        setTimeout(() => setFormSuccess(''), 4000)
+        setTimeout(() => { setFormSuccess(''); setFLastEntry(null) }, type === 'cash' ? 15000 : 4000)
         setMonth(fDate.substring(0, 7))
       } else {
         const d = await r.json().catch(() => ({}))
@@ -717,7 +655,16 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
         </span>
       </div>
 
-      {formSuccess && <p style={{ color: 'var(--green)', fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: '#F0FDF4', borderRadius: '0.4rem', border: '1px solid #86efac' }}>{formSuccess}</p>}
+      {formSuccess && (
+        <div style={{ color: 'var(--green)', fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: '#F0FDF4', borderRadius: '0.4rem', border: '1px solid #86efac', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {formSuccess}
+          {type === 'cash' && fLastEntry && !invoiceByEntry[fLastEntry.id] && taxRate !== null && (
+            <button type="button" onClick={() => setInvoiceFor(fLastEntry)} style={{ padding: '0.35rem 0.8rem', background: '#8B4513', color: 'white', border: 'none', borderRadius: '0.4rem', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem' }}>
+              🧾 Créer la facture client
+            </button>
+          )}
+        </div>
+      )}
       {!showForm && formError && <p style={{ color: 'var(--red)', fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: '#FEF2F2', borderRadius: '0.4rem', border: '1px solid #fca5a5' }}>{formError}</p>}
  
       {showForm && (
@@ -912,11 +859,6 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
             )}
  
             {formError && <p style={{ color: 'var(--red)', fontSize: '0.875rem' }}>{formError}</p>}
-            {formSuccess && fLastEntry && (
-              <button type="button" onClick={() => generateInvoice(fLastEntry!)} style={{ width: '100%', padding: '0.6rem', background: '#8B4513', color: 'white', border: 'none', borderRadius: '0.5rem', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}>
-                📄 Générer la facture comptable
-              </button>
-            )}
             <button className="btn-primary" type="submit" disabled={submitting || fUploading || fExtracting}>{fExtracting ? '🤖 Analyse document…' : fUploading ? '⬆️ Upload…' : submitting ? 'Enregistrement…' : 'Enregistrer'}</button>
           </form>
         </div>
@@ -937,6 +879,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                 <th>Description</th>
                 <th>Devise</th><th>Montant</th>
                 <th>Justificatif</th>
+                {type === 'cash' && <th title="Facture client (numérotée) avec la taxe de séjour">Facture</th>}
                 <th title="Facture à envoyer au comptable">Compta.</th>
                 <th>Statut</th><th></th>
               </tr>
@@ -985,6 +928,18 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                       : <button onClick={() => { setPendingUploadEntry(e.id); rowFileRef.current?.click() }} disabled={uploadingEntryId === e.id} style={{ background: 'none', border: '1px dashed #aaa', borderRadius: '0.3rem', color: '#888', cursor: 'pointer', fontSize: '0.75rem', padding: '0.2rem 0.4rem' }}>{uploadingEntryId === e.id ? '⬆️…' : '📎 Ajouter'}</button>
                     }
                   </td>
+                  {type === 'cash' && (
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {invoiceByEntry[e.id] ? (
+                        <>
+                          <button onClick={() => downloadInvoice(invoiceByEntry[e.id])} title="Télécharger la facture" style={{ background: 'none', border: 'none', color: 'var(--blue)', cursor: 'pointer', fontSize: '0.8rem', padding: 0 }}>📄 {invoiceByEntry[e.id].number}</button>
+                          <button onClick={() => setInvoiceFor(e)} title="Modifier la facture" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: '#999', marginLeft: '0.3rem', padding: 0 }}>✎</button>
+                        </>
+                      ) : (
+                        <button onClick={() => setInvoiceFor(e)} disabled={taxRate === null} title="Créer la facture client (nuits, personnes, taxe de séjour)" style={{ background: '#FAF6F2', border: '1px solid #D9B99B', color: '#8B4513', borderRadius: '0.3rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.45rem' }}>🧾 Créer</button>
+                      )}
+                    </td>
+                  )}
                   <td style={{ textAlign: 'center' }}>
                     <input type="checkbox" checked={!!e.to_accountant} onChange={() => toggleAccountant(e)} title="Facture à envoyer au comptable" style={{ width: '1.1rem', height: '1.1rem', cursor: 'pointer', accentColor: color }} />
                   </td>
@@ -1001,6 +956,16 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       )}
  
       <input ref={rowFileRef} type="file" accept="image/*,application/pdf" onChange={handleRowUpload} style={{ display: 'none' }} />
+
+      {invoiceFor && taxRate !== null && (
+        <InvoiceModal entry={invoiceFor} invoice={invoiceByEntry[invoiceFor.id] ?? null} taxRate={taxRate}
+          onClose={() => setInvoiceFor(null)}
+          onSaved={() => {
+            setInvoiceFor(null); setFLastEntry(null); reloadInvoices()
+            // La création de facture coche « à envoyer au comptable » côté serveur
+            fetchEntries()
+          }} />
+      )}
  
       {deleteModal !== null && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
@@ -1963,16 +1928,40 @@ function CoffreTab() {
 }
  
 // ─── Comptable Tab ─────────────────────────────────────────────────────────────
-// Toutes les factures (dépenses et encaissements) cochées « à envoyer au comptable »
- 
+// Factures cochées « à envoyer au comptable », séparées en factures d'achat (dépenses)
+// et factures de vente (encaissements), plus le relevé trimestriel de la taxe de séjour.
+
+type ComptableSection = 'achats' | 'ventes' | 'taxes'
+
 function ComptableTab() {
+  const [section, setSection] = useState<ComptableSection>('achats')
+  const sections: { id: ComptableSection; label: string }[] = [
+    { id: 'achats', label: '📥 Factures d’achat' },
+    { id: 'ventes', label: '📤 Factures de vente' },
+    { id: 'taxes', label: '🏨 Taxes de séjour' },
+  ]
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        {sections.map(s => (
+          <button key={s.id} onClick={() => setSection(s.id)} style={{ padding: '0.45rem 0.9rem', borderRadius: '999px', border: `1px solid ${section === s.id ? '#0F766E' : '#ddd'}`, background: section === s.id ? '#0F766E' : 'white', color: section === s.id ? 'white' : 'var(--text)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>{s.label}</button>
+        ))}
+      </div>
+      {section === 'achats' && <ComptableInvoices type="cb" />}
+      {section === 'ventes' && <ComptableInvoices type="cash" />}
+      {section === 'taxes' && <TaxeSejourPanel />}
+    </div>
+  )
+}
+
+function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
   const now = new Date()
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const [allEntries, setAllEntries] = useState<Entry[]>([])
   const [loading, setLoading] = useState(true)
   const [month, setMonth] = useState(currentMonth)
   const [allMonths, setAllMonths] = useState(false)
-  const [filterType, setFilterType] = useState<'' | 'cb' | 'cash'>('')
+  const { byEntry: invoiceByEntry } = useInvoices()
  
   const reload = useCallback(async () => {
     setLoading(true)
@@ -1987,8 +1976,8 @@ function ComptableTab() {
   const rows = useMemo(() => allEntries
     .filter(e => !!e.to_accountant)
     .filter(e => allMonths || e.date.substring(0, 7) === month)
-    .filter(e => !filterType || e.type === filterType)
-    .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id), [allEntries, allMonths, month, filterType])
+    .filter(e => e.type === type)
+    .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id), [allEntries, allMonths, month, type])
  
   const totals = useMemo(() => {
     const t: Record<string, { dep: number; enc: number }> = {}
@@ -2003,14 +1992,15 @@ function ComptableTab() {
  
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState('')
-  const exportTitle = allMonths ? 'Tous les mois' : formatMonth(month)
+  const kindLabel = type === 'cb' ? 'Factures d’achat' : 'Factures de vente'
+  const exportTitle = `${kindLabel} - ${allMonths ? 'Tous les mois' : formatMonth(month)}`
  
   async function exportPdf() {
     if (rows.length === 0) return
     setExporting(true); setExportError('')
     try {
       const { buildAccountantPdf } = await import('@/lib/pdf-export')
-      const blob = await buildAccountantPdf(rows, exportTitle)
+      const blob = await buildAccountantPdf(rows, exportTitle, type === 'cash' ? invoiceByEntry : {})
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -2064,7 +2054,7 @@ function ComptableTab() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
-        <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0F766E' }}>📨 Factures à envoyer au comptable</h2>
+        <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0F766E' }}>{type === 'cb' ? '📥 Factures d’achat (dépenses)' : '📤 Factures de vente (encaissements)'}</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <button onClick={() => { setAllMonths(false); setMonth(shiftMonth(month, -1)) }} disabled={allMonths} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: allMonths ? 'default' : 'pointer', opacity: allMonths ? 0.4 : 1, fontWeight: 600 }}>‹</button>
           <span style={{ fontWeight: 700, minWidth: 140, textAlign: 'center', color: allMonths ? '#aaa' : 'var(--text)' }}>{formatMonth(month)}</span>
@@ -2077,17 +2067,12 @@ function ComptableTab() {
       </div>
  
       <div className="card" style={{ marginBottom: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <select className="form-input" style={{ width: 'auto' }} value={filterType} onChange={e => setFilterType(e.target.value as '' | 'cb' | 'cash')}>
-          <option value="">Dépenses et encaissements</option>
-          <option value="cb">Dépenses uniquement</option>
-          <option value="cash">Encaissements uniquement</option>
-        </select>
         <span style={{ fontSize: '0.85rem', color: '#666' }}>
           {rows.length} facture{rows.length > 1 ? 's' : ''}
           {missingCount > 0 && <span style={{ color: 'var(--red)', fontWeight: 600 }}> · {missingCount} justificatif{missingCount > 1 ? 's' : ''} manquant{missingCount > 1 ? 's' : ''}</span>}
         </span>
         <button className="btn-primary" onClick={exportPdf} disabled={exporting || rows.length === 0} style={{ background: '#0F766E', fontSize: '0.85rem', padding: '0.4rem 0.9rem', opacity: rows.length === 0 ? 0.5 : 1 }}>
-          {exporting ? 'Création du PDF…' : `📄 Exporter le PDF — ${exportTitle}`}
+          {exporting ? 'Création du PDF…' : `📄 Exporter le PDF — ${allMonths ? 'Tous les mois' : formatMonth(month)}`}
         </button>
         {exportError && <span style={{ color: 'var(--red)', fontSize: '0.8rem' }}>{exportError}</span>}
         {uploadError && <span style={{ color: 'var(--red)', fontSize: '0.8rem' }}>{uploadError}</span>}
@@ -2106,14 +2091,16 @@ function ComptableTab() {
       {loading ? <p>Chargement…</p> : rows.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>
           Aucune facture à envoyer {allMonths ? '' : 'pour ce mois'}.<br />
-          <span style={{ fontSize: '0.8rem' }}>Cochez « Facture à envoyer au comptable » dans Dépenses ou Encaissements pour qu&apos;elle apparaisse ici.</span>
+          <span style={{ fontSize: '0.8rem' }}>{type === 'cb'
+            ? <>Cochez « Facture à envoyer au comptable » dans Dépenses pour qu&apos;elle apparaisse ici.</>
+            : <>Créez la facture client depuis Encaissements (colonne « Facture »), ou cochez « Compta. », pour qu&apos;elle apparaisse ici.</>}</span>
         </div>
       ) : (
         <div className="table-scroll">
           <table className="table-dep">
             <thead>
               <tr>
-                <th>Date</th><th>Type</th><th>Employé</th><th>Catégorie</th><th>Fournisseur / client</th>
+                <th>Date</th>{type === 'cash' && <th>Facture</th>}<th>Employé</th><th>Catégorie</th><th>{type === 'cb' ? 'Fournisseur' : 'Client'}</th>
                 <th>Paiement</th><th>N° fact./chèque</th><th>Description</th>
                 <th>Devise</th><th>Montant</th><th>Justificatif</th><th title="Retirer de la liste du comptable">Retirer</th>
               </tr>
@@ -2124,7 +2111,13 @@ function ComptableTab() {
                 return (
                   <tr key={e.id}>
                     <td style={{ whiteSpace: 'nowrap' }}>{new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR')}</td>
-                    <td style={{ color, fontWeight: 600, fontSize: '0.8rem' }}>{e.type === 'cb' ? 'Dépense' : 'Encaissement'}</td>
+                    {type === 'cash' && (
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        {invoiceByEntry[e.id]
+                          ? <button onClick={() => downloadInvoice(invoiceByEntry[e.id])} title="Télécharger la facture" style={{ background: 'none', border: 'none', color: 'var(--blue)', cursor: 'pointer', fontSize: '0.8rem', padding: 0, fontWeight: 600 }}>📄 {invoiceByEntry[e.id].number}</button>
+                          : <span style={{ fontSize: '0.75rem', color: '#aaa' }}>—</span>}
+                      </td>
+                    )}
                     <td>{e.employee_name}</td>
                     <td>{e.category}</td>
                     <td className="col-wrap">{e.supplier || '—'}</td>
