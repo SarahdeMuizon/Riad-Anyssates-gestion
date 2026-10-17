@@ -7,6 +7,7 @@ import { openAttachment, fileToDataUrl } from '@/lib/attachments'
 import ManagerGuide from './guide'
 import NotificationBell from './notifications'
 import { StatementsPanel, StatementsMonthPanel, STATEMENT_LABELS, type StatementSource } from './statements'
+import { DateRangeFilter, EMPTY_RANGE, inRange, rangeActive, rangeLabel, type DateRange } from './date-range'
 import { InvoiceModal, InvoiceEditor, TaxeSejourPanel, TvaRatesCard, useInvoices, downloadInvoice, emptyDraft, previewDraft, draftBody, type InvoiceDraft } from './invoices'
  
 type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'banque' | 'coffre' | 'comptable' | 'employees' | 'settings'
@@ -340,15 +341,20 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
  
   const categories = type === 'cb' ? DEPENSES_CATEGORIES : ENCAISSEMENTS_CATEGORIES
  
+  // Période libre (du … au …) : remplace la navigation par mois tant qu'elle est remplie
+  const [range, setRange] = useState<DateRange>(EMPTY_RANGE)
+  const useRange = rangeActive(range)
+
   const fetchEntries = useCallback(async () => {
     setLoading(true)
-    const params = new URLSearchParams({ type, month })
+    const params = new URLSearchParams({ type })
+    if (!useRange) params.set('month', month)
     if (filterStatus) params.set('status', filterStatus)
     if (filterEmployee) params.set('employee', filterEmployee)
     const r = await fetch(`/api/entries?${params}`)
     setEntries(await r.json())
     setLoading(false)
-  }, [type, month, filterStatus, filterEmployee])
+  }, [type, month, useRange, filterStatus, filterEmployee])
  
   useEffect(() => { fetchEntries() }, [fetchEntries])
   const [me, setMe] = useState('Valérie')
@@ -699,6 +705,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const needsInvoice = (e: Entry) => type === 'cash' && e.category === 'Client' && !invoiceByEntry[e.id]
   const toInvoiceCount = entries.filter(needsInvoice).length
   const shown = entries.filter(e =>
+    (!useRange || inRange(e.date, range)) &&
     (!filterNoInvoice || needsInvoice(e)) &&
     (!filterCategory || e.category === filterCategory) &&
     (!filterPayment || e.payment === filterPayment) &&
@@ -710,13 +717,20 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
  
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button onClick={() => setMonth(shiftMonth(month, -1))} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: 'pointer', fontWeight: 600 }}>‹</button>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color }}>{formatMonth(month)}</h2>
-          <button onClick={() => setMonth(shiftMonth(month, 1))} disabled={month === currentMonth} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: month === currentMonth ? 'default' : 'pointer', opacity: month === currentMonth ? 0.4 : 1, fontWeight: 600 }}>›</button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {useRange ? (
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color }}>Période {rangeLabel(range)}</h2>
+          ) : (
+            <>
+              <button onClick={() => setMonth(shiftMonth(month, -1))} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: 'pointer', fontWeight: 600 }}>‹</button>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color }}>{formatMonth(month)}</h2>
+              <button onClick={() => setMonth(shiftMonth(month, 1))} disabled={month === currentMonth} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: month === currentMonth ? 'default' : 'pointer', opacity: month === currentMonth ? 0.4 : 1, fontWeight: 600 }}>›</button>
+            </>
+          )}
+          <DateRangeFilter value={range} onChange={setRange} color={color} />
         </div>
-        <button className="btn-primary" onClick={() => setShowForm(!showForm)}>{showForm ? 'Annuler' : '+ Ajouter'}</button>
+        <button className="btn-primary" onClick={() => setShowForm(!showForm)} style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>{showForm ? 'Annuler' : '+ Ajouter'}</button>
       </div>
  
       <div className="card filters-bar" style={{ marginBottom: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -960,7 +974,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
  
  
       {loading ? <p>Chargement…</p> : shown.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>{entries.length === 0 ? 'Aucune entrée pour ce mois' : 'Aucune entrée ne correspond aux filtres'}</div>
+        <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>{entries.length === 0 ? (useRange ? 'Aucune entrée sur cette période' : 'Aucune entrée pour ce mois') : 'Aucune entrée ne correspond aux filtres'}</div>
       ) : (
         <div className="table-scroll">
           <table className="table-dep">
@@ -1172,7 +1186,8 @@ function FondsTab() {
     return withSolde.reverse() // plus récent en premier
   }, [cashEntries, fondsEntries])
   const histMonths = useMemo(() => Array.from(new Set(caisseRows.map(r => r.date.substring(0, 7)))).sort().reverse(), [caisseRows])
-  const shownCaisse = caisseRows.filter(r => r.currency === histCurrency && (!histMonth || r.date.startsWith(histMonth)))
+  const [histRange, setHistRange] = useState<DateRange>(EMPTY_RANGE)
+  const shownCaisse = caisseRows.filter(r => r.currency === histCurrency && (!histMonth || r.date.startsWith(histMonth)) && inRange(r.date, histRange))
   const histIn = shownCaisse.filter(r => r.signed > 0).reduce((s, r) => s + r.signed, 0)
   const histOut = shownCaisse.filter(r => r.signed < 0).reduce((s, r) => s - r.signed, 0)
  
@@ -1313,6 +1328,7 @@ function FondsTab() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
           <h3 style={{ fontWeight: 700, fontSize: '0.95rem', color: '#374151' }}>📋 Historique de la caisse</h3>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <DateRangeFilter value={histRange} onChange={setHistRange} />
             <select className="form-input" style={{ width: 'auto' }} value={histMonth} onChange={e => setHistMonth(e.target.value)}>
               <option value="">Tous les mois</option>
               {histMonths.map(m => <option key={m} value={m}>{formatMonth(m)}</option>)}
@@ -1479,6 +1495,10 @@ function BanqueMouvements() {
     setSavingSolde(false)
   }
  
+  // Filtre de dates sur la liste (les soldes Théorique / Réel restent cumulés)
+  const [bankRange, setBankRange] = useState<DateRange>(EMPTY_RANGE)
+  const bankShown = bankRows.filter(e => inRange(e.date, bankRange))
+
   const byMode = useMemo(() => {
     const modes: Record<string, { in: number; out: number }> = {}
     for (const e of bankEntries) {
@@ -1536,7 +1556,15 @@ function BanqueMouvements() {
       </div>
  
       <div className="card">
-        <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', color: '#374151' }}>📋 Mouvements bancaires</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+          <h3 style={{ fontWeight: 700, fontSize: '0.95rem', color: '#374151' }}>📋 Mouvements bancaires</h3>
+          <DateRangeFilter value={bankRange} onChange={setBankRange} color="#3730A3" />
+          {rangeActive(bankRange) && (
+            <span style={{ fontSize: '0.85rem', color: '#666' }}>
+              {bankShown.length} mouvement{bankShown.length > 1 ? 's' : ''} {rangeLabel(bankRange)} · <span style={{ color: 'var(--green)', fontWeight: 600 }}>+{fmt(bankShown.filter(e => e.type === 'cash').reduce((t, e) => t + Number(e.amount), 0))}</span> / <span style={{ color: 'var(--red)', fontWeight: 600 }}>−{fmt(bankShown.filter(e => e.type === 'cb').reduce((t, e) => t + Number(e.amount), 0))}</span> MAD
+            </span>
+          )}
+        </div>
         <div style={{ overflowX: 'auto' }}>
           <table className="table-compact">
             <colgroup>
@@ -1552,7 +1580,7 @@ function BanqueMouvements() {
               </tr>
             </thead>
             <tbody>
-              {[...bankRows].reverse().map(e => {
+              {[...bankShown].reverse().map(e => {
                 const isIn = e.type === 'cash'
                 const amt = Number(e.amount)
                 return (
@@ -1694,6 +1722,10 @@ function CoffreTab() {
   const currentSoldeEur = rowsWithSolde.length > 0 ? rowsWithSolde[rowsWithSolde.length - 1].soldeEur : 0
  
   // Dépôts / retraits — tout l'historique, par devise
+  // Filtre de dates : n'affiche que les lignes de la période (les soldes restent cumulés)
+  const [range, setRange] = useState<DateRange>(EMPTY_RANGE)
+  const periodRows = rowsWithSolde.filter(e => inRange(e.date, range))
+  const periodSum = (dir: 'in' | 'out', cur: string) => periodRows.filter(e => e.direction === dir && (e.currency || 'MAD') === cur).reduce((s, e) => s + Number(e.amount), 0)
   const totalInDhs  = rowsWithSolde.filter(e => e.direction === 'in'  && (e.currency || 'MAD') === 'MAD').reduce((s, e) => s + Number(e.amount), 0)
   const totalOutDhs = rowsWithSolde.filter(e => e.direction === 'out' && (e.currency || 'MAD') === 'MAD').reduce((s, e) => s + Number(e.amount), 0)
   const totalInEur  = rowsWithSolde.filter(e => e.direction === 'in'  && e.currency === 'EUR').reduce((s, e) => s + Number(e.amount), 0)
@@ -1961,8 +1993,18 @@ function CoffreTab() {
         </div>
       )}
  
-      {loading ? <p>Chargement…</p> : rowsWithSolde.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>Aucun mouvement</div>
+      <div className="card" style={{ marginBottom: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <DateRangeFilter value={range} onChange={setRange} color="#B8860B" />
+        {rangeActive(range) && (
+          <span style={{ fontSize: '0.85rem', color: '#666' }}>
+            {periodRows.length} mouvement{periodRows.length > 1 ? 's' : ''} {rangeLabel(range)} · DHS : <span style={{ color: 'var(--green)', fontWeight: 600 }}>+{fmt(periodSum('in', 'MAD'))}</span> / <span style={{ color: 'var(--red)', fontWeight: 600 }}>−{fmt(periodSum('out', 'MAD'))}</span>
+            {' '}· € : <span style={{ color: 'var(--green)', fontWeight: 600 }}>+{fmt(periodSum('in', 'EUR'))}</span> / <span style={{ color: 'var(--red)', fontWeight: 600 }}>−{fmt(periodSum('out', 'EUR'))}</span>
+          </span>
+        )}
+      </div>
+
+      {loading ? <p>Chargement…</p> : periodRows.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>{rowsWithSolde.length === 0 ? 'Aucun mouvement' : 'Aucun mouvement sur cette période'}</div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table className="table-compact">
@@ -1982,7 +2024,7 @@ function CoffreTab() {
               </tr>
             </thead>
             <tbody>
-              {[...rowsWithSolde].reverse().map(e => {
+              {[...periodRows].reverse().map(e => {
                 const isEur = e.currency === 'EUR'
                 const amt = Number(e.amount)
                 const hasInvoice = !!e.invoice_url
@@ -2092,11 +2134,14 @@ function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
  
   useEffect(() => { reload() }, [reload])
  
+  // Période libre (du … au …) : prioritaire sur le mois choisi
+  const [range, setRange] = useState<DateRange>(EMPTY_RANGE)
+  const useRange = rangeActive(range)
   const rows = useMemo(() => allEntries
     .filter(e => !!e.to_accountant)
-    .filter(e => allMonths || e.date.substring(0, 7) === month)
+    .filter(e => useRange ? inRange(e.date, range) : (allMonths || e.date.substring(0, 7) === month))
     .filter(e => e.type === type)
-    .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id), [allEntries, allMonths, month, type])
+    .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id), [allEntries, allMonths, month, type, useRange, range])
  
   const totals = useMemo(() => {
     const t: Record<string, { dep: number; enc: number }> = {}
@@ -2112,7 +2157,8 @@ function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState('')
   const kindLabel = type === 'cb' ? 'Factures d’achat' : 'Factures de vente'
-  const exportTitle = `${kindLabel} - ${allMonths ? 'Tous les mois' : formatMonth(month)}`
+  const periodTitle = useRange ? rangeLabel(range) : allMonths ? 'Tous les mois' : formatMonth(month)
+  const exportTitle = `${kindLabel} - ${periodTitle}`
  
   async function exportPdf() {
     if (rows.length === 0) return
@@ -2178,7 +2224,7 @@ function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
         <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0F766E' }}>{type === 'cb' ? '📥 Factures d’achat (dépenses)' : '📤 Factures de vente (encaissements)'}</h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
           <button onClick={() => { setAllMonths(false); setMonth(shiftMonth(month, -1)) }} disabled={allMonths} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: allMonths ? 'default' : 'pointer', opacity: allMonths ? 0.4 : 1, fontWeight: 600 }}>‹</button>
           <span style={{ fontWeight: 700, minWidth: 140, textAlign: 'center', color: allMonths ? '#aaa' : 'var(--text)' }}>{formatMonth(month)}</span>
           <button onClick={() => setMonth(shiftMonth(month, 1))} disabled={allMonths || month === currentMonth} style={{ border: '1px solid #ddd', background: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.65rem', cursor: (allMonths || month === currentMonth) ? 'default' : 'pointer', opacity: (allMonths || month === currentMonth) ? 0.4 : 1, fontWeight: 600 }}>›</button>
@@ -2186,6 +2232,7 @@ function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
             <input type="checkbox" checked={allMonths} onChange={e => setAllMonths(e.target.checked)} style={{ accentColor: '#0F766E' }} />
             Tous les mois
           </label>
+          <DateRangeFilter value={range} onChange={setRange} color="#0F766E" />
         </div>
       </div>
  
@@ -2205,7 +2252,7 @@ function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
           {missingCount > 0 && <span style={{ color: 'var(--red)', fontWeight: 600 }}> · {missingCount} justificatif{missingCount > 1 ? 's' : ''} manquant{missingCount > 1 ? 's' : ''}</span>}
         </span>
         <button className="btn-primary" onClick={exportPdf} disabled={exporting || rows.length === 0} style={{ background: '#0F766E', fontSize: '0.85rem', padding: '0.4rem 0.9rem', opacity: rows.length === 0 ? 0.5 : 1 }}>
-          {exporting ? 'Création du PDF…' : `📄 Exporter le PDF — ${allMonths ? 'Tous les mois' : formatMonth(month)}`}
+          {exporting ? 'Création du PDF…' : `📄 Exporter le PDF — ${periodTitle}`}
         </button>
         {exportError && <span style={{ color: 'var(--red)', fontSize: '0.8rem' }}>{exportError}</span>}
         {uploadError && <span style={{ color: 'var(--red)', fontSize: '0.8rem' }}>{uploadError}</span>}
@@ -2223,7 +2270,7 @@ function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
  
       {loading ? <p>Chargement…</p> : rows.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>
-          Aucune facture à envoyer {allMonths ? '' : 'pour ce mois'}.<br />
+          Aucune facture à envoyer {useRange ? rangeLabel(range) : allMonths ? '' : 'pour ce mois'}.<br />
           <span style={{ fontSize: '0.8rem' }}>{type === 'cb'
             ? <>Cochez « Facture à envoyer au comptable » dans Dépenses pour qu&apos;elle apparaisse ici.</>
             : <>Créez la facture client depuis Encaissements (colonne « Facture »), ou cochez « Compta. », pour qu&apos;elle apparaisse ici.</>}</span>
@@ -2344,7 +2391,7 @@ function EmployeesTab() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
         <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--terracotta)' }}>👥 Employés</h2>
-        <button className="btn-primary" onClick={() => setShowForm(!showForm)}>{showForm ? 'Annuler' : '+ Ajouter'}</button>
+        <button className="btn-primary" onClick={() => setShowForm(!showForm)} style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>{showForm ? 'Annuler' : '+ Ajouter'}</button>
       </div>
  
       {showForm && (

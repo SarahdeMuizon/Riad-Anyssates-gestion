@@ -48,7 +48,8 @@ export default function ManagerGuide({ onClose }: { onClose: () => void }) {
           décrits ci-dessous dans l&apos;ordre de la barre.
         </p>
 
-        <h2 style={h2}>1. Se connecter</h2>
+      <p style={{ background: '#FFFBF7', border: '1px solid #eee', borderRadius: '0.5rem', padding: '0.6rem 0.8rem' }}>📅 <b>Dates</b> : dans Dépenses, Encaissements, Fond de caisse, Banque, Coffre fort et Comptable, le bouton « 📅 Dates » affiche les opérations d&apos;une période libre (du … au …), avec les raccourcis Ce mois, Mois dernier, Ce trimestre et Cette année. Le ✕ revient à l&apos;affichage habituel. Les soldes restent calculés sur tout l&apos;historique.</p>
+      <h2 style={h2}>1. Se connecter</h2>
         <ul style={list}>
           <li style={li}><b>Code PIN</b> : sur riad-anyssates-gestion.vercel.app/manager, saisissez le PIN. Vous êtes connectée en tant que Valérie.</li>
           <li style={li}><b>Lien personnel avec accès manager</b> : c&apos;est le cas de Nicolas. Son lien d&apos;employé ouvre directement l&apos;interface manager, à son nom.</li>
