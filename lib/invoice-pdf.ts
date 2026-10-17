@@ -46,7 +46,7 @@ const right = (page: PDFPage, s: string, xRight: number, y: number, size: number
 const spaced = (s: string) => s.split('').join(' ').replace(/ {3}/g, '   ')
 
 // En-tête : logo et nom du riad à gauche, titre du document à droite ; pied de page légal
-function frame(page: PDFPage, k: Kit, title: string, meta: [string, string][]) {
+function frame(page: PDFPage, k: Kit, title: string, meta: [string, string][], titleSize = 20) {
   const [W, H] = A4
   const { c } = k
   // Bandeau d'accent tout en haut
@@ -57,7 +57,7 @@ function frame(page: PDFPage, k: Kit, title: string, meta: [string, string][]) {
   text(page, spaced('RIAD ANYSSATES'), tx, H - 66, 13, k.bold, c.ink)
   text(page, "Maison d'hôtes  -  Marrakech Médina", tx, H - 82, 9, k.font, c.muted)
 
-  right(page, title, W - M, H - 62, 26, k.bold, c.accent)
+  right(page, title, W - M, H - 62, titleSize, k.bold, c.accent)
   let y = H - 82
   for (const [l, v] of meta) {
     const vw = k.bold.widthOfTextAtSize(clean(v), 9.5)
@@ -108,6 +108,16 @@ function amountInWords(amount: number, currency: string): string {
   return s
 }
 
+
+// Bandeau du total : discret, aligné sur les lignes au-dessus (libellé à xL, montant à droite)
+function totalBand(page: PDFPage, k: Kit, label: string, value: string, xL: number, y: number) {
+  const xR = A4[0] - M
+  page.drawRectangle({ x: xL - 8, y: y - 7, width: xR - xL + 8, height: 22, color: k.c.accent })
+  text(page, label, xL, y, 9, k.bold, k.c.white)
+  let size = 11
+  while (size > 8 && k.bold.widthOfTextAtSize(clean(value), size) > xR - 8 - xL - k.bold.widthOfTextAtSize(clean(label), 9) - 16) size -= 0.5
+  right(page, value, xR - 8, y, size, k.bold, k.c.white)
+}
 
 async function drawInvoice(doc: PDFDocument, k: Kit, inv: Invoice) {
   const [W, H] = A4
@@ -168,16 +178,14 @@ async function drawInvoice(doc: PDFDocument, k: Kit, inv: Invoice) {
   const xL = 340
   const totalRow = (l: string, v: string) => {
     text(page, l, xL, y, 9.5, k.font, c.muted)
-    right(page, v, xR, y, 9.5, k.font, c.ink)
+    right(page, v, xR - 8, y, 9.5, k.font, c.ink)
     y -= 16
   }
   totalRow('Total HT', `${fmtAmount(t.totalHT + (taxCur === cur ? tax : 0))} ${cur}`)
   totalRow('TVA', `${fmtAmount(t.totalTVA)} ${cur}`)
   if (tax > 0) totalRow('dont taxe de séjour', `${fmtAmount(tax)} ${taxCur}`)
   y -= 6
-  page.drawRectangle({ x: xL - 12, y: y - 10, width: xR - xL + 12, height: 30, color: c.accent })
-  text(page, 'TOTAL TTC', xL, y, 11, k.bold, c.white)
-  right(page, `${fmtAmount(Number(inv.amount_total))} ${cur}`, xR - 10, y, 13, k.bold, c.white)
+  totalBand(page, k, 'TOTAL TTC', `${fmtAmount(Number(inv.amount_total))} ${cur}`, xL, y)
 
   // Montant en lettres
   y -= 56
@@ -237,7 +245,7 @@ export async function buildTaxeSejourPdf(invoices: Invoice[], year: number, quar
   }
   const newPage = (first: boolean) => {
     if (!first) page = doc.addPage(A4)
-    frame(page, k, 'TAXE DE SÉJOUR', [['Période', `T${quarter} ${year}`], ['Édité le', today]])
+    frame(page, k, 'Taxe de séjour', [['Période', `T${quarter} ${year}`], ['Édité le', today]], 15)
     y = H - 162
     if (first) {
       text(page, `Relevé du ${QUARTER_LABELS[quarter]} ${year}`, M, y, 13, k.bold, c.ink)
@@ -273,14 +281,12 @@ export async function buildTaxeSejourPdf(invoices: Invoice[], year: number, quar
   if (y < 190) newPage(false)
   y -= 34
   const xL = 300
-  const line = (l: string, v: string) => { text(page, l, xL, y, 9.5, k.font, c.muted); right(page, v, xR, y, 9.5, k.font, c.ink); y -= 16 }
+  const line = (l: string, v: string) => { text(page, l, xL, y, 9.5, k.font, c.muted); right(page, v, xR - 8, y, 9.5, k.font, c.ink); y -= 16 }
   line('Factures', String(sorted.length))
   line('Personnes', String(persons))
   line('Nuitées (personnes x nuits)', String(nuitees))
   y -= 6
-  page.drawRectangle({ x: xL - 12, y: y - 10, width: xR - xL + 12, height: 30, color: c.accent })
-  text(page, 'TAXE À REVERSER', xL, y, 11, k.bold, c.white)
-  right(page, Object.entries(totals).map(([cur, v]) => `${fmtAmount(v)} ${cur}`).join(' + ') || '0,00 MAD', xR - 10, y, 13, k.bold, c.white)
+  totalBand(page, k, 'TAXE À REVERSER', Object.entries(totals).map(([cur, v]) => `${fmtAmount(v)} ${cur}`).join(' + ') || '0,00 MAD', xL, y)
 
   doc.setTitle(clean(`Taxe de séjour - T${quarter} ${year}`))
   return new Blob([(await doc.save()) as BlobPart], { type: 'application/pdf' })

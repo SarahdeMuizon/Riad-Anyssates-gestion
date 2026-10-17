@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import sql, { ensureDb } from '@/lib/db'
 import { getManagerSession } from '@/lib/auth'
 import { computeInvoice, invoiceExtras, parseExtras, type Invoice } from '@/lib/invoice'
+import { removeInvoice } from '@/lib/invoice-db'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +17,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const id = parseInt(params.id)
     const inv = (await sql`SELECT * FROM invoices WHERE id = ${id}`)[0] as unknown as Invoice | undefined
     if (!inv) return NextResponse.json({ error: 'Facture introuvable' }, { status: 404 })
+    if ((inv as unknown as { cancelled?: number }).cancelled) return NextResponse.json({ error: 'Cette facture est annulée' }, { status: 400 })
     const body = await req.json()
 
     const date = String(body.date || inv.date)
@@ -47,22 +49,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-// Seule la dernière facture de l'année peut être supprimée : la numérotation reste continue.
+// Facture faite par erreur : supprimée si c'est la dernière de l'année, sinon annulée
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
     await ensureDb()
     const isAuth = await getManagerSession()
     if (!isAuth) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-    const id = parseInt(params.id)
-    const inv = (await sql`SELECT * FROM invoices WHERE id = ${id}`)[0]
-    if (!inv) return NextResponse.json({ error: 'Facture introuvable' }, { status: 404 })
-    const last = await sql`SELECT MAX(seq) AS m FROM invoices WHERE year = ${inv.year}`
-    if (Number(last[0]?.m) !== Number(inv.seq)) {
-      return NextResponse.json({ error: `Seule la dernière facture de ${inv.year} peut être supprimée — corrigez plutôt la facture ${inv.number}.` }, { status: 400 })
-    }
-    await sql`DELETE FROM invoices WHERE id = ${id}`
-    return NextResponse.json({ ok: true })
+    const result = await removeInvoice(parseInt(params.id))
+    if (!result) return NextResponse.json({ error: 'Facture introuvable' }, { status: 404 })
+    return NextResponse.json({ ok: true, result })
   } catch (error) {
     console.error('DELETE invoice error:', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

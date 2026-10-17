@@ -27,6 +27,7 @@ export interface Invoice {
   amount_total: number    // total de la facture = montant payé par le client
   currency: string
   payment: string | null
+  cancelled?: number      // 1 = facture annulée (faite par erreur)
   created_at: string
 }
 

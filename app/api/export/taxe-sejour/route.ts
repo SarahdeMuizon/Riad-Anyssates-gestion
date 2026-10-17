@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const from = `${year}-${String(quarter * 3 - 2).padStart(2, '0')}-01`
     const to = `${year}-${String(quarter * 3).padStart(2, '0')}-31`
 
-    const rows = await sql`SELECT * FROM invoices WHERE date >= ${from} AND date <= ${to} AND tax_amount > 0 ORDER BY date, seq`
+    const rows = await sql`SELECT * FROM invoices WHERE date >= ${from} AND date <= ${to} AND tax_amount > 0 AND COALESCE(cancelled, 0) = 0 ORDER BY date, seq`
 
     const wb = new ExcelJS.Workbook()
     const ws = wb.addWorksheet(`Taxe de séjour T${quarter} ${year}`)

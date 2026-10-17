@@ -7,3 +7,18 @@ export async function getTaxeSejourRate(): Promise<number> {
   const v = parseFloat((rows[0]?.value as string) ?? '')
   return isNaN(v) ? DEFAULT_TAXE_SEJOUR : v
 }
+
+// Retire une facture faite par erreur. La dernière facture de l'année est supprimée (son numéro
+// sera réutilisé) ; une plus ancienne est annulée : son numéro reste pour que la numérotation
+// soit continue, mais elle ne compte plus dans la taxe de séjour ni dans l'onglet Comptable.
+export async function removeInvoice(id: number): Promise<'deleted' | 'cancelled' | null> {
+  const inv = (await sql`SELECT id, year, seq FROM invoices WHERE id = ${id}`)[0]
+  if (!inv) return null
+  const last = await sql`SELECT MAX(seq) AS m FROM invoices WHERE year = ${inv.year}`
+  if (Number(last[0]?.m) === Number(inv.seq)) {
+    await sql`DELETE FROM invoices WHERE id = ${id}`
+    return 'deleted'
+  }
+  await sql`UPDATE invoices SET cancelled = 1, entry_id = NULL WHERE id = ${id}`
+  return 'cancelled'
+}

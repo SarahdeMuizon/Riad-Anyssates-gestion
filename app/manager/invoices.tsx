@@ -36,7 +36,7 @@ export function useInvoices() {
   useEffect(() => { reload() }, [reload])
   const byEntry = useMemo(() => {
     const m: Record<number, Invoice> = {}
-    for (const i of invoices) if (i.entry_id) m[i.entry_id] = i
+    for (const i of invoices) if (i.entry_id && !i.cancelled) m[i.entry_id] = i
     return m
   }, [invoices])
   return { invoices, byEntry, taxRate, reload }
@@ -177,7 +177,7 @@ export function InvoiceModal({ entry, invoice, taxRate, onClose, onSaved }: {
   }
 
   async function remove() {
-    if (!invoice || !confirm(`Supprimer la facture ${invoice.number} ?`)) return
+    if (!invoice || !confirm(`Supprimer la facture ${invoice.number} ?\n\nSa taxe de séjour ne sera plus comptée. Si d’autres factures ont été faites depuis, elle est annulée (son numéro reste, marqué « annulée »).`)) return
     setSaving(true); setError('')
     const r = await fetch(`/api/invoices/${invoice.id}`, { method: 'DELETE' }).catch(() => null)
     const d = r ? await r.json().catch(() => ({})) : {}
@@ -207,7 +207,7 @@ export function InvoiceModal({ entry, invoice, taxRate, onClose, onSaved }: {
 
         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
           <button className="btn-secondary" onClick={onClose} disabled={saving}>Fermer</button>
-          {invoice && <button onClick={remove} disabled={saving} title="Possible uniquement pour la dernière facture de l’année" style={{ background: 'none', border: '1px solid #fca5a5', color: 'var(--red)', borderRadius: '0.5rem', padding: '0.4rem 0.7rem', cursor: 'pointer', fontSize: '0.8rem' }}>Supprimer</button>}
+          {invoice && <button onClick={remove} disabled={saving} title="Facture faite par erreur : elle sort de la taxe de séjour et du comptable" style={{ background: 'none', border: '1px solid #fca5a5', color: 'var(--red)', borderRadius: '0.5rem', padding: '0.4rem 0.7rem', cursor: 'pointer', fontSize: '0.8rem' }}>Supprimer</button>}
           {invoice && <button className="btn-secondary" onClick={() => save(false)} disabled={saving || !c.valid}>Enregistrer</button>}
           <button className="btn-primary" onClick={() => save(true)} disabled={saving || !c.valid || !draft.clientName.trim()} style={{ marginLeft: 'auto', background: BROWN }}>
             {saving ? 'Enregistrement…' : invoice ? '📄 Enregistrer et télécharger' : '📄 Créer la facture'}
@@ -234,7 +234,7 @@ export function TaxeSejourPanel() {
   useEffect(() => { if (taxRate !== null) setRateInput(String(taxRate)) }, [taxRate])
 
   const rows = useMemo(() => invoices
-    .filter(i => Number(i.tax_amount) > 0 && Number(i.date.substring(0, 4)) === year && quarterOf(i.date) === quarter)
+    .filter(i => !i.cancelled && Number(i.tax_amount) > 0 && Number(i.date.substring(0, 4)) === year && quarterOf(i.date) === quarter)
     .sort((a, b) => a.date.localeCompare(b.date) || a.seq - b.seq), [invoices, year, quarter])
   const persons = rows.reduce((t, i) => t + i.persons, 0)
   const nuitees = rows.reduce((t, i) => t + i.nights * i.persons, 0)

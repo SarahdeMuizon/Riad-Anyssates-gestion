@@ -427,6 +427,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     await fetch(`/api/entries/${id}`, { method: 'DELETE' })
     setDeleteModal(null)
     fetchEntries()
+    if (type === 'cash') reloadInvoices()
   }
  
   async function processFile(file: File) {
@@ -1017,7 +1018,8 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       {deleteModal !== null && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
           <div className="card" style={{ maxWidth: 340, width: '90%', textAlign: 'center' }}>
-            <p style={{ marginBottom: '1rem', fontWeight: 600 }}>Supprimer cette entrée ?</p>
+            <p style={{ marginBottom: invoiceByEntry[deleteModal] ? '0.4rem' : '1rem', fontWeight: 600 }}>Supprimer cette entrée ?</p>
+            {invoiceByEntry[deleteModal] && <p style={{ marginBottom: '1rem', fontSize: '0.8rem', color: '#666' }}>Sa facture {invoiceByEntry[deleteModal].number} sera aussi supprimée et sa taxe de séjour ne sera plus comptée.</p>}
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
               <button className="btn-secondary" onClick={() => setDeleteModal(null)}>Annuler</button>
               <button className="btn-red" onClick={() => deleteEntry(deleteModal)}>Supprimer</button>
