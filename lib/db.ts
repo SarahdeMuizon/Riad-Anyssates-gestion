@@ -331,6 +331,8 @@ export async function initDb() {
     // Taxe de séjour : enfants de moins de 12 ans (tarif réduit)
     `ALTER TABLE invoices ADD COLUMN children INTEGER DEFAULT 0`,
     `ALTER TABLE invoices ADD COLUMN child_rate REAL DEFAULT 0`,
+    // Lecture du relevé Attijari par Claude (pour le contrôle mensuel), gardée pour ne pas la refaire
+    `ALTER TABLE bank_statements ADD COLUMN analysis TEXT`,
   ]) {
     const mResults = await tursoRequest([{ sql: migSql }])
     const r = mResults[0]
