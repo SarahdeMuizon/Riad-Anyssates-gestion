@@ -50,7 +50,7 @@ export interface InvoiceDraft {
   clientName: string
   nights: string
   persons: string
-  extras: { label: string; amount: string; detail: string }[]
+  extras: { label: string; amount: string }[]
   amountMad: string   // encaissement en euros : montant facturé en dirhams
 }
 
@@ -61,14 +61,14 @@ export function previewDraft(d: InvoiceDraft, gross: number | null, taxRate: num
   return computeInvoice({
     gross: gross ?? (parseFloat(d.amountMad) || 0), rates,
     nights: Number(d.nights), persons: Number(d.persons), taxRate,
-    extras: d.extras.map(e => ({ label: e.label, amount: parseFloat(e.amount) || 0, detail: e.detail })),
+    extras: d.extras.map(e => ({ label: e.label, amount: parseFloat(e.amount) || 0 })),
   })
 }
 
 export function draftBody(d: InvoiceDraft) {
   return {
     client_name: d.clientName, nights: Number(d.nights) || 0, persons: Number(d.persons) || 0,
-    extras: d.extras.map(e => ({ label: e.label, amount: parseFloat(e.amount) || 0, detail: e.detail })),
+    extras: d.extras.map(e => ({ label: e.label, amount: parseFloat(e.amount) || 0 })),
     amount_mad: parseFloat(d.amountMad) || undefined,
   }
 }
@@ -82,7 +82,7 @@ export function InvoiceEditor({ draft, onChange, gross, taxRate, rates, autoFocu
   autoFocus?: boolean
 }) {
   const set = (patch: Partial<InvoiceDraft>) => onChange({ ...draft, ...patch })
-  const setExtra = (i: number, patch: Partial<{ label: string; amount: string; detail: string }>) =>
+  const setExtra = (i: number, patch: Partial<{ label: string; amount: string }>) =>
     set({ extras: draft.extras.map((e, k) => k === i ? { ...e, ...patch } : e) })
   const c = previewDraft(draft, gross, taxRate, rates)
   const tvaTag = (l: string) => <span style={{ color: '#999', fontSize: '0.72rem', whiteSpace: 'nowrap' }}>TVA {String(tvaOf(l, rates)).replace('.', ',')} %</span>
@@ -118,8 +118,7 @@ export function InvoiceEditor({ draft, onChange, gross, taxRate, rates, autoFocu
           <strong style={{ whiteSpace: 'nowrap', color: c.lodging < 0 ? 'var(--red)' : 'var(--text)' }}>{fmt(c.lodging)} MAD</strong>
         </div>
         {draft.extras.map((e, i) => (
-          <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', paddingTop: '0.35rem', borderTop: '1px dashed #EADBCB' }}>
-          <div style={{ ...row, justifyContent: 'flex-start' }}>
+          <div key={i} style={{ ...row, justifyContent: 'flex-start' }}>
             <select className="form-input" value={e.label} onChange={ev => setExtra(i, { label: ev.target.value })} style={{ width: 'auto', padding: '0.25rem 0.4rem' }}>
               {EXTRA_CATEGORIES.map(l => <option key={l} value={l}>{l}</option>)}
             </select>
@@ -128,12 +127,8 @@ export function InvoiceEditor({ draft, onChange, gross, taxRate, rates, autoFocu
             <span style={{ fontSize: '0.75rem', color: '#888' }}>MAD</span>
             <button type="button" onClick={() => set({ extras: draft.extras.filter((_, k) => k !== i) })} title="Retirer la ligne" style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '1rem' }}>×</button>
           </div>
-          <input className="form-input" value={e.detail} onChange={ev => setExtra(i, { detail: ev.target.value })} maxLength={300}
-            placeholder={e.label === 'Boissons' ? 'Détail pour le client : 2 thés à la menthe, 1 jus d’orange…' : 'Détail pour le client (facultatif)'}
-            style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }} />
-          </div>
         ))}
-        <button type="button" onClick={() => set({ extras: [...draft.extras, { label: EXTRA_CATEGORIES[0], amount: '', detail: '' }] })}
+        <button type="button" onClick={() => set({ extras: [...draft.extras, { label: EXTRA_CATEGORIES[0], amount: '' }] })}
           style={{ alignSelf: 'flex-start', background: 'none', border: '1px dashed #D9B99B', color: BROWN, borderRadius: '0.4rem', padding: '0.25rem 0.6rem', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>
           + Ajouter une ligne (restauration, boissons, spa, transport, divers)
         </button>
@@ -169,7 +164,7 @@ export function InvoiceModal({ entry, invoice, taxRate, rates, onClose, onSaved 
 }) {
   const [draft, setDraft] = useState<InvoiceDraft>(() => invoice ? {
     clientName: invoice.client_name ?? '', nights: String(invoice.nights), persons: String(invoice.persons),
-    extras: invoiceExtras(invoice).map(e => ({ label: e.label, amount: String(e.amount), detail: e.detail ?? '' })), amountMad: '',
+    extras: invoiceExtras(invoice).map(e => ({ label: e.label, amount: String(e.amount) })), amountMad: '',
   } : emptyDraft(entry?.supplier ?? ''))
   const [date, setDate] = useState(invoice?.date ?? entry?.date ?? new Date().toISOString().split('T')[0])
   const [saving, setSaving] = useState(false)
