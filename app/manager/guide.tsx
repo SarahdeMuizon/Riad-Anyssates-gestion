@@ -136,7 +136,7 @@ export default function ManagerGuide({ onClose }: { onClose: () => void }) {
           <li style={li}><b>📄 Exporter le PDF</b> crée le dossier du mois, par exemple « Comptable - Octobre 2026.pdf » : une page récapitulative avec les totaux, puis toutes les factures à la suite. Le récapitulatif indique la page de chaque facture, ou « manque ».</li>
         </ul>
         <p style={p}>Avant d&apos;exporter, vérifiez qu&apos;il ne reste aucun justificatif manquant pour le mois. Dans les factures de vente, le PDF exporté contient les factures clients générées par l&apos;application.</p>
-        <p style={p}><b>Taxes de séjour</b> : choisissez le trimestre avec les flèches pour voir le total des nuitées et de la taxe à reverser. <b>📄 Relevé PDF</b> et <b>📊 Excel</b> créent le fichier à remettre au comptable. Le tarif (MAD par personne et par nuit) se modifie en haut à droite ; il s&apos;applique aux nouvelles factures seulement. Une facture se corrige à tout moment (son numéro ne change pas) ; seule la dernière facture de l&apos;année peut être supprimée.</p>
+        <p style={p}><b>Taxes de séjour</b> : choisissez le trimestre avec les flèches pour voir le total des nuitées et de la taxe à reverser. <b>📄 Relevé PDF</b> et <b>📊 Excel</b> créent le fichier à remettre au comptable. Le tableau donne, par facture, le nombre de personnes et de nuits ; la taxe vaut personnes × nuits × 2,5 €. Le tarif et sa devise se modifient en haut à droite ; il s&apos;applique aux nouvelles factures seulement. Une facture se corrige à tout moment (son numéro ne change pas) ; seule la dernière facture de l&apos;année peut être supprimée.</p>
 
         <h2 style={h2}>7. Employés et Paramètres (👥 / ⚙️)</h2>
         <h3 style={h3}>Employés</h3>

@@ -30,7 +30,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       gross, currency: inv.currency as string,
       nights: body.nights !== undefined ? Number(body.nights) : Number(inv.nights),
       persons: body.persons !== undefined ? Number(body.persons) : Number(inv.persons),
-      taxRate: Number(inv.tax_rate),
+      taxRate: Number(inv.tax_rate), taxCurrency: (inv.tax_currency as string) || 'MAD',
       taxIncluded: body.tax_included !== undefined ? body.tax_included !== false : !!inv.tax_included,
       tvaRate,
     })

@@ -25,15 +25,15 @@ export async function GET(req: NextRequest) {
     const wb = new ExcelJS.Workbook()
     const ws = wb.addWorksheet(`Taxe de séjour T${quarter} ${year}`)
     ws.columns = [
-      { width: 15 }, { width: 12 }, { width: 30 }, { width: 8 }, { width: 10 }, { width: 10 }, { width: 14 }, { width: 14 },
+      { width: 12 }, { width: 15 }, { width: 30 }, { width: 11 }, { width: 8 }, { width: 16 }, { width: 10 }, { width: 15 }, { width: 8 },
     ]
-    ws.mergeCells('A1:H1')
+    ws.mergeCells('A1:I1')
     ws.getCell('A1').value = `RIAD ANYSSATES — Relevé de la taxe de séjour — ${QUARTER_LABELS[quarter]} ${year}`
     ws.getCell('A1').font = { bold: true, size: 13, color: { argb: 'FF9E1C21' } }
     ws.getRow(1).height = 22
 
     const head = ws.getRow(3)
-    ;['N° facture', 'Date', 'Client', 'Nuits', 'Personnes', 'Nuitées', 'Tarif (MAD)', 'Taxe (MAD)'].forEach((t, i) => {
+    ;['Date', 'N° facture', 'Client', 'Personnes', 'Nuits', 'Personnes × nuits', 'Tarif', 'Taxe de séjour', 'Devise'].forEach((t, i) => {
       const c = head.getCell(i + 1)
       c.value = t
       c.font = { bold: true, color: { argb: 'FFFFFFFF' } }
@@ -45,14 +45,15 @@ export async function GET(req: NextRequest) {
     for (const inv of rows) {
       const row = ws.getRow(r)
       row.values = [
-        inv.number as string,
         new Date(`${inv.date}T00:00:00Z`),
+        inv.number as string,
         (inv.client_name as string) || '',
-        Number(inv.nights), Number(inv.persons),
+        Number(inv.persons), Number(inv.nights),
         { formula: `D${r}*E${r}`, result: Number(inv.nights) * Number(inv.persons) },
         Number(inv.tax_rate), Number(inv.tax_amount),
+        (inv.tax_currency as string) || 'MAD',
       ]
-      row.getCell(2).numFmt = 'dd/mm/yyyy'
+      row.getCell(1).numFmt = 'dd/mm/yyyy'
       row.getCell(7).numFmt = '#,##0.00'
       row.getCell(8).numFmt = '#,##0.00'
       r++
@@ -61,10 +62,10 @@ export async function GET(req: NextRequest) {
     const last = Math.max(r - 1, 4)
     totalRow.getCell(3).value = 'TOTAL'
     totalRow.getCell(4).value = { formula: `SUM(D4:D${last})` }
-    totalRow.getCell(5).value = { formula: `SUM(E4:E${last})` }
     totalRow.getCell(6).value = { formula: `SUM(F4:F${last})` }
     totalRow.getCell(8).value = { formula: `SUM(H4:H${last})` }
     totalRow.getCell(8).numFmt = '#,##0.00'
+    totalRow.getCell(9).value = (rows[0]?.tax_currency as string) || 'EUR'
     totalRow.font = { bold: true }
 
     const buf = await wb.xlsx.writeBuffer()

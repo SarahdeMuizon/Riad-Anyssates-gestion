@@ -322,7 +322,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [fClientName, setFClientName] = useState('')
   // Dernier encaissement enregistré : proposer d'en créer la facture
   const [fLastEntry, setFLastEntry] = useState<Entry | null>(null)
-  const { byEntry: invoiceByEntry, taxRate, reload: reloadInvoices } = useInvoices()
+  const { byEntry: invoiceByEntry, taxRate, taxCurrency, reload: reloadInvoices } = useInvoices()
   const [invoiceFor, setInvoiceFor] = useState<Entry | null>(null)
   // Facture client créée en même temps que l'encaissement
   const [fInvoice, setFInvoice] = useState(false)
@@ -633,7 +633,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const invoicePreview = computeInvoice({
     gross: parseFloat(fPayment === 'CB' && fTransactionAmount ? fTransactionAmount : fAmount) || 0,
     currency: fCurrency, nights: Number(fNights), persons: Number(fPersons),
-    taxRate: taxRate ?? 0, taxIncluded: fTaxIncluded, tvaRate: parseFloat(fInvTva) || 0,
+    taxRate: taxRate ?? 0, taxCurrency, taxIncluded: fTaxIncluded, tvaRate: parseFloat(fInvTva) || 0,
   })
 
   function exportCSV() { window.location.href = `/api/export/${type}?month=${month}` }
@@ -740,10 +740,11 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                   </div>
                   <div style={{ marginTop: '0.75rem', fontSize: '0.83rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>
-                      <span>Taxe de séjour : {invoicePreview.nights} nuit{invoicePreview.nights > 1 ? 's' : ''} × {invoicePreview.persons} pers. × {fmt(taxRate ?? 0)} MAD</span>
-                      <strong style={{ color: '#8B4513', whiteSpace: 'nowrap' }}>{fmt(invoicePreview.taxAmount)} MAD</strong>
+                      <span>Taxe de séjour : {invoicePreview.nights} nuit{invoicePreview.nights > 1 ? 's' : ''} × {invoicePreview.persons} pers. × {fmt(taxRate ?? 0)} {taxCurrency}</span>
+                      <strong style={{ color: '#8B4513', whiteSpace: 'nowrap' }}>{fmt(invoicePreview.taxAmount)} {taxCurrency}</strong>
                     </div>
                     <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', fontSize: '0.78rem' }}>
+                      {!invoicePreview.mixable && <span style={{ color: '#888' }}>Encaissement en {fCurrency} : la taxe ({taxCurrency}) figure sur la facture, hors total.</span>}
                       {invoicePreview.mixable && (
                         <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
                           <input type="checkbox" checked={fTaxIncluded} onChange={e => setFTaxIncluded(e.target.checked)} style={{ accentColor: '#8B4513' }} />
@@ -1054,7 +1055,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       <input ref={rowFileRef} type="file" accept="image/*,application/pdf" onChange={handleRowUpload} style={{ display: 'none' }} />
 
       {invoiceFor && taxRate !== null && (
-        <InvoiceModal entry={invoiceFor} invoice={invoiceByEntry[invoiceFor.id] ?? null} taxRate={taxRate}
+        <InvoiceModal entry={invoiceFor} invoice={invoiceByEntry[invoiceFor.id] ?? null} taxRate={taxRate} taxCurrency={taxCurrency}
           onClose={() => setInvoiceFor(null)}
           onSaved={() => {
             setInvoiceFor(null); setFLastEntry(null); reloadInvoices()

@@ -267,6 +267,7 @@ export async function initDb() {
         persons INTEGER DEFAULT 0,
         tax_rate REAL DEFAULT 0,
         tax_amount REAL DEFAULT 0,
+        tax_currency TEXT DEFAULT 'MAD',
         tax_included INTEGER DEFAULT 1,
         tva_rate REAL DEFAULT 0,
         amount_lodging REAL NOT NULL,
@@ -304,6 +305,8 @@ export async function initDb() {
     // Transferts coffre ↔ fond de caisse : relie les deux mouvements d'un même transfert
     `ALTER TABLE fonds_entries ADD COLUMN transfer_id TEXT`,
     `ALTER TABLE coffre_entries ADD COLUMN transfer_id TEXT`,
+    // Devise de la taxe de séjour (les premières factures étaient en MAD)
+    `ALTER TABLE invoices ADD COLUMN tax_currency TEXT DEFAULT 'MAD'`,
   ]) {
     const mResults = await tursoRequest([{ sql: migSql }])
     const r = mResults[0]

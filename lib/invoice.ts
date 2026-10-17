@@ -13,8 +13,9 @@ export interface Invoice {
   description: string | null
   nights: number
   persons: number
-  tax_rate: number        // taxe de séjour, en MAD par personne et par nuit
-  tax_amount: number      // en MAD
+  tax_rate: number        // taxe de séjour, par personne et par nuit
+  tax_amount: number
+  tax_currency: string    // devise de la taxe de séjour (EUR ou MAD)
   tax_included: number    // 1 = la taxe est comprise dans le montant encaissé
   tva_rate: number        // TVA (%) appliquée à la prestation, 0 = pas de TVA
   amount_lodging: number  // prestation TTC (hors taxe de séjour)
@@ -24,7 +25,8 @@ export interface Invoice {
   created_at: string
 }
 
-export const DEFAULT_TAXE_SEJOUR = 25 // MAD / personne / nuit
+export const DEFAULT_TAXE_SEJOUR = 2.5 // par personne et par nuit
+export const DEFAULT_TAXE_DEVISE = 'EUR'
 
 export interface InvoiceInput {
   gross: number          // montant payé par le client (transaction CB brute, ou montant encaissé)
@@ -32,6 +34,7 @@ export interface InvoiceInput {
   nights: number
   persons: number
   taxRate: number
+  taxCurrency: string
   taxIncluded: boolean
   tvaRate: number
 }
@@ -42,8 +45,8 @@ export function computeInvoice(i: InvoiceInput) {
   const nights = Math.max(0, Math.floor(i.nights || 0))
   const persons = Math.max(0, Math.floor(i.persons || 0))
   const taxAmount = r2(nights * persons * (i.taxRate || 0))
-  // La taxe de séjour est en MAD : on ne peut l'ajouter / la déduire que d'un montant en MAD.
-  const mixable = (i.currency || 'MAD') === 'MAD'
+  // La taxe ne s'ajoute / se déduit que d'un encaissement dans la même devise.
+  const mixable = (i.currency || 'MAD') === (i.taxCurrency || DEFAULT_TAXE_DEVISE)
   const taxIncluded = mixable && i.taxIncluded
   const lodging = r2(taxIncluded ? i.gross - taxAmount : i.gross)
   const total = r2(mixable && !taxIncluded ? i.gross + taxAmount : i.gross)
