@@ -1517,7 +1517,15 @@ function BanqueMouvements() {
  
   return (
     <div>
-      <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#3730A3', marginBottom: '1rem' }}>🏦 Banque</h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+        <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#3730A3' }}>🏦 Banque</h2>
+        <DateRangeFilter value={bankRange} onChange={setBankRange} color="#3730A3" />
+      </div>
+      {rangeActive(bankRange) && (
+        <div className="card" style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
+          <b>{bankShown.length} mouvement{bankShown.length > 1 ? 's' : ''} {rangeLabel(bankRange)}</b> · encaissé <span style={{ color: 'var(--green)', fontWeight: 600 }}>+{fmt(bankShown.filter(e => e.type === 'cash').reduce((t, e) => t + Number(e.amount), 0))}</span> · dépensé <span style={{ color: 'var(--red)', fontWeight: 600 }}>−{fmt(bankShown.filter(e => e.type === 'cb').reduce((t, e) => t + Number(e.amount), 0))}</span> MAD
+        </div>
+      )}
       <p style={{ fontSize: '0.8rem', color: '#888', marginBottom: '1rem' }}>
         Regroupe tous les mouvements payés/encaissés par CB, Virement, Chèque ou Prélèvement (hors espèces, suivies dans le Fond de caisse ou le Coffre fort).
       </p>
@@ -1561,12 +1569,6 @@ function BanqueMouvements() {
       <div className="card">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
           <h3 style={{ fontWeight: 700, fontSize: '0.95rem', color: '#374151' }}>📋 Mouvements bancaires</h3>
-          <DateRangeFilter value={bankRange} onChange={setBankRange} color="#3730A3" />
-          {rangeActive(bankRange) && (
-            <span style={{ fontSize: '0.85rem', color: '#666' }}>
-              {bankShown.length} mouvement{bankShown.length > 1 ? 's' : ''} {rangeLabel(bankRange)} · <span style={{ color: 'var(--green)', fontWeight: 600 }}>+{fmt(bankShown.filter(e => e.type === 'cash').reduce((t, e) => t + Number(e.amount), 0))}</span> / <span style={{ color: 'var(--red)', fontWeight: 600 }}>−{fmt(bankShown.filter(e => e.type === 'cb').reduce((t, e) => t + Number(e.amount), 0))}</span> MAD
-            </span>
-          )}
         </div>
         <div style={{ overflowX: 'auto' }}>
           <table className="table-compact">
@@ -1866,8 +1868,9 @@ function CoffreTab() {
  
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
         <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#374151' }}>🔐 Coffre fort</h2>
+        <DateRangeFilter value={range} onChange={setRange} color="#B8860B" />
         <button className="btn-primary" onClick={() => setShowForm(!showForm)} style={{ background: '#374151' }}>{showForm ? 'Annuler' : '+ Ajouter'}</button>
       </div>
  
@@ -1996,15 +1999,14 @@ function CoffreTab() {
         </div>
       )}
  
-      <div className="card" style={{ marginBottom: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <DateRangeFilter value={range} onChange={setRange} color="#B8860B" />
-        {rangeActive(range) && (
-          <span style={{ fontSize: '0.85rem', color: '#666' }}>
-            {periodRows.length} mouvement{periodRows.length > 1 ? 's' : ''} {rangeLabel(range)} · DHS : <span style={{ color: 'var(--green)', fontWeight: 600 }}>+{fmt(periodSum('in', 'MAD'))}</span> / <span style={{ color: 'var(--red)', fontWeight: 600 }}>−{fmt(periodSum('out', 'MAD'))}</span>
+      {rangeActive(range) && (
+        <div className="card" style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
+          <span>
+            <b>{periodRows.length} mouvement{periodRows.length > 1 ? 's' : ''} {rangeLabel(range)}</b> · DHS : <span style={{ color: 'var(--green)', fontWeight: 600 }}>+{fmt(periodSum('in', 'MAD'))}</span> / <span style={{ color: 'var(--red)', fontWeight: 600 }}>−{fmt(periodSum('out', 'MAD'))}</span>
             {' '}· € : <span style={{ color: 'var(--green)', fontWeight: 600 }}>+{fmt(periodSum('in', 'EUR'))}</span> / <span style={{ color: 'var(--red)', fontWeight: 600 }}>−{fmt(periodSum('out', 'EUR'))}</span>
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       {loading ? <p>Chargement…</p> : periodRows.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>{rowsWithSolde.length === 0 ? 'Aucun mouvement' : 'Aucun mouvement sur cette période'}</div>
