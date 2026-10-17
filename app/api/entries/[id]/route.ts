@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import sql, { ensureDb } from '@/lib/db'
 import { getManagerSession } from '@/lib/auth'
 import { removeInvoice } from '@/lib/invoice-db'
+import { refreshPayableStatus } from '@/lib/payables-db'
 
 export const dynamic = 'force-dynamic'
  
@@ -100,8 +101,10 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     // sa taxe de séjour ne compte plus. On la retire avant l'encaissement pour ne jamais la laisser orpheline.
     const inv = await sql`SELECT id FROM invoices WHERE entry_id = ${id}`
     for (const i of inv) await removeInvoice(i.id as number)
-    // Facture fournisseur réglée par cette dépense : elle redevient « à payer »
-    await sql`UPDATE payables SET status = 'todo', paid_date = NULL, payment = NULL, entry_id = NULL WHERE entry_id = ${id}`
+    // Règlement d'une facture fournisseur : il est retiré, la facture redevient « à payer » (ou partiellement réglée)
+    const pays = await sql`SELECT id, payable_id FROM payable_payments WHERE entry_id = ${id}`
+    await sql`DELETE FROM payable_payments WHERE entry_id = ${id}`
+    for (const x of pays) await refreshPayableStatus(x.payable_id as number)
     await sql`DELETE FROM entries WHERE id = ${id}`
     return NextResponse.json({ ok: true })
   } catch (error) {

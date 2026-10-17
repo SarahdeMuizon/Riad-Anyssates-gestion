@@ -288,6 +288,18 @@ export async function initDb() {
         created_at TEXT DEFAULT (datetime('now'))
       )`,
     },
+    // Règlements des factures fournisseurs (un acompte puis le solde, ou un seul paiement) ; chacun crée une dépense
+    {
+      sql: `CREATE TABLE IF NOT EXISTS payable_payments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        payable_id INTEGER NOT NULL,
+        date TEXT NOT NULL,
+        amount REAL NOT NULL,
+        payment TEXT,
+        entry_id INTEGER,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`,
+    },
     // Factures de vente générées pour les encaissements clients (numérotation continue par année)
     {
       sql: `CREATE TABLE IF NOT EXISTS invoices (
@@ -355,6 +367,14 @@ export async function initDb() {
     `ALTER TABLE invoices ADD COLUMN child_rate REAL DEFAULT 0`,
     // Lecture du relevé Attijari par Claude (pour le contrôle mensuel), gardée pour ne pas la refaire
     `ALTER TABLE bank_statements ADD COLUMN analysis TEXT`,
+    // Fournisseurs : 'facture' (à payer) ou 'bon' (bon de commande / livraison, réglé par la facture de fin de mois)
+    `ALTER TABLE payables ADD COLUMN kind TEXT DEFAULT 'facture'`,
+    // Mois concerné par la facture (AAAA-MM)
+    `ALTER TABLE payables ADD COLUMN period TEXT`,
+    // Bon : facture de fin de mois qui le reprend
+    `ALTER TABLE payables ADD COLUMN invoice_id INTEGER`,
+    // Notes libres (acompte convenu, détail du travail…)
+    `ALTER TABLE payables ADD COLUMN notes TEXT`,
   ]) {
     const mResults = await tursoRequest([{ sql: migSql }])
     const r = mResults[0]
@@ -367,6 +387,11 @@ export async function initDb() {
     }
   }
  
+  // Factures fournisseurs réglées avant les acomptes : leur règlement devient une ligne de paiement
+  await tursoRequest([{ sql: `INSERT INTO payable_payments (payable_id, date, amount, payment, entry_id)
+    SELECT id, COALESCE(paid_date, date), amount, payment, entry_id FROM payables
+    WHERE entry_id IS NOT NULL AND id NOT IN (SELECT payable_id FROM payable_payments)` }])
+
   // L'ancien libellé « Administrateur » (connexion par code PIN) devient Valérie
   await tursoRequest([
     { sql: `UPDATE entries SET employee_name = 'Valérie' WHERE employee_name = 'Administrateur'` },

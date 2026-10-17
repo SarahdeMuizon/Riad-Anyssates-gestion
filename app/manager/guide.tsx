@@ -48,7 +48,7 @@ export default function ManagerGuide({ onClose }: { onClose: () => void }) {
           décrits ci-dessous dans l&apos;ordre de la barre.
         </p>
 
-      <p style={{ background: '#FFFBF7', border: '1px solid #eee', borderRadius: '0.5rem', padding: '0.6rem 0.8rem' }}>📅 <b>Dates</b> : dans Dépenses, Encaissements, À payer, Fond de caisse, Banque, Coffre fort et Comptable, les champs « 📅 Du … au … » en haut de la liste affichent les opérations d&apos;une période libre, avec les raccourcis Ce mois, Mois dernier, Ce trimestre et Cette année. Le ✕ revient à l&apos;affichage habituel. Les soldes restent calculés sur tout l&apos;historique.</p>
+      <p style={{ background: '#FFFBF7', border: '1px solid #eee', borderRadius: '0.5rem', padding: '0.6rem 0.8rem' }}>📅 <b>Dates</b> : dans le Dashboard, Dépenses, Encaissements, À payer, Fond de caisse, Banque, Coffre fort et Comptable, les champs « 📅 Du … au … » en haut de la liste affichent les opérations d&apos;une période libre, avec les raccourcis Ce mois, Mois dernier, Ce trimestre et Cette année. Le ✕ revient à l&apos;affichage habituel. Les soldes restent calculés sur tout l&apos;historique.</p>
       <h2 style={h2}>1. Se connecter</h2>
         <ul style={list}>
           <li style={li}><b>Code PIN</b> : sur riad-anyssates-gestion.vercel.app/manager, saisissez le PIN. Vous êtes connectée en tant que Valérie.</li>
@@ -94,7 +94,14 @@ export default function ManagerGuide({ onClose }: { onClose: () => void }) {
         <p style={note}>Les saisies des employés arrivent « En attente » : vérifiez le montant et la facture, puis validez avec ✓. Une suppression est définitive, justificatif compris.</p>
         <p style={p}>Dans Encaissements, on saisit d&apos;abord le montant total et le mode de paiement, puis le bouton <b>🧾 Créer une facture client</b> du formulaire d&apos;ajout (ou, pour un encaissement déjà saisi, le bouton <b>🧾 Créer</b> de la colonne Facture) crée la facture client sur le papier à en-tête du riad : indiquez le nombre d&apos;adultes, d&apos;enfants de moins de 12 ans et de nuits, et ajoutez si besoin des lignes Restauration, Boissons, Spa, Transport ou Divers ; la taxe de séjour et taxe de promotion touristique (28 MAD par adulte et 18 MAD par enfant, par nuit) est déduite du montant encaissé, le reste correspond à l&apos;hébergement. La facture est toujours en dirhams. Les factures sont numérotées à la suite (FA-2026-0001, FA-2026-0002…) et partent directement dans l&apos;onglet Comptable. Le bouton <b>📊 Excel</b> de la barre du haut télécharge toutes les données dans un fichier Excel.</p>
 
-        <p style={p}><b>🧾 À payer</b> : les factures des fournisseurs (NDT, Renaisens, Berghout, Elite Food) et des artisans, en attente de règlement. Le bouton <b>+ Facture fournisseur</b> enregistre la facture : choisissez le fournisseur (ou <b>✏️ Artisan / autre</b> pour saisir un nom libre), le montant, la date limite de paiement et joignez la photo ou le PDF. En haut, une case par fournisseur affiche le reste à payer ; une facture dont la date limite est passée apparaît en rouge. Le bouton <b>💸 Payer</b> enregistre le règlement (date et mode : virement, chèque, espèces du coffre ou de la caisse…) et crée automatiquement la dépense correspondante, avec sa facture pour le comptable. ↩️ annule un règlement fait par erreur (la dépense est retirée).</p>
+        <p style={p}><b>🧾 À payer</b> (après Encaissements) : les factures des fournisseurs en attente de règlement. Une case par fournisseur affiche le reste à payer ; une facture dont la date limite est passée apparaît en rouge.</p>
+        <Table head={['Fournisseur', 'Comment faire']} rows={[
+          ['NDT, Renaisens', 'Une facture par mois : bouton + Facture, en indiquant le mois concerné.'],
+          ['Elite Food, Berghout', 'À chaque commande, + Bon de commande (montant, n°, photo du bon). En fin de mois, + Facture : les bons du mois sont listés, cochés, et l’écart entre la facture et le total des bons s’affiche.'],
+          ['Libre', '✏️ Libre (artisan, tapissier…) : nom libre, avec une zone de notes (acompte convenu, détail du travail…).'],
+          ['💸 Payer', 'Montant payé maintenant : tout, ou un acompte. Il reste alors « Reste … » et le bouton devient 💸 Payer le solde. Chaque règlement crée sa dépense (Banque, Coffre ou Caisse) avec la facture pour le comptable ; ↩️ à côté d’un règlement l’annule.'],
+          ['⚖️ Rapprochement', 'Chaque mois : facture reçue ou non pour chaque fournisseur, total des bons, écart, et bons oubliés dans la facture.'],
+        ]} />
 
         <h2 style={h2}>4. Fond de caisse et Coffre fort (💰 / 🔐)</h2>
         <p style={p}>Les espèces vivent à deux endroits : la <b>caisse</b> (l&apos;argent du quotidien, visible par les employés) et le <b>coffre fort</b> (la réserve, visible seulement des administrateurs).</p>
