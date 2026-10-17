@@ -7,6 +7,7 @@ import { openAttachment, fileToDataUrl } from '@/lib/attachments'
 import ManagerGuide from './guide'
 import NotificationBell from './notifications'
 import { InvoiceModal, TaxeSejourPanel, useInvoices, downloadInvoice } from './invoices'
+import { computeInvoice } from '@/lib/invoice'
  
 type Tab = 'dashboard' | 'depenses' | 'encaissements' | 'fonds' | 'banque' | 'coffre' | 'comptable' | 'employees' | 'settings'
  
@@ -323,6 +324,13 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
   const [fLastEntry, setFLastEntry] = useState<Entry | null>(null)
   const { byEntry: invoiceByEntry, taxRate, reload: reloadInvoices } = useInvoices()
   const [invoiceFor, setInvoiceFor] = useState<Entry | null>(null)
+  // Facture client créée en même temps que l'encaissement
+  const [fInvoice, setFInvoice] = useState(false)
+  const [fNights, setFNights] = useState('')
+  const [fPersons, setFPersons] = useState('')
+  const [fPrestation, setFPrestation] = useState('Hébergement')
+  const [fTaxIncluded, setFTaxIncluded] = useState(true)
+  const [fInvTva, setFInvTva] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [formSuccess, setFormSuccess] = useState('')
@@ -367,6 +375,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       setFReference('')
       setFCashLocation('fonds')
       setFToAccountant(false)
+      setFInvoice(false); setFNights(''); setFPersons(''); setFPrestation('Hébergement'); setFTaxIncluded(true); setFInvTva('')
     }
   }, [showForm, type])
  
@@ -489,7 +498,7 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       el.removeEventListener('dragleave', onDragLeave)
       el.removeEventListener('drop', onDrop)
     }
-  }, [showForm])
+  }, [showForm, fInvoice])
  
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -577,15 +586,37 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
       }
     }
  
+    if (type === 'cash' && fInvoice) {
+      if (invoicePreview.lodging < 0) { setFormError('La taxe de séjour dépasse le montant encaissé.'); setSubmitting(false); return }
+      body.category = 'Client'
+      body.to_accountant = true
+    }
+
     try {
       const r = await fetch('/api/entries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       if (r.ok) {
-        if (type === 'cash') setFLastEntry(await r.json().catch(() => null))
+        const created: Entry | null = await r.json().catch(() => null)
+        let invoiceMsg = ''
+        if (type === 'cash' && fInvoice && created) {
+          const ri = await fetch('/api/invoices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+            entry_id: created.id, client_name: fClientName, date: fDate, description: fPrestation,
+            nights: Number(fNights) || 0, persons: Number(fPersons) || 0, tax_included: fTaxIncluded, tva_rate: parseFloat(fInvTva) || 0,
+          }) }).catch(() => null)
+          const inv = ri ? await ri.json().catch(() => null) : null
+          if (ri && ri.ok && inv) {
+            invoiceMsg = ` Facture ${inv.number} créée.`
+            downloadInvoice(inv).catch(() => {})
+            reloadInvoices()
+          } else {
+            invoiceMsg = ` ⚠️ La facture n'a pas pu être créée${inv?.error ? ` (${inv.error})` : ''} — utilisez « 🧾 Créer » dans la colonne Facture.`
+          }
+        }
+        if (type === 'cash') setFLastEntry(created)
         setFAmount(''); setFAmountHT(''); setFTvaRate(''); setFSupplier(''); setFDescription('')
         setFFile(null); setFFilePreview(null); setFExtracted(false); setShowForm(false)
         setFTransactionAmount(''); setFClientName(''); setFReference(''); setFToAccountant(false)
         setFilterStatus(''); setFilterEmployee(''); setFilterCategory(''); setFilterPayment(''); setFilterSupplier('')
-        setFormSuccess('✓ Entrée ajoutée avec succès !')
+        setFormSuccess('✓ Entrée ajoutée avec succès !' + invoiceMsg)
         setTimeout(() => { setFormSuccess(''); setFLastEntry(null) }, type === 'cash' ? 15000 : 4000)
         setMonth(fDate.substring(0, 7))
       } else {
@@ -598,6 +629,13 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
     setSubmitting(false)
   }
  
+  // Aperçu de la facture pendant la saisie de l'encaissement
+  const invoicePreview = computeInvoice({
+    gross: parseFloat(fPayment === 'CB' && fTransactionAmount ? fTransactionAmount : fAmount) || 0,
+    currency: fCurrency, nights: Number(fNights), persons: Number(fPersons),
+    taxRate: taxRate ?? 0, taxIncluded: fTaxIncluded, tvaRate: parseFloat(fInvTva) || 0,
+  })
+
   function exportCSV() { window.location.href = `/api/export/${type}?month=${month}` }
  
   // Filtres catégorie / paiement / fournisseur (appliqués sur le mois affiché)
@@ -674,9 +712,60 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
             {/* Upload zone — identique page employé */}
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>
-                {type === 'cb' ? 'Facture' : 'Ticket'}
-                <span style={{ color: '#888', fontWeight: 400 }}> (optionnel — peut être ajouté plus tard)</span>
+                {type === 'cb' ? 'Facture' : fInvoice ? 'Facture client' : 'Ticket ou facture client'}
+                {!fInvoice && <span style={{ color: '#888', fontWeight: 400 }}> (optionnel — peut être ajouté plus tard)</span>}
               </label>
+              {type === 'cash' && fInvoice ? (
+                <div style={{ position: 'relative', border: '2px solid #D9B99B', borderRadius: '0.5rem', padding: '1rem', background: '#FAF6F2' }}>
+                  <button type="button" onClick={() => setFInvoice(false)} title="Ne pas créer de facture"
+                    style={{ position: 'absolute', top: '0.35rem', right: '0.35rem', background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '1.1rem', lineHeight: 1 }}>×</button>
+                  <p style={{ fontSize: '0.85rem', fontWeight: 700, color: '#8B4513', marginBottom: '0.75rem' }}>🧾 Facture client — numérotée automatiquement à l&apos;enregistrement</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.625rem' }}>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '0.2rem' }}>Client *</label>
+                      <input className="form-input" value={fClientName} onChange={e => setFClientName(e.target.value)} placeholder="Nom du client" required autoFocus />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '0.2rem' }}>Nombre de nuits</label>
+                      <input className="form-input" type="number" min="0" step="1" inputMode="numeric" value={fNights} onChange={e => setFNights(e.target.value)} placeholder="0" />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '0.2rem' }}>Nombre de personnes</label>
+                      <input className="form-input" type="number" min="0" step="1" inputMode="numeric" value={fPersons} onChange={e => setFPersons(e.target.value)} placeholder="0" />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '0.2rem' }}>Prestation</label>
+                      <input className="form-input" value={fPrestation} onChange={e => setFPrestation(e.target.value)} />
+                    </div>
+                  </div>
+                  <div style={{ marginTop: '0.75rem', fontSize: '0.83rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>
+                      <span>Taxe de séjour : {invoicePreview.nights} nuit{invoicePreview.nights > 1 ? 's' : ''} × {invoicePreview.persons} pers. × {fmt(taxRate ?? 0)} MAD</span>
+                      <strong style={{ color: '#8B4513', whiteSpace: 'nowrap' }}>{fmt(invoicePreview.taxAmount)} MAD</strong>
+                    </div>
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', fontSize: '0.78rem' }}>
+                      {invoicePreview.mixable && (
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={fTaxIncluded} onChange={e => setFTaxIncluded(e.target.checked)} style={{ accentColor: '#8B4513' }} />
+                          Taxe comprise dans le montant encaissé
+                        </label>
+                      )}
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        TVA <input className="form-input" type="number" min="0" step="0.1" value={fInvTva} onChange={e => setFInvTva(e.target.value)} placeholder="0" style={{ width: '4rem', padding: '0.15rem 0.35rem' }} /> %
+                      </span>
+                    </div>
+                    {invoicePreview.total > 0 ? (
+                      <div style={{ borderTop: '1px solid #EADBCB', paddingTop: '0.35rem', display: 'flex', justifyContent: 'space-between', fontWeight: 700, color: '#8B4513' }}>
+                        <span>Total facture{invoicePreview.taxAmount > 0 ? ` (dont prestation ${fmt(invoicePreview.lodging)} ${fCurrency})` : ''}</span>
+                        <span style={{ whiteSpace: 'nowrap' }}>{fmt(invoicePreview.total)} {fCurrency}</span>
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: '0.75rem', color: '#888' }}>Saisissez le montant encaissé ci-dessous : le total de la facture s&apos;affichera ici.</span>
+                    )}
+                    {invoicePreview.lodging < 0 && <span style={{ color: 'var(--red)', fontWeight: 600, fontSize: '0.78rem' }}>La taxe de séjour dépasse le montant encaissé.</span>}
+                  </div>
+                </div>
+              ) : (
               <div
                 ref={fDropZoneRef}
                 style={{ position: 'relative', border: `2px dashed ${fDragCounter > 0 ? (type === 'cb' ? 'var(--terracotta)' : 'var(--green)') : fFile ? 'var(--green)' : '#ddd'}`, borderRadius: '0.5rem', padding: '1.25rem', textAlign: 'center', background: fDragCounter > 0 ? (type === 'cb' ? '#FFF5F0' : '#F0FDF4') : fExtracting ? '#FFFBF0' : fFile ? '#F0FDF4' : '#FAFAFA', transition: 'all 0.15s' }}
@@ -711,10 +800,17 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
                         <input type="file" accept="image/*,application/pdf" onChange={handleFileSelect} style={{ display: 'none' }} />
                       </label>
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: '#aaa', marginTop: '0.5rem' }}>Image ou PDF — les champs seront remplis automatiquement</div>
+                    {type === 'cash' && (
+                      <button type="button" onClick={() => setFInvoice(true)} disabled={taxRate === null}
+                        style={{ marginTop: '0.75rem', padding: '0.5rem 0.875rem', background: '#8B4513', border: 'none', borderRadius: '0.5rem', color: 'white', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem' }}>
+                        🧾 Créer une facture client
+                      </button>
+                    )}
+                    <div style={{ fontSize: '0.72rem', color: '#aaa', marginTop: '0.5rem' }}>Image ou PDF — les champs seront remplis automatiquement{type === 'cash' ? ' · ou créez la facture client (nuits, personnes, taxe de séjour)' : ''}</div>
                   </div>
                 )}
               </div>
+              )}
               <input ref={fFileRef} type="file" accept="image/*,application/pdf" onChange={handleFileSelect} style={{ display: 'none' }} />
             </div>
  
@@ -850,8 +946,8 @@ function EntriesTab({ type, label, color }: { type: 'cb' | 'cash'; label: string
               Facture à envoyer au comptable
             </label>
  
-            {/* Nom du client (pour encaissements) */}
-            {type === 'cash' && (
+            {/* Nom du client (pour encaissements) — saisi dans la facture si elle est créée */}
+            {type === 'cash' && !fInvoice && (
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Nom du client</label>
                 <input className="form-input" type="text" value={fClientName} onChange={e => setFClientName(e.target.value)} placeholder="(optionnel)" />
@@ -2043,7 +2139,7 @@ function ComptableInvoices({ type }: { type: 'cb' | 'cash' }) {
     setUploadingId(null); setUploadFor(null)
   }
 
-  const missingCount = rows.filter(e => !e.invoice_url).length
+  const missingCount = rows.filter(e => !e.invoice_url && !invoiceByEntry[e.id]).length
 
   async function removeFromList(entry: Entry) {
     setAllEntries(prev => prev.map(e => e.id === entry.id ? { ...e, to_accountant: false } : e))

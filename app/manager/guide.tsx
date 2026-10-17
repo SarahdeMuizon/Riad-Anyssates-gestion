@@ -91,7 +91,7 @@ export default function ManagerGuide({ onClose }: { onClose: () => void }) {
           ['Actions', '✓ pour valider, ↩ pour remettre en attente, 🗑 pour supprimer (avec confirmation).'],
         ]} />
         <p style={note}>Les saisies des employés arrivent « En attente » : vérifiez le montant et la facture, puis validez avec ✓. Une suppression est définitive, justificatif compris.</p>
-        <p style={p}>Dans Encaissements, la colonne <b>Facture</b> (bouton <b>🧾 Créer</b>) crée la facture client sur le papier à en-tête du riad : indiquez le nombre de nuits et de personnes, la taxe de séjour est calculée automatiquement. Les factures sont numérotées à la suite (FA-2026-0001, FA-2026-0002…) et partent directement dans l&apos;onglet Comptable. Le bouton <b>📊 Excel</b> de la barre du haut télécharge toutes les données dans un fichier Excel.</p>
+        <p style={p}>Dans Encaissements, le bouton <b>🧾 Créer une facture client</b> du formulaire d&apos;ajout (ou, pour un encaissement déjà saisi, le bouton <b>🧾 Créer</b> de la colonne Facture) crée la facture client sur le papier à en-tête du riad : indiquez le nombre de nuits et de personnes, la taxe de séjour est calculée automatiquement. Les factures sont numérotées à la suite (FA-2026-0001, FA-2026-0002…) et partent directement dans l&apos;onglet Comptable. Le bouton <b>📊 Excel</b> de la barre du haut télécharge toutes les données dans un fichier Excel.</p>
 
         <h2 style={h2}>4. Fond de caisse et Coffre fort (💰 / 🔐)</h2>
         <p style={p}>Les espèces vivent à deux endroits : la <b>caisse</b> (l&apos;argent du quotidien, visible par les employés) et le <b>coffre fort</b> (la réserve, visible seulement des administrateurs).</p>
